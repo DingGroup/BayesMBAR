@@ -1,2 +1,3 @@
-# BayesMBAR
-Bayesian Multistate Bennett Acceptance Ratio Method
+# Bayesian Multistate Bennett Acceptance Ratio Method (BayesMBAR)
+
+This repository contains the code for the Bayesian Multistate Bennett Acceptance Ratio Method (BayesMBAR) as described in the paper [Bayesian Multistate Bennett Acceptance Ratio Method](https://doi.org/10.1021/acs.jctc.3c01212). BayesMBAR is a Bayesion generalization of the Multistate Bennett Acceptance Ratio (MBAR) method for computing free energy differences between multiple states. It not only provides better uncertainty estimates, but also allows for the incorporation of prior information to improve the accuracy of the free energy estimates.
