@@ -28,6 +28,14 @@ class BayesMBAR:
         warmup_steps: int = 500,
         optimize_steps: int = 10000,
     ) -> None:
+        """
+        The Bayesian Multistate Bennett Acceptance Ratio (BayesMBAR) method
+
+        Arguments:
+            rng_key (jax.random.PRNGKey): Random number generator key
+        
+        """
+
         self.rng_key = rng_key
 
         self.energy = jnp.float64(energy)
@@ -48,7 +56,10 @@ class BayesMBAR:
         self.m = self.energy.shape[0]
         self.n = self.energy.shape[1]
 
-        ## solve the mbar equation in terms of dF
+        ## We first compute the mode estimate based on the likelihood 
+        ## because it is used in both the uniform and normal priors.         
+        ## The mode estimate based on the likelihood is the solution to the MBAR equation.
+
         dF_init = jnp.zeros((self.m - 1,))
         f = jit(value_and_grad(_compute_loss_likelihood_of_dF))
         hess = jit(hessian(_compute_loss_likelihood_of_dF))
@@ -56,7 +67,11 @@ class BayesMBAR:
         dF = res["x"]
         self._dF_mode_ll = dF
 
-        ## sample dF from the likelihood
+        ## sample dF based on the likelihood.
+        ## When the uniform prior is used, the posterior distribution of dF is ## the same as the likelihood function.
+        ## Thefore so these samples are also samples from the posterior 
+        ## distribution of dF when the uniform prior is used.
+
         self.rng_key, subkey = random.split(self.rng_key)
         logdensity = lambda dF: _compute_log_likelihood_of_dF(
             dF, self.energy, self.num_conf
@@ -68,6 +83,8 @@ class BayesMBAR:
             self.warmup_steps,
             self.sample_size,
         )
+
+        ## compute the mean, covariance, and precision of dF based on the samples from the likelihood
         self._dF_mean_ll = jnp.mean(self._dF_samples_ll, axis=0)
         self._dF_cov_ll = jnp.cov(self._dF_samples_ll.T)
         self._dF_prec_ll = jnp.linalg.inv(self._dF_cov_ll)
@@ -79,6 +96,9 @@ class BayesMBAR:
 
         print("sampling from the likelihood is done")
 
+        ## we are done here if the prior is uniform.
+        ## When normal prior is used, we need to learn the hyperparameters of the prior and then sample dF from the posterior distribution of dF.
+        
         if self.prior == "normal":
             _data = {
                 "energy": self.energy,
@@ -257,6 +277,14 @@ def _dF_to_F(dF, num_conf):
 
 
 def _compute_loss_joint_likelihood_of_dF(dF, energy, num_conf, mean_prior, prec_prior):
+    """
+    Compute the loss function of dF based on the joint likelihood.
+
+    The logarithm of the joint likelihood of dF scales with the number of configurations and the number of states. To make the loss function semi-invariant to the number of configurations and the number of states, we divide the log likelihood by the total number of configurations and the number of states. This helps to set a single tolerance for the optimization algorithm used to compute the MAP estimate.
+
+    See the doc of _compute_log_joint_likelihood_of_dF for more details on the arguments and the return value.
+    """
+
     loss = -_compute_log_joint_likelihood_of_dF(
         dF, energy, num_conf, mean_prior, prec_prior
     )
@@ -265,6 +293,23 @@ def _compute_loss_joint_likelihood_of_dF(dF, energy, num_conf, mean_prior, prec_
 
 
 def _compute_log_joint_likelihood_of_dF(dF, energy, num_conf, mean_prior, prec_prior):
+    """
+    Compute the logarithm of the joint likelihood of dF when the prior is a normal distribution.
+
+    The joint likelihood is defined by the right hand side of Eq. (9) in the reference paper.
+
+    Arguments:
+        dF (jnp.ndarray): Free energy differences
+        energy (jnp.ndarray): Energy matrix
+        num_conf (jnp.ndarray): Number of configurations in each state
+        mean_prior (jnp.ndarray): Mean of the prior
+        prec_prior (jnp.ndarray): Precision matrix of the prior
+
+    Returns:
+        jnp.ndarray: Logarithm of the joint likelihood of dF
+
+    """
+
     logp = -0.5 * jnp.dot(dF - mean_prior, jnp.dot(prec_prior, dF - mean_prior))
     logp = logp + _compute_log_likelihood_of_dF(dF, energy, num_conf)
     return logp
@@ -492,6 +537,21 @@ def _sample_loop(rng_key, kernel, init_state, num_samples):
 
 
 def _compute_log_likelihood_of_F(F, energy, num_conf):
+    """
+    Compute the log likelihood of F.
+
+    See Eq. (5) in the reference paper.
+    
+    Arguments:
+        F (jnp.ndarray): Free energies of the states
+        energy (jnp.ndarray): Energy matrix
+        num_conf (jnp.ndarray): Number of configurations in each state
+
+    Returns:
+        jnp.ndarray: Log likelihood of F
+
+    """
+
     logn = jnp.log(num_conf)
     u = energy.T - F - logn
     l = jnp.sum(num_conf * F) - logsumexp(-u, axis=1).sum()
@@ -499,11 +559,34 @@ def _compute_log_likelihood_of_F(F, energy, num_conf):
 
 
 def _compute_log_likelihood_of_dF(dF, energy, num_conf):
+    """
+    Compute the log likelihood of dF.
+    
+    Because F can only be determined up to an additive constant, we use dF instead of F as the parameter in both optimization and sampling.
+    dF is defined as dF = [F_1 - F_0, F_2 - F_0, ..., F_m - F_0].    
+
+    See the doc of _compute_log_likelihood_of_F for more details on the arguments and the return value.
+    """
+
     F = jnp.concatenate([jnp.zeros((1,)), dF])
     return _compute_log_likelihood_of_F(F, energy, num_conf)
 
 
 def _compute_loss_likelihood_of_dF(dF, energy, num_conf):
+    """
+    Compute the loss function of dF based on the likelihood.
+
+    The log likelihood of dF scales with the number of configurations. To make the loss function semi-invariant to the number of configurations, we divide the log likelihood by the total number of configurations. This helps to set a single tolerance for the optimization algorithm.
+
+    Arguments:
+        dF (jnp.ndarray): Free energy differences
+        energy (jnp.ndarray): Energy matrix
+        num_conf (jnp.ndarray): Number of configurations in each state
+
+    Returns:
+        jnp.ndarray: Loss function of dF
+    """
+
     return -_compute_log_likelihood_of_dF(dF, energy, num_conf) / num_conf.sum()
 
 
