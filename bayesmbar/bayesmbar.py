@@ -1,8 +1,9 @@
 from functools import partial
-import jax.numpy as jnp
-from jax import grad, hessian, jit, value_and_grad
+
 import numpy as np
 import jax
+import jax.numpy as jnp
+from jax import grad, hessian, jit, value_and_grad
 from jax.config import config
 
 config.update("jax_enable_x64", True)
@@ -12,12 +13,12 @@ import blackjax
 from optax import sgd
 import optax
 from collections import namedtuple
-from utils import fmin_newton
+from .utils import fmin_newton
+
 
 class BayesMBAR:
     def __init__(
         self,
-        rng_key,
         energy,
         num_conf,
         prior,
@@ -27,16 +28,15 @@ class BayesMBAR:
         sample_size: int = 1000,
         warmup_steps: int = 500,
         optimize_steps: int = 10000,
+        verbose: bool = True,
+        random_seed: int = 0,
     ) -> None:
         """
         The Bayesian Multistate Bennett Acceptance Ratio (BayesMBAR) method
 
         Arguments:
-            rng_key (jax.random.PRNGKey): Random number generator key
-        
-        """
 
-        self.rng_key = rng_key
+        """
 
         self.energy = jnp.float64(energy)
         self.num_conf = jnp.int32(num_conf)
@@ -53,13 +53,17 @@ class BayesMBAR:
         self.warmup_steps = warmup_steps
         self.optimize_steps = optimize_steps
 
+        self.verbose = verbose
+        self.rng_key = jax.random.PRNGKey(random_seed)
+
         self.m = self.energy.shape[0]
         self.n = self.energy.shape[1]
 
-        ## We first compute the mode estimate based on the likelihood 
-        ## because it is used in both the uniform and normal priors.         
+        ## We first compute the mode estimate based on the likelihood
+        ## because it is used in both the uniform and normal priors.
         ## The mode estimate based on the likelihood is the solution to the MBAR equation.
 
+        print("Solve for the mode of the likelihood")
         dF_init = jnp.zeros((self.m - 1,))
         f = jit(value_and_grad(_compute_loss_likelihood_of_dF))
         hess = jit(hessian(_compute_loss_likelihood_of_dF))
@@ -69,8 +73,11 @@ class BayesMBAR:
 
         ## sample dF based on the likelihood.
         ## When the uniform prior is used, the posterior distribution of dF is ## the same as the likelihood function.
-        ## Thefore so these samples are also samples from the posterior 
+        ## Thefore so these samples are also samples from the posterior
         ## distribution of dF when the uniform prior is used.
+        print("")
+        print("=====================================================")
+        print("Sample from the likelihood")
 
         self.rng_key, subkey = random.split(self.rng_key)
         logdensity = lambda dF: _compute_log_likelihood_of_dF(
@@ -82,23 +89,27 @@ class BayesMBAR:
             logdensity,
             self.warmup_steps,
             self.sample_size,
+            self.verbose,
         )
 
         ## compute the mean, covariance, and precision of dF based on the samples from the likelihood
         self._dF_mean_ll = jnp.mean(self._dF_samples_ll, axis=0)
         self._dF_cov_ll = jnp.cov(self._dF_samples_ll.T)
-        self._dF_prec_ll = jnp.linalg.inv(self._dF_cov_ll)
+
+        L = jnp.linalg.cholesky(self._dF_cov_ll)
+        L_inv = jax.scipy.linalg.solve_triangular(L, jnp.eye(L.shape[0]), lower=True)
+        self._dF_prec_ll = L_inv.T.dot(L_inv)
+        #self._dF_prec_ll = jnp.linalg.inv(self._dF_cov_ll)
+
 
         self._F_mode_ll = _dF_to_F(self._dF_mode_ll, self.num_conf)
         self._F_samples_ll = _dF_to_F(self._dF_samples_ll, self.num_conf)
         self._F_mean_ll = jnp.mean(self._F_samples_ll, axis=0)
         self._F_cov_ll = jnp.cov(self._F_samples_ll.T)
 
-        print("sampling from the likelihood is done")
-
         ## we are done here if the prior is uniform.
         ## When normal prior is used, we need to learn the hyperparameters of the prior and then sample dF from the posterior distribution of dF.
-        
+
         if self.prior == "normal":
             _data = {
                 "energy": self.energy,
@@ -195,6 +206,7 @@ class BayesMBAR:
                 logdensity,
                 self.warmup_steps,
                 self.sample_size,
+                self.verbose,
             )
             self._dF_mean_posterior = jnp.mean(self._dF_samples_posterior, axis=0)
             self._dF_cov_posterior = jnp.cov(self._dF_samples_posterior.T)
@@ -377,7 +389,7 @@ def _print_params(params):
     if "alpha" in params["kernel"].keys():
         res += f'alpha: {params["kernel"]["alpha"].item():.4f}, '
 
-    res += 'dscale: '
+    res += "dscale: "
     for i in range(params["kernel"]["dscale"].shape[0]):
         res += f'{params["kernel"]["dscale"][i].item():.4f}, '
     return res
@@ -428,7 +440,7 @@ def _init_kernel_params(kernel_name, dF, state_cv, num_conf):
     params = {}
     params["scale"] = jnp.std(dF)
     params["length_scale"] = (state_cv.max(0) - state_cv.min(0)) / state_cv.shape[0]
-    params["dscale"] = jnp.ones_like(dF)*jnp.std(dF)
+    params["dscale"] = jnp.ones_like(dF) * jnp.std(dF)
 
     if kernel_name == "RQ":
         params["alpha"] = jnp.ones((1,)) * 10
@@ -507,21 +519,33 @@ def _compute_squared_distance(x):
     return jnp.sum((x1 - x2) ** 2, axis=-1)
 
 
-def _sample_dF_from_logdensity(rng_key, init_dF, logdensity, warmup_steps, num_samples):
+def _sample_dF_from_logdensity(
+    rng_key, init_dF, logdensity, warmup_steps, num_samples, verbose
+):
     ## warmup to find step size and mass matrix
     warmup = blackjax.window_adaptation(
         blackjax.nuts,
         logdensity,
         is_mass_matrix_diagonal=False,
-        progress_bar=True,
+        progress_bar=verbose,
     )
     rng_key, subkey = random.split(rng_key)
     (state, parameters), _ = warmup.run(subkey, init_dF, num_steps=warmup_steps)
 
     ## sample using nuts
-    rng_key, subkey = random.split(rng_key)
-    kernel = blackjax.nuts(logdensity, **parameters).step
-    states = _sample_loop(subkey, kernel, state, num_samples)
+    ## Use the blackjax.util.run_inference_algorithm function to run the nuts algorithm
+    ## so that we can have a progress bar. It is a wrap of _sample_loop.
+    print("Sample using the NUTS sampler")
+    alg = blackjax.nuts(logdensity, **parameters)
+    _, states, _ = blackjax.util.run_inference_algorithm(
+        rng_key, state, alg, num_samples, progress_bar=verbose
+    )
+
+    # ## sample using nuts
+    # rng_key, subkey = random.split(rng_key)
+    # kernel = blackjax.nuts(logdensity, **parameters).step
+    # states = _sample_loop(subkey, kernel, state, num_samples)
+
     return states.position
 
 
@@ -541,7 +565,7 @@ def _compute_log_likelihood_of_F(F, energy, num_conf):
     Compute the log likelihood of F.
 
     See Eq. (5) in the reference paper.
-    
+
     Arguments:
         F (jnp.ndarray): Free energies of the states
         energy (jnp.ndarray): Energy matrix
@@ -561,9 +585,9 @@ def _compute_log_likelihood_of_F(F, energy, num_conf):
 def _compute_log_likelihood_of_dF(dF, energy, num_conf):
     """
     Compute the log likelihood of dF.
-    
+
     Because F can only be determined up to an additive constant, we use dF instead of F as the parameter in both optimization and sampling.
-    dF is defined as dF = [F_1 - F_0, F_2 - F_0, ..., F_m - F_0].    
+    dF is defined as dF = [F_1 - F_0, F_2 - F_0, ..., F_m - F_0].
 
     See the doc of _compute_log_likelihood_of_F for more details on the arguments and the return value.
     """
@@ -588,5 +612,3 @@ def _compute_loss_likelihood_of_dF(dF, energy, num_conf):
     """
 
     return -_compute_log_likelihood_of_dF(dF, energy, num_conf) / num_conf.sum()
-
-

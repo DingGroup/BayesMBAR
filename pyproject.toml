@@ -1,0 +1,35 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "BayesMBAR"
+version = "0.0.1"
+authors = [
+  { name="Xinqiang Ding", email="Xinqiang.Ding@tufts.edu" }
+]
+description = "Bayesian Multistate Bennett Acceptance Ratio Methods"
+readme = "README.md"
+license = { file="LICENSE" }
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    'numpy>=1.20.0',
+    'scipy>=1.11.0',
+    'torch>=2.0.0',
+    'pytest>=7.4.0'
+]
+
+[project.urls]
+"Homepage" = "https://bayesmbar.readthedocs.io"
+"Bug Tracker" = "https://github.com/DingGroup/BayesMBAR/issues"
+
+[tool.hatch.build]
+exclude = [
+  "examples/*",
+]

@@ -1,2 +1,2 @@
-# from .bayesmbar import BayesMBAR
-# __all__ = ['BayesMBAR']
+from .bayesmbar import BayesMBAR
+__all__ = ['BayesMBAR']
