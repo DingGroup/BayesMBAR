@@ -6,4 +6,4 @@ Examples
 .. toctree::
    :maxdepth: 1
    
-   three_harmonics
+   examples/three_harmonics.ipynb
