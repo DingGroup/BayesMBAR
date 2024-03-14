@@ -2,11 +2,10 @@ from functools import partial
 
 import numpy as np
 import jax
+jax.config.update("jax_enable_x64", True)
+
 import jax.numpy as jnp
 from jax import grad, hessian, jit, value_and_grad
-from jax.config import config
-
-config.update("jax_enable_x64", True)
 from jax.scipy.special import logsumexp
 from jax import random
 import blackjax

@@ -3,7 +3,7 @@ import numpy as np
 import jax
 from sys import exit
 import sys
-sys.path.append("/cluster/home/xding07/dinglab/xding07/projects_on_github/BayesMBAR")
+#sys.path.append("/cluster/home/xding07/dinglab/xding07/projects_on_github/BayesMBAR")
 from bayesmbar import BayesMBAR
 
 M = 3 ## number of states
