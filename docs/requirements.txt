@@ -1,6 +1,7 @@
 sphinx_copybutton>=0.5.2
 sphinx-book-theme>=1.0.1
 nbsphinx
+sphinx_copybutton
 # optax>=0.1.9
 # jax>=0.4.24
 # blackjax>=1.1.1
