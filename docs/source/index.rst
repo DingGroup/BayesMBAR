@@ -3,12 +3,19 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to BayesMBAR's documentation!
-=====================================
+Welcome to BayesMBAR
+====================
+
+BayesMBAR stands for Bayesian Multistate Bennett Acceptance Ratio methods. 
+It is a Bayesian generalization of the Multistate Bennett Acceptance Ratio (MBAR) method. 
+The MBAR method is a very useful for estimating free energy differences between multiple states from molecular dynamics simulations or Monte Carlo sampling.
+BayesMBAR generalizes the MBAR method by providing a Bayesian framework for estimating free energy differences and their uncertainties. 
+This package provides a Python implementation of the BayesMBAR method.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+
+   installation
 
 
 
