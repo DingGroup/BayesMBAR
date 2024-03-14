@@ -3,6 +3,10 @@ sphinx-book-theme>=1.0.1
 nbsphinx
 sphinx_copybutton
 ipython
+pygments
+sphinx
+pandoc
+
 # optax>=0.1.9
 # jax>=0.4.24
 # blackjax>=1.1.1
