@@ -6,7 +6,7 @@
 Welcome to BayesMBAR
 ====================
 
-BayesMBAR stands for Bayesian Multistate Bennett Acceptance Ratio methods. 
+BayesMBAR stands for `Bayesian Multistate Bennett Acceptance Ratio methods <https://pubs.acs.org/doi/full/10.1021/acs.jctc.3c01212>`_. 
 It is a Bayesian generalization of the Multistate Bennett Acceptance Ratio (MBAR) method. 
 The MBAR method is a very useful for estimating free energy differences between multiple states from molecular dynamics simulations or Monte Carlo sampling.
 BayesMBAR generalizes the MBAR method by providing a Bayesian framework for estimating free energy differences and their uncertainties. 

@@ -1,9 +1,9 @@
 Installing BayesMBAR
 ====================
 
-BayesMBAR is written in pure Python and can be installed using the `pip` package manager.
+BayesMBAR is written in pure Python and can be installed using the pip package manager.
 BayesMBAR depends on several Python packages.
-Although many of these packages will be installed automatically as dependencies when you install BayesMBAR with `pip`, one of the dependencies, JAX, needs to be installed separately.
+Although many of these packages will be installed automatically as dependencies when you install BayesMBAR with pip, one of the dependencies, JAX, needs to be installed separately.
 We suggest following these steps to install BayesMBAR:
 
 1. Installing JAX
@@ -13,11 +13,11 @@ We highly recommend using the GPU version of JAX if you have a GPU available, as
 
 2. Installing BayesMBAR
 ------------------------
-Once JAX is installed, you can install BayesMBAR using `pip`:
+Once JAX is installed, you can install BayesMBAR using pip:
 
-  .. code-block:: bash
+.. code-block:: bash
 
-     pip install bayesmbar
+  pip install bayesmbar
 
 
 
