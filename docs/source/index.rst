@@ -16,4 +16,6 @@ This package provides a Python implementation of the BayesMBAR method.
    :maxdepth: 2
 
    installation
+   API
    examples
+   

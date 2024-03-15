@@ -1,4 +1,5 @@
 from functools import partial
+from typing import Literal
 
 import numpy as np
 import jax
@@ -18,12 +19,12 @@ from .utils import fmin_newton
 class BayesMBAR:
     def __init__(
         self,
-        energy,
-        num_conf,
-        prior,
-        mean,
-        kernel,
-        state_cv,
+        energy: np.ndarray,
+        num_conf: np.ndarray,
+        prior : Literal['uniform', 'normal'] = 'uniform',
+        mean: Literal["constant", "linear", "quadratic"] = 'constant',
+        kernel: Literal['SE', 'Matern52', 'Matern32', 'RQ'] = 'SE',
+        state_cv: np.ndarray = None,
         sample_size: int = 1000,
         warmup_steps: int = 500,
         optimize_steps: int = 10000,
@@ -33,8 +34,18 @@ class BayesMBAR:
         """
         The Bayesian Multistate Bennett Acceptance Ratio (BayesMBAR) method
 
-        Arguments:
-
+        Args:
+            energy (np.ndarray): Energy matrix of shape (m, n), where m is the number of states and n is the number of configurations.
+            num_conf (np.ndarray): Number of configurations in each state. It is a 1D array of length m.
+            prior (str, optional): Prior distribution of dF. It can be either "uniform" or "normal". Defaults to "uniform".
+            mean (str, optional): Mean function of the prior. It can be either "constant", "linear", or "quadratic". Defaults to "constant".
+            kernel (str, optional): Kernel function of the prior. It can be either "SE", "Matern52", "Matern32", or "RQ". Defaults to "SE".
+            state_cv (np.ndarray, optional): State collective variables. It is a 2D array of shape (n, d), where n is the number of configurations and d is the dimension of the collective variables. Defaults to None.
+            sample_size (int, optional): Number of samples drawn from the posterior distribution. Defaults to 1000.
+            warmup_steps (int, optional): Number of warmup steps used to find the step size and mass matrix of the NUTS sampler. Defaults to 500.
+            optimize_steps (int, optional): Number of optimization steps used to learn the hyperparameters when normal priors are used. Defaults to 10000.
+            verbose (bool, optional): Whether to print the progress bar for the optimization and sampling. Defaults to True.
+            random_seed (int, optional): Random seed. Defaults to 0.
         """
 
         self.energy = jnp.float64(energy)
@@ -220,6 +231,8 @@ class BayesMBAR:
 
     @property
     def F_mode(self):
+        """The posterior mode estimate of the free energies of the states under the constraints that :math:`\\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively.
+        """
         if self.prior == "uniform":
             F_mode = self._F_mode_ll
         elif self.prior == "normal":
@@ -228,6 +241,9 @@ class BayesMBAR:
 
     @property
     def F_mean(self):
+        """The posterior mean of the free energies of the states under the constraints that :math:`\\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively.
+        """
+
         if self.prior == "uniform":
             F_mean = self._F_mean_ll
         elif self.prior == "normal":
@@ -236,6 +252,8 @@ class BayesMBAR:
 
     @property
     def F_cov(self):
+        """ The posterior covariance matrix of the free energies of the states under the constraints that :math:`\\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively.
+        """
         if self.prior == "uniform":
             F_cov = self._F_cov_ll
         elif self.prior == "normal":
@@ -249,10 +267,14 @@ class BayesMBAR:
 
     @property
     def F_std(self):
+        """ The posterior standard deviation of the free energies of the states under the constraints that :math:`\\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively.
+        """
         return jnp.sqrt(jnp.diag(self.F_cov))
 
     @property
     def F_samples(self):
+        """ The samples of the free energies of the states from the posterior distribution under the constraints that :math:`\\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively.
+        """
         if self.prior == "uniform":
             F_samples = self._F_samples_ll
         elif self.prior == "normal":
@@ -261,21 +283,32 @@ class BayesMBAR:
 
     @property
     def DeltaF_mode(self):
+        """The posterior mode estimate of free energy difference between states.
+        DeltaF_mode[i,j] is the free energy difference between state :math:`j` and state :math:`i`,
+        i.e., DeltaF_mode[i,j] = F_mode[j] - F_mode[i].
+        """
         return self.F_mode[None, :] - self.F_mode[:, None]
 
     @property
     def DeltaF_mean(self):
+        """The posterior mean of free energy difference between states.
+        DeltaF_mean[i,j] is the free energy difference between state :math:`j` and state :math:`i`,
+        i.e., DeltaF_mean[i,j] = F_mean[j] - F_mean[i].
+        """
         return self.F_mean[None, :] - self.F_mean[:, None]
 
     @property
     def DeltaF_std(self):
+        """The posterior standard deviation of free energy difference between states.
+        DeltaF_std[i,j] is the posterior standard deviation of the free energy difference between state :math:`j` and state :math:`i`,
+        """
+
         DeltaF_cov = (
             jnp.diag(self.F_cov)[:, None]
             + jnp.diag(self.F_cov)[None, :]
             - 2 * self.F_cov
         )
         return jnp.sqrt(DeltaF_cov)
-
 
 def _dF_to_F(dF, num_conf):
     if dF.ndim == 1:
