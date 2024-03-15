@@ -30,17 +30,21 @@ sys.path.insert(0, os.path.abspath('../../../'))
 extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
-    'sphinx.ext.autodoc',
+    #'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
     'sphinx_copybutton',
     'nbsphinx']
 
+extensions.append('autoapi.extension')
+
+autoapi_dirs = ['../../bayesmbar']
+
 templates_path = ['_templates']
 exclude_patterns = []
 
-autodoc_default_options = {
-    'member-order': 'bysource',
-}
+# autodoc_default_options = {
+#     'member-order': 'bysource',
+# }
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output

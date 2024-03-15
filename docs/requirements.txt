@@ -6,6 +6,7 @@ ipython
 pygments
 sphinx
 pandoc
+sphinx-autoapi
 
 # optax>=0.1.9
 # jax>=0.4.24
