@@ -9,7 +9,7 @@
 project = 'BayesMBAR'
 copyright = '2024, Xinqiang Ding'
 author = 'Xinqiang Ding'
-release = '0.0.1'
+#release = '0.0.1'
 
 # -- Path setup --------------------------------------------------------------
 
