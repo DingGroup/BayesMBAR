@@ -1,2 +1,4 @@
 from .bayesmbar import BayesMBAR
-__all__ = ['BayesMBAR']
+from .bayesbar import BayesBAR
+
+__all__ = ('BayesMBAR', 'BayesBAR', '__init__')

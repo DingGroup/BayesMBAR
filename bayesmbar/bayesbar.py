@@ -5,14 +5,11 @@ from numpy import ndarray
 import scipy.optimize as optimize
 import scipy.integrate as integrate
 import jax
-from jax.config import config
-
-config.update("jax_enable_x64", True)
+jax.config.update("jax_enable_x64", True)
 from jax import grad, hessian, jit, value_and_grad
 import jax.numpy as jnp
 from utils import fmin_newton
 from tqdm import tqdm
-
 
 class BayesBAR:
     """Bayesian Bennett acceptance ratio method"""

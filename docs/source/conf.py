@@ -30,14 +30,14 @@ sys.path.insert(0, os.path.abspath('../../../'))
 extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
-    #'sphinx.ext.autodoc',
+    'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
     'sphinx_copybutton',
     'nbsphinx']
 
 extensions.append('autoapi.extension')
 
-autoapi_dirs = ['../../bayesmbar']
+
 
 templates_path = ['_templates']
 exclude_patterns = []
@@ -54,3 +54,18 @@ html_static_path = ['_static']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
+
+
+## autoapi
+autoapi_type = 'python'
+autoapi_dirs = ['../../bayesmbar']
+autoapi_python_class_content = 'both'
+
+def skip_submodules(app, what, name, obj, skip, options):
+    if what == "module":
+        skip = True
+    return skip
+
+
+def setup(sphinx):
+    sphinx.connect("autoapi-skip-member", skip_submodules)

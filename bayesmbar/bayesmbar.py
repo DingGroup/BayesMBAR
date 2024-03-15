@@ -17,6 +17,9 @@ from .utils import fmin_newton
 
 
 class BayesMBAR:
+    """Bayesian Multistate Bennett Acceptance Ratio (BayesMBAR) method
+    """
+
     def __init__(
         self,
         energy: np.ndarray,
