@@ -35,8 +35,6 @@ class BayesMBAR:
         random_seed: int = 0,
     ) -> None:
         """
-        The Bayesian Multistate Bennett Acceptance Ratio (BayesMBAR) method
-
         Args:
             energy (np.ndarray): Energy matrix of shape (m, n), where m is the number of states and n is the number of configurations.
             num_conf (np.ndarray): Number of configurations in each state. It is a 1D array of length m.

@@ -8,7 +8,7 @@ import jax
 jax.config.update("jax_enable_x64", True)
 from jax import grad, hessian, jit, value_and_grad
 import jax.numpy as jnp
-from utils import fmin_newton
+from .utils import fmin_newton
 from tqdm import tqdm
 
 class BayesBAR:
@@ -21,8 +21,7 @@ class BayesBAR:
         verbose=False,
         sample_size: int = 0,
     ):
-        """Initializer of the BayesBAR class
-
+        """
         Args:
           energy: energy matrix in reduced units. Its size should be 2xN, where N is
               the total number of samples from the two states.
@@ -99,6 +98,30 @@ class BayesBAR:
         )
         self._dF_std_bennett = jnp.sqrt(_dF_var_bennett)
 
+
+    @property
+    def DeltaF_mode(self):
+        """The posterior mode of the free energy difference.
+        """
+        return jax.device_put(self.dF_mode, jax.devices("cpu")[0])
+
+    @property
+    def DeltaF_mean(self):
+        """The posterior mean of the free energy difference.
+        """
+        return jax.device_put(self.dF_mean, jax.devices("cpu")[0])
+    
+    @property
+    def DeltaF_std(self):
+        """The posterior standard deviation of the free energy difference.
+        """
+        return jax.device_put(self.dF_std, jax.devices("cpu")[0])
+    
+    @property
+    def DeltaF_samples(self):
+        """The samples from the posterior distribution of the free energy difference.
+        """
+        return jax.device_put(self.dF_samples, jax.devices("cpu")[0])
 
 @jit
 def _compute_logp(dF, energy, num_conf):
