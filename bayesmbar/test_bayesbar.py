@@ -21,9 +21,15 @@ def setup_data():
 
     key, subkey = random.split(key)
     mu = random.uniform(subkey, (num_states,), jnp.float64, 0, 2)
+    
 
     key, subkey = random.split(key)
     sigma = random.uniform(subkey, (num_states,), jnp.float64, 1, 3)
+
+    num_conf = jnp.array([100, 100])
+    mu = jnp.array([0, 60])
+    sigma = jnp.array([1, 3])
+    
 
     ## draw samples from each state and
     ## calculate energies of each sample in all states
@@ -46,6 +52,4 @@ def setup_data():
 
 energy, num_conf, F_ref, key = setup_data()
 key, subkey = random.split(key)
-bar = BayesBAR(energy, num_conf, verbose=True, sample_size=50000)
-
-
+bar = BayesBAR(energy, num_conf, verbose=True, sample_size=0)
