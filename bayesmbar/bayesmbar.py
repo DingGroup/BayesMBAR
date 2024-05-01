@@ -3,7 +3,6 @@ from typing import Literal
 
 import numpy as np
 import jax
-jax.config.update("jax_enable_x64", True)
 
 import jax.numpy as jnp
 from jax import grad, hessian, jit, value_and_grad
@@ -15,6 +14,7 @@ import optax
 from collections import namedtuple
 from .utils import fmin_newton
 
+jax.config.update("jax_enable_x64", True)
 
 class BayesMBAR:
     """Bayesian Multistate Bennett Acceptance Ratio (BayesMBAR) method
@@ -91,9 +91,10 @@ class BayesMBAR:
         print("Sample from the likelihood")
 
         self.rng_key, subkey = random.split(self.rng_key)
-        logdensity = lambda dF: _compute_log_likelihood_of_dF(
-            dF, self.energy, self.num_conf
-        )
+        
+        def logdensity(dF):
+            return _compute_log_likelihood_of_dF(dF, self.energy, self.num_conf)
+        
         self._dF_samples_ll = _sample_dF_from_logdensity(
             subkey,
             self._dF_mode_ll,
@@ -207,9 +208,8 @@ class BayesMBAR:
             self._dF_mode_posterior = res["x"]
 
             ## sample dF from the posterior
-            logdensity = lambda dF: _compute_log_joint_likelihood_of_dF(
-                dF, self.energy, self.num_conf, self._dF_mean_prior, self._dF_prec_prior
-            )
+            def logdensity(dF):
+                return _compute_log_joint_likelihood_of_dF(dF, self.energy, self.num_conf, self._dF_mean_prior, self._dF_prec_prior)
             self.rng_key, subkey = random.split(self.rng_key)
             self._dF_samples_posterior = _sample_dF_from_logdensity(
                 subkey,
