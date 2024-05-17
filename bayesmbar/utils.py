@@ -43,6 +43,7 @@ def fmin_newton(f, hess, x_init, args=(), verbose=True, eps=1e-12, max_iter=300)
         N_func += 1
 
         H = hess(x, *args)
+        H = H + jnp.eye(H.shape[0]) * 1e-16
 
         newton_direction = np.linalg.solve(H, -grad)
         newton_decrement_square = np.sum(-grad * newton_direction)
