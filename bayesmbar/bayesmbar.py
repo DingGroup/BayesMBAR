@@ -95,7 +95,7 @@ class BayesMBAR:
         def logdensity(dF):
             return _compute_log_likelihood_of_dF(dF, self.energy, self.num_conf)
         
-        self._dF_samples_ll = _sample_dF_from_logdensity(
+        self._dF_samples_ll = _sample_from_logdensity(
             subkey,
             self._dF_mode_ll,
             logdensity,
@@ -211,7 +211,7 @@ class BayesMBAR:
             def logdensity(dF):
                 return _compute_log_joint_likelihood_of_dF(dF, self.energy, self.num_conf, self._dF_mean_prior, self._dF_prec_prior)
             self.rng_key, subkey = random.split(self.rng_key)
-            self._dF_samples_posterior = _sample_dF_from_logdensity(
+            self._dF_samples_posterior = _sample_from_logdensity(
                 subkey,
                 self._dF_mode_posterior,
                 logdensity,
@@ -552,7 +552,7 @@ def _compute_squared_distance(x):
     return jnp.sum((x1 - x2) ** 2, axis=-1)
 
 
-def _sample_dF_from_logdensity(
+def _sample_from_logdensity(
     rng_key, init_dF, logdensity, warmup_steps, num_samples, verbose
 ):
     ## warmup to find step size and mass matrix

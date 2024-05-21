@@ -2,13 +2,14 @@ from collections.abc import Sequence
 
 import numpy as np
 import numpy.typing as npt
+import networkx as nx
 
 import jax
 import jax.numpy as jnp
 from jax import random
-from jax import hessian, jit, value_and_grad
+from jax import hessian, jit, value_and_grad, vmap
 
-from .bayesmbar import _compute_log_likelihood_of_F, _sample_dF_from_logdensity
+from .bayesmbar import _compute_log_likelihood_of_dF, _sample_from_logdensity
 from .utils import fmin_newton
 
 jax.config.update("jax_enable_x64", True)
@@ -38,82 +39,93 @@ class BayesCMBAR:
         # number of states in each mbar system
         self.nums_state = [len(s) for s in self.nums_conf]
 
-        self.state_idx_to_F_idx = _map_from_state_idx_to_F_idx(
-            self.nums_state, identical_states
-        )
-
-        self.num_of_free_F = len(set(self.state_idx_to_F_idx.values()))
-
-        dF_init = jnp.zeros((self.num_of_free_F - 1))
+        self.Q = _compute_projection(self.nums_state, identical_states)
+        x = jnp.zeros((self.Q.shape[1]))
 
         print("Solve for the mode of the likelihood")
-        f = jit(value_and_grad(_compute_cmbar_loss_likelihood_of_dF))
-        hess = jit(hessian(_compute_cmbar_loss_likelihood_of_dF))
+        f = jit(value_and_grad(_compute_cmbar_loss_likelihood))
+        hess = jit(hessian(_compute_cmbar_loss_likelihood))
         res = fmin_newton(
             f,
             hess,
-            dF_init,
-            args=(self.energies, self.nums_conf, self.state_idx_to_F_idx),
+            x,
+            args=(self.Q, self.energies, self.nums_conf),
         )
-        dF = res["x"]
-        self._dF_mode_ll = dF
 
-        print("=====================================================")
-        print("Sample from the likelihood")
+        x_mode_ll = res["x"]
+        self._dF_mode_ll = jnp.dot(self.Q, x_mode_ll)
+        self._state_F_mode_ll = _dF_to_state_F(self._dF_mode_ll, self.nums_state)
 
-        self.rng_key, subkey = random.split(self.rng_key)
+        if self.sample_size > 0:
+            print("=====================================================")
+            print("Sample from the likelihood")
 
-        def logdensity(dF):
-            return _compute_cmbar_log_likelihood_of_dF(
-                dF, self.energies, self.nums_conf, self.state_idx_to_F_idx
+            self.rng_key, subkey = random.split(self.rng_key)
+
+            def logdensity(x):
+                return _compute_cmbar_log_likelihood(
+                    x, self.Q, self.energies, self.nums_conf
+                )
+
+
+            self._x_samples_ll = _sample_from_logdensity(
+                subkey,
+                x_mode_ll,
+                logdensity,
+                self.warmup_steps,
+                self.sample_size,
+                self.verbose,
             )
+            self._dF_samples_ll = self._x_samples_ll @ self.Q.T
 
-        self._dF_samples_ll = _sample_dF_from_logdensity(
-            subkey,
-            self._dF_mode_ll,
-            logdensity,
-            self.warmup_steps,
-            self.sample_size,
-            self.verbose,
-        )
-
-        self._F_mode_ll = jnp.concatenate([jnp.zeros(1), self._dF_mode_ll])
-        self._F_samples_ll = jnp.concatenate(
-            [jnp.zeros((self.sample_size, 1)), self._dF_samples_ll], axis=1
-        )
-
-        self._state_F_mode_ll = _F_to_state_F(
-            self._F_mode_ll, self.nums_state, self.state_idx_to_F_idx
-        )
-        self._state_F_samples_ll = _F_to_state_F(
-            self._F_samples_ll, self.nums_state, self.state_idx_to_F_idx
-        )
-
-        self._state_F_mean_ll = [jnp.mean(F, axis=0) for F in self._state_F_samples_ll]
+            
+            self._state_F_samples_ll = vmap(_dF_to_state_F, in_axes=[0, None])(
+                self._dF_samples_ll, self.nums_state
+            )
+            self._state_F_mean_ll = [jnp.mean(F, axis=0) for F in self._state_F_samples_ll]
 
     @property
     def F_mode(self):
-        return [np.array(jax.device_put(F, jax.devices("cpu")[0])) for F in self._state_F_mode_ll]
+        return [
+            np.array(jax.device_put(F, jax.devices("cpu")[0]))
+            for F in self._state_F_mode_ll
+        ]
 
     @property
     def F_samples(self):
-        return [np.array(jax.device_put(F, jax.devices("cpu")[0])) for F in self._state_F_samples_ll]
+        return [
+            np.array(jax.device_put(F, jax.devices("cpu")[0]))
+            for F in self._state_F_samples_ll
+        ]
 
     @property
     def F_mean(self):
-        return [np.array(jax.device_put(F, jax.devices("cpu")[0])) for F in self._state_F_mean_ll]        
+        return [
+            np.array(jax.device_put(F, jax.devices("cpu")[0]))
+            for F in self._state_F_mean_ll
+        ]
 
     @property
     def DeltaF_mode(self):
-        return [F[None,:] - F[:, None] for F in self.F_mode]
-    
+        return [F[None, :] - F[:, None] for F in self.F_mode]
+
     @property
     def DeltaF_mean(self):
-        return [F[None,:] - F[:, None] for F in self.F_mean]
-    
+        return [F[None, :] - F[:, None] for F in self.F_mean]
+
     @property
     def DeltaF_std(self):
-        return [np.std(F[:,None,:] - F[:,:,None], 0) for F in self.F_samples]
+        return [np.std(F[:, None, :] - F[:, :, None], 0) for F in self.F_samples]
+
+
+def _dF_to_state_F(dF: jnp.ndarray, nums_state: Sequence[int]) -> list[jnp.ndarray]:
+    state_dF = []
+    idx = 0
+    for n in nums_state:
+        state_dF.append(dF[idx : idx + n - 1])
+        idx += n - 1
+    state_F = [jnp.concatenate([jnp.zeros(1), dF]) for dF in state_dF]
+    return state_F
 
 
 def _F_to_state_F(
@@ -126,34 +138,94 @@ def _F_to_state_F(
     return F_of_states
 
 
-def _compute_cmbar_log_likelihood_of_dF(
-    dF: jnp.ndarray,
+def _compute_cmbar_log_likelihood(
+    x: jnp.ndarray,
+    Q: jnp.ndarray,
     energies: Sequence[jnp.ndarray],
     nums_conf: Sequence[jnp.ndarray],
-    state_idx_to_F_idx: dict[(int, int), int],
 ):
+    dF = jnp.dot(Q, x)
     nums_state = [len(s) for s in nums_conf]
-    F = jnp.concatenate([jnp.zeros(1), dF])
-    state_F = _F_to_state_F(F, nums_state, state_idx_to_F_idx)
+    state_dF = []
+    idx = 0
+    for n in nums_state:
+        state_dF.append(dF[..., idx : idx + n - 1])
+        idx += n - 1
 
     log_likelihood = 0
-    for energy, num_conf, F in zip(energies, nums_conf, state_F):
-        log_likelihood += _compute_log_likelihood_of_F(F, energy, num_conf)
+    for energy, num_conf, dF in zip(energies, nums_conf, state_dF):
+        log_likelihood += _compute_log_likelihood_of_dF(dF, energy, num_conf)
 
     return log_likelihood
 
 
-def _compute_cmbar_loss_likelihood_of_dF(
-    dF: jnp.ndarray,
+def _compute_cmbar_loss_likelihood(
+    x: jnp.ndarray,
+    Q: jnp.ndarray,
     energies: Sequence[jnp.ndarray],
     nums_conf: Sequence[jnp.ndarray],
-    state_idx_to_F_idx: dict[(int, int), int],
 ):
-    log_likelihood = _compute_cmbar_log_likelihood_of_dF(
-        dF, energies, nums_conf, state_idx_to_F_idx
-    )
+    log_likelihood = _compute_cmbar_log_likelihood(x, Q, energies, nums_conf)
     N = jnp.sum(jnp.array(nums_conf))
     return -log_likelihood / N
+
+
+def _generate_dF_graph(
+    nums_state: Sequence[int], identical_states: Sequence[Sequence[(int, int)]]
+):
+    G = nx.Graph()
+    for i in range(len(nums_state)):
+        for j in range(1, nums_state[i]):
+            G.add_edge((i, 0), (i, j))
+
+    for states in identical_states:
+        for i in range(len(states)):
+            for j in range(i + 1, len(states)):
+                G.add_edge(states[i], states[j])
+
+    return G
+
+
+def _compute_projection(
+    nums_state: Sequence[int], identical_states: Sequence[Sequence[(int, int)]]
+):
+    state_dF_idx_to_dF_idx = {}
+    idx = 0
+    for i in range(len(nums_state)):
+        for j in range(1, nums_state[i]):
+            state_dF_idx_to_dF_idx[(i, j)] = idx
+            idx += 1
+
+    graph = _generate_dF_graph(nums_state, identical_states)
+    cycles = nx.cycle_basis(graph)
+    A = []
+
+    for cycle in cycles:
+        q = np.zeros(len(state_dF_idx_to_dF_idx))
+        for i in range(len(cycle)):
+            n1, n2 = cycle[i], cycle[(i + 1) % len(cycle)]
+
+            if n1[0] != n2[0]:
+                continue
+
+            assert n1[1] == 0 or n2[1] == 0
+
+            if n1[1] == 0 and n2[1] != 0:
+                q[state_dF_idx_to_dF_idx[n2]] = 1
+            elif n1[1] != 0 and n2[1] == 0:
+                q[state_dF_idx_to_dF_idx[n1]] = -1
+            else:
+                raise ValueError("Invalid cycle")
+
+        if np.any(q != 0):
+            A.append(q)
+
+    A = np.array(A).T
+
+    Q, R = np.linalg.qr(A, mode="complete")
+    Q = Q[:, A.shape[1] :]
+    
+    return Q
 
 
 def _map_from_state_idx_to_F_idx(

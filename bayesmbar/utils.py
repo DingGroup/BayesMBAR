@@ -2,7 +2,7 @@ import numpy as np
 from numpy import ndarray
 import jax.numpy as jnp
 
-def fmin_newton(f, hess, x_init, args=(), verbose=True, eps=1e-12, max_iter=300):
+def fmin_newton(f, hess, x_init, args=(), verbose=True, eps=1e-10, max_iter=300):
     """Minimize a function with the Newton's method.
 
     For details of the Newton's method, see Chapter 9.5 of Prof. Boyd's book
