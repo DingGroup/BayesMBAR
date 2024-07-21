@@ -15,7 +15,7 @@ from .utils import fmin_newton
 jax.config.update("jax_enable_x64", True)
 
 
-class BayesCMBAR:
+class CBayesMBAR:
     def __init__(
         self,
         energies: Sequence[npt.NDArray[np.floating]],

@@ -1,5 +1,5 @@
 from .bayesmbar import BayesMBAR
-from .bayescmbar import BayesCMBAR
+from .cbayesmbar import CBayesMBAR
 from .bayesbar import BayesBAR
 
-__all__ = ('BayesMBAR', 'BayesBAR', 'BayesCMBAR','__init__')
+__all__ = ('BayesMBAR', 'BayesBAR', 'CBayesMBAR','__init__')
