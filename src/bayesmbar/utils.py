@@ -1,6 +1,60 @@
 import numpy as np
-from numpy import ndarray
 import jax.numpy as jnp
+from jax.scipy.special import logsumexp
+
+def _compute_log_likelihood_of_F(F, energy, num_conf):
+    """
+    Compute the log likelihood of F.
+
+    See Eq. (5) in the reference paper.
+
+    Arguments:
+        F (jnp.ndarray): Free energies of the states
+        energy (jnp.ndarray): Energy matrix
+        num_conf (jnp.ndarray): Number of configurations in each state
+
+    Returns:
+        jnp.ndarray: Log likelihood of F
+
+    """
+
+    logn = jnp.log(num_conf)
+    u = energy.T - F - logn
+    L = jnp.sum(num_conf * F) - logsumexp(-u, axis=1).sum()
+    return L
+
+
+def _compute_log_likelihood_of_dF(dF, energy, num_conf):
+    """
+    Compute the log likelihood of dF.
+
+    Because F can only be determined up to an additive constant, we use dF instead of F as the parameter in both optimization and sampling.
+    dF is defined as dF = [F_1 - F_0, F_2 - F_0, ..., F_m - F_0].
+
+    See the doc of _compute_log_likelihood_of_F for more details on the arguments and the return value.
+    """
+
+    F = jnp.concatenate([jnp.zeros((1,)), dF])
+    return _compute_log_likelihood_of_F(F, energy, num_conf)
+
+
+def _compute_loss_likelihood_of_dF(dF, energy, num_conf):
+    """
+    Compute the loss function of dF based on the likelihood.
+
+    The log likelihood of dF scales with the number of configurations. To make the loss function semi-invariant to the number of configurations, we divide the log likelihood by the total number of configurations. This helps to set a single tolerance for the optimization algorithm.
+
+    Arguments:
+        dF (jnp.ndarray): Free energy differences
+        energy (jnp.ndarray): Energy matrix
+        num_conf (jnp.ndarray): Number of configurations in each state
+
+    Returns:
+        jnp.ndarray: Loss function of dF
+    """
+
+    return -_compute_log_likelihood_of_dF(dF, energy, num_conf) / num_conf.sum()
+
 
 def fmin_newton(f, hess, x_init, args=(), verbose=True, eps=1e-10, max_iter=300):
     """Minimize a function with the Newton's method.

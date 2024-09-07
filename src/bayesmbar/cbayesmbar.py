@@ -9,8 +9,8 @@ import jax.numpy as jnp
 from jax import random
 from jax import hessian, jit, value_and_grad, vmap
 
-from .bayesmbar import _compute_log_likelihood_of_dF, _sample_from_logdensity
-from .utils import fmin_newton
+from .bayesmbar import _sample_from_logdensity
+from .utils import fmin_newton, _compute_log_likelihood_of_dF
 
 jax.config.update("jax_enable_x64", True)
 

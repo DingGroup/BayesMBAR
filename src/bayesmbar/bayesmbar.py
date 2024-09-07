@@ -5,28 +5,31 @@ import numpy as np
 import jax
 
 import jax.numpy as jnp
-from jax import grad, hessian, jit, value_and_grad
-from jax.scipy.special import logsumexp
+from jax import hessian, jit, value_and_grad
 from jax import random
 import blackjax
 from optax import sgd
 import optax
-from collections import namedtuple
-from .utils import fmin_newton
+from .utils import (
+    fmin_newton,
+    _compute_log_likelihood_of_dF,
+    _compute_log_likelihood_of_F,
+    _compute_loss_likelihood_of_dF,
+)
 
 jax.config.update("jax_enable_x64", True)
 
+
 class BayesMBAR:
-    """Bayesian Multistate Bennett Acceptance Ratio (BayesMBAR) method
-    """
+    """Bayesian Multistate Bennett Acceptance Ratio (BayesMBAR) method"""
 
     def __init__(
         self,
         energy: np.ndarray,
         num_conf: np.ndarray,
-        prior : Literal['uniform', 'normal'] = 'uniform',
-        mean: Literal["constant", "linear", "quadratic"] = 'constant',
-        kernel: Literal['SE', 'Matern52', 'Matern32', 'RQ'] = 'SE',
+        prior: Literal["uniform", "normal"] = "uniform",
+        mean: Literal["constant", "linear", "quadratic"] = "constant",
+        kernel: Literal["SE", "Matern52", "Matern32", "RQ"] = "SE",
         state_cv: np.ndarray = None,
         sample_size: int = 1000,
         warmup_steps: int = 500,
@@ -91,10 +94,10 @@ class BayesMBAR:
         print("Sample from the likelihood")
 
         self.rng_key, subkey = random.split(self.rng_key)
-        
+
         def logdensity(dF):
             return _compute_log_likelihood_of_dF(dF, self.energy, self.num_conf)
-        
+
         self._dF_samples_ll = _sample_from_logdensity(
             subkey,
             self._dF_mode_ll,
@@ -111,8 +114,7 @@ class BayesMBAR:
         L = jnp.linalg.cholesky(self._dF_cov_ll)
         L_inv = jax.scipy.linalg.solve_triangular(L, jnp.eye(L.shape[0]), lower=True)
         self._dF_prec_ll = L_inv.T.dot(L_inv)
-        #self._dF_prec_ll = jnp.linalg.inv(self._dF_cov_ll)
-
+        # self._dF_prec_ll = jnp.linalg.inv(self._dF_cov_ll)
 
         self._F_mode_ll = _dF_to_F(self._dF_mode_ll, self.num_conf)
         self._F_samples_ll = _dF_to_F(self._dF_samples_ll, self.num_conf)
@@ -209,7 +211,14 @@ class BayesMBAR:
 
             ## sample dF from the posterior
             def logdensity(dF):
-                return _compute_log_joint_likelihood_of_dF(dF, self.energy, self.num_conf, self._dF_mean_prior, self._dF_prec_prior)
+                return _compute_log_joint_likelihood_of_dF(
+                    dF,
+                    self.energy,
+                    self.num_conf,
+                    self._dF_mean_prior,
+                    self._dF_prec_prior,
+                )
+
             self.rng_key, subkey = random.split(self.rng_key)
             self._dF_samples_posterior = _sample_from_logdensity(
                 subkey,
@@ -232,8 +241,7 @@ class BayesMBAR:
 
     @property
     def F_mode(self):
-        """The posterior mode estimate of the free energies of the states under the constraints that :math:`\\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively.
-        """
+        """The posterior mode estimate of the free energies of the states under the constraints that :math:`\\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively."""
         if self.prior == "uniform":
             F_mode = self._F_mode_ll
         elif self.prior == "normal":
@@ -242,8 +250,7 @@ class BayesMBAR:
 
     @property
     def F_mean(self):
-        """The posterior mean of the free energies of the states under the constraints that :math:`\\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively.
-        """
+        """The posterior mean of the free energies of the states under the constraints that :math:`\\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively."""
 
         if self.prior == "uniform":
             F_mean = self._F_mean_ll
@@ -253,8 +260,7 @@ class BayesMBAR:
 
     @property
     def F_cov(self):
-        """ The posterior covariance matrix of the free energies of the states under the constraints that :math:`\\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively.
-        """
+        """The posterior covariance matrix of the free energies of the states under the constraints that :math:`\\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively."""
         if self.prior == "uniform":
             F_cov = self._F_cov_ll
         elif self.prior == "normal":
@@ -268,14 +274,12 @@ class BayesMBAR:
 
     @property
     def F_std(self):
-        """ The posterior standard deviation of the free energies of the states under the constraints that :math:`\\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively.
-        """
+        """The posterior standard deviation of the free energies of the states under the constraints that :math:`\\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively."""
         return jnp.sqrt(jnp.diag(self.F_cov))
 
     @property
     def F_samples(self):
-        """ The samples of the free energies of the states from the posterior distribution under the constraints that :math:`\\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively.
-        """
+        """The samples of the free energies of the states from the posterior distribution under the constraints that :math:`\\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively."""
         if self.prior == "uniform":
             F_samples = self._F_samples_ll
         elif self.prior == "normal":
@@ -310,6 +314,7 @@ class BayesMBAR:
             - 2 * self.F_cov
         )
         return jnp.sqrt(DeltaF_cov)
+
 
 def _dF_to_F(dF, num_conf):
     if dF.ndim == 1:
@@ -591,57 +596,3 @@ def _sample_loop(rng_key, kernel, init_state, num_samples):
     keys = jax.random.split(rng_key, num_samples)
     _, states = jax.lax.scan(one_step, init_state, keys)
     return states
-
-
-def _compute_log_likelihood_of_F(F, energy, num_conf):
-    """
-    Compute the log likelihood of F.
-
-    See Eq. (5) in the reference paper.
-
-    Arguments:
-        F (jnp.ndarray): Free energies of the states
-        energy (jnp.ndarray): Energy matrix
-        num_conf (jnp.ndarray): Number of configurations in each state
-
-    Returns:
-        jnp.ndarray: Log likelihood of F
-
-    """
-
-    logn = jnp.log(num_conf)
-    u = energy.T - F - logn
-    l = jnp.sum(num_conf * F) - logsumexp(-u, axis=1).sum()
-    return l
-
-
-def _compute_log_likelihood_of_dF(dF, energy, num_conf):
-    """
-    Compute the log likelihood of dF.
-
-    Because F can only be determined up to an additive constant, we use dF instead of F as the parameter in both optimization and sampling.
-    dF is defined as dF = [F_1 - F_0, F_2 - F_0, ..., F_m - F_0].
-
-    See the doc of _compute_log_likelihood_of_F for more details on the arguments and the return value.
-    """
-
-    F = jnp.concatenate([jnp.zeros((1,)), dF])
-    return _compute_log_likelihood_of_F(F, energy, num_conf)
-
-
-def _compute_loss_likelihood_of_dF(dF, energy, num_conf):
-    """
-    Compute the loss function of dF based on the likelihood.
-
-    The log likelihood of dF scales with the number of configurations. To make the loss function semi-invariant to the number of configurations, we divide the log likelihood by the total number of configurations. This helps to set a single tolerance for the optimization algorithm.
-
-    Arguments:
-        dF (jnp.ndarray): Free energy differences
-        energy (jnp.ndarray): Energy matrix
-        num_conf (jnp.ndarray): Number of configurations in each state
-
-    Returns:
-        jnp.ndarray: Loss function of dF
-    """
-
-    return -_compute_log_likelihood_of_dF(dF, energy, num_conf) / num_conf.sum()
