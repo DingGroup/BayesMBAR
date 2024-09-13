@@ -570,19 +570,21 @@ def _sample_from_logdensity(
     rng_key, subkey = random.split(rng_key)
     (state, parameters), _ = warmup.run(subkey, init_dF, num_steps=warmup_steps)
 
-    ## sample using nuts
-    ## Use the blackjax.util.run_inference_algorithm function to run the nuts algorithm
-    ## so that we can have a progress bar. It is a wrap of _sample_loop.
     print("Sample using the NUTS sampler")
-    alg = blackjax.nuts(logdensity, **parameters)
-    _, states, _ = blackjax.util.run_inference_algorithm(
-        rng_key, state, alg, num_samples, progress_bar=verbose
-    )
 
-    # ## sample using nuts
-    # rng_key, subkey = random.split(rng_key)
-    # kernel = blackjax.nuts(logdensity, **parameters).step
-    # states = _sample_loop(subkey, kernel, state, num_samples)
+    ## sample using nuts
+
+    # ## Use the blackjax.util.run_inference_algorithm function to run the nuts algorithm
+    # ## so that we can have a progress bar. It is a wrap of _sample_loop.   
+    # alg = blackjax.nuts(logdensity, **parameters)
+    # _, states, _ = blackjax.util.run_inference_algorithm(
+    #     rng_key, state, alg, num_samples, progress_bar=verbose
+    # )
+
+    ## sample using nuts
+    rng_key, subkey = random.split(rng_key)
+    kernel = blackjax.nuts(logdensity, **parameters).step
+    states = _sample_loop(subkey, kernel, state, num_samples)
 
     return states.position
 

@@ -32,4 +32,17 @@ def setup_data():
     pi = num_conf / num_conf.sum()
     F_ref = F_ref - jnp.sum(pi * F_ref)
 
-    return np.array(energy), np.array(num_conf), np.array(F_ref), key
+    ## perturbed states
+    key, subkey = jr.split(key)
+    num_states_p = 8
+    mu_p = jr.uniform(subkey, (num_states_p,), jnp.float64, 0, 2)
+    sigma_p = jr.uniform(subkey, (num_states_p,), jnp.float64, 0, 4)
+
+    energy_p = 0.5 * ((Xs - mu_p) / sigma_p) ** 2
+    energy_p = energy_p.T
+
+    F_ref_p = -jnp.log(sigma_p)
+    F_ref_p = F_ref_p - jnp.mean(F_ref_p)
+
+    return np.array(energy), np.array(num_conf), np.array(F_ref), np.array(energy_p), np.array(F_ref_p)
+

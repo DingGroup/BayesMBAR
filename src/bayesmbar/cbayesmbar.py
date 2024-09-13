@@ -1,31 +1,52 @@
 from collections.abc import Sequence
-
 import numpy as np
 import numpy.typing as npt
 import networkx as nx
-
 import jax
 import jax.numpy as jnp
 from jax import random
 from jax import hessian, jit, value_and_grad, vmap
-
+from scipy import optimize
 from .bayesmbar import _sample_from_logdensity
 from .utils import fmin_newton, _compute_log_likelihood_of_dF
-
 jax.config.update("jax_enable_x64", True)
-
 
 class CBayesMBAR:
     def __init__(
         self,
-        energies: Sequence[npt.NDArray[np.floating]],
-        nums_conf: Sequence[npt.NDArray[np.integer]],
+        energies: Sequence[npt.NDArray[np.float64]],
+        nums_conf: Sequence[npt.NDArray[np.int64]],
         identical_states: Sequence[Sequence[(int, int)]],
         sample_size: int = 1000,
         warmup_steps: int = 500,
         verbose: bool = True,
         random_seed: int = 0,
+        method: str = "Newton",
     ):
+        """
+        Parameters
+        ----------
+        energies : Sequence[npt.NDArray[np.float64]]
+            A list of energies for each MBAR system. The energies should be in the unit of kT.
+        nums_conf : Sequence[npt.NDArray[np.int64]]
+            A list of the number of configurations for each MBAR system.
+        identical_states : Sequence[Sequence[(int, int)]]
+            A list of identical states. Each element in the outer list is a list of tuples and
+            represents a group of states that are identical to each other. States are represented
+            by a tuple where the first element is the index of a MBAR system and the second element
+            is the index of the state in that MBAR system. For example,
+            identical_states = [[(0, 3), (1, 0)], [(1, 3), (2, 0), (3, 0)]] means that state 3 in
+            system 0 is identical to state 0 in system 1, and state 3 in system 1 is identical to
+            state 0 in system 2, and state 0 in system 3.
+        sample_size : int, optional
+            The number of samples to draw from the likelihood. The default is 1000.
+        warmup_steps : int, optional
+            The number of warmup steps for the HMC sampler. The default is 500.
+        verbose : bool, optional
+            Whether to print out the progress of the sampling. The default is True.
+        random_seed : int, optional
+            The random seed. The default is 0.
+        """
         self.energies = [jnp.float64(u) for u in energies]
         self.nums_conf = [jnp.int32(n) for n in nums_conf]
         self.identical_states = identical_states
@@ -43,14 +64,28 @@ class CBayesMBAR:
         x = jnp.zeros((self.Q.shape[1]))
 
         print("Solve for the mode of the likelihood")
-        f = jit(value_and_grad(_compute_cmbar_loss_likelihood))
-        hess = jit(hessian(_compute_cmbar_loss_likelihood))
-        res = fmin_newton(
-            f,
-            hess,
-            x,
-            args=(self.Q, self.energies, self.nums_conf),
-        )
+        if method == "Newton":
+            f = jit(value_and_grad(_compute_cmbar_loss_likelihood))
+            hess = jit(hessian(_compute_cmbar_loss_likelihood))
+            res = fmin_newton(
+                f,
+                hess,
+                x,
+                args=(self.Q, self.energies, self.nums_conf),
+            )
+        elif method == "L-BFGS-B":
+            options = {"disp": verbose, "gtol": 1e-8}
+            f = jit(value_and_grad(_compute_cmbar_loss_likelihood))
+            res = optimize.minimize(
+                lambda x: [np.array(r) for r in f(x, self.Q, self.energies, self.nums_conf)],
+                x,
+                jac=True,
+                method="L-BFGS-B",
+                tol=1e-12,
+                options=options,
+            )
+        else:
+            raise ValueError("Invalid method")
 
         x_mode_ll = res["x"]
         self._dF_mode_ll = jnp.dot(self.Q, x_mode_ll)
@@ -67,7 +102,6 @@ class CBayesMBAR:
                     x, self.Q, self.energies, self.nums_conf
                 )
 
-
             self._x_samples_ll = _sample_from_logdensity(
                 subkey,
                 x_mode_ll,
@@ -78,11 +112,12 @@ class CBayesMBAR:
             )
             self._dF_samples_ll = self._x_samples_ll @ self.Q.T
 
-            
             self._state_F_samples_ll = vmap(_dF_to_state_F, in_axes=[0, None])(
                 self._dF_samples_ll, self.nums_state
             )
-            self._state_F_mean_ll = [jnp.mean(F, axis=0) for F in self._state_F_samples_ll]
+            self._state_F_mean_ll = [
+                jnp.mean(F, axis=0) for F in self._state_F_samples_ll
+            ]
 
     @property
     def F_mode(self):
@@ -173,6 +208,20 @@ def _compute_cmbar_loss_likelihood(
 def _generate_dF_graph(
     nums_state: Sequence[int], identical_states: Sequence[Sequence[(int, int)]]
 ):
+    """
+    Generate a graph where each node represents a state and each edge represents a perturbation
+    between two states whose free energy difference is to be computed. For states that are identical
+    as specified in identical_states, edges are added between all pairs of states that are identical.
+    We add edges between all pairs of identical states because we will use them to constraint
+    the free energy difference of these edges to be zero.
+
+    Parameters
+    ----------
+    nums_state : Sequence[int]
+        A list of the number of states in each MBAR system.
+    identical_states : Sequence[Sequence[(int, int)]]
+        Same as the identical_states parameter in the CBayesMBAR class.
+    """
     G = nx.Graph()
     for i in range(len(nums_state)):
         for j in range(1, nums_state[i]):
@@ -189,6 +238,12 @@ def _generate_dF_graph(
 def _compute_projection(
     nums_state: Sequence[int], identical_states: Sequence[Sequence[(int, int)]]
 ):
+    """Compute the projection matrix Q"""
+
+    ## map from state index (i,j), where i is the index of the MBAR system and j is the index of
+    ## the state in that system, to the index of the free energy differences in the vector dF
+    ## i.e., dF[state_idx_to_dF_idx[(i,j)]] is the free energy difference between state j and
+    ## state 0 in system i
     state_dF_idx_to_dF_idx = {}
     idx = 0
     for i in range(len(nums_state)):
@@ -196,20 +251,41 @@ def _compute_projection(
             state_dF_idx_to_dF_idx[(i, j)] = idx
             idx += 1
 
+    ## build the dF graph and find the cycles in the graph
     graph = _generate_dF_graph(nums_state, identical_states)
     cycles = nx.cycle_basis(graph)
-    A = []
 
+    ## build the matrix A where each row corresponds to a cycle in the graph
+    ## For each cycle, we build a vector q that has the same length as the number of free energy
+    ## differences.
+    ## q[k] = 1 if the k-th free energy difference is in the cycle and the second state
+    ## in the edge is the reference state (state 0).
+    ## q[k] = -1 if the k-th free energy difference is in the cycle and the first state
+    ## in the edge is the reference state.
+    ## q[k] = 0 if the k-th free energy difference is not in the cycle.
+    ## Note that because all free energy differences are within the same MBAR system,
+    ## if a cycle contains an edge between two states in different systems, that edge
+    ## must have been added because the two states are identical. In this case, we set q[k] = 0.
+
+    A = []
     for cycle in cycles:
         q = np.zeros(len(state_dF_idx_to_dF_idx))
         for i in range(len(cycle)):
             n1, n2 = cycle[i], cycle[(i + 1) % len(cycle)]
 
+            ## nodes are represented by tuples (m, k), where m is the index of the MBAR system
+            ## and k is the index of the state in that system
+
+            ## if the two nodes are in different systems, they must be identical states
+            ## and we set q[k] = 0
             if n1[0] != n2[0]:
                 continue
 
+            ## check that one of the states is the reference state (state 0)
             assert n1[1] == 0 or n2[1] == 0
 
+            ## set q[k] = 1 if the second state in the edge is the reference state
+            ## set q[k] = -1 if the first state in the edge is the reference state
             if n1[1] == 0 and n2[1] != 0:
                 q[state_dF_idx_to_dF_idx[n2]] = 1
             elif n1[1] != 0 and n2[1] == 0:
@@ -220,11 +296,11 @@ def _compute_projection(
         if np.any(q != 0):
             A.append(q)
 
-    A = np.array(A).T
+    ## compute the projection matrix Q using the QR decomposition
+    B = np.array(A).T
+    Q, R = np.linalg.qr(B, mode="complete")
+    Q = Q[:, B.shape[1] :]
 
-    Q, R = np.linalg.qr(A, mode="complete")
-    Q = Q[:, A.shape[1] :]
-    
     return Q
 
 
