@@ -12,6 +12,9 @@ from .utils import fmin_newton, _compute_log_likelihood_of_dF
 jax.config.update("jax_enable_x64", True)
 
 class CBayesMBAR:
+    """
+    Coupled BayesMBAR (CBayesMBAR)
+    """
     def __init__(
         self,
         energies: Sequence[npt.NDArray[np.float64]],
@@ -47,21 +50,21 @@ class CBayesMBAR:
         random_seed : int, optional
             The random seed. The default is 0.
         """
-        self.energies = [jnp.float64(u) for u in energies]
-        self.nums_conf = [jnp.int32(n) for n in nums_conf]
-        self.identical_states = identical_states
+        self._energies = [jnp.float64(u) for u in energies]
+        self._nums_conf = [jnp.int32(n) for n in nums_conf]
+        self._identical_states = identical_states
 
-        self.sample_size = sample_size
-        self.warmup_steps = warmup_steps
+        self._sample_size = sample_size
+        self._warmup_steps = warmup_steps
 
-        self.verbose = verbose
-        self.rng_key = jax.random.PRNGKey(random_seed)
+        self._verbose = verbose
+        self._rng_key = jax.random.PRNGKey(random_seed)
 
         # number of states in each mbar system
-        self.nums_state = [len(s) for s in self.nums_conf]
+        self._nums_state = [len(s) for s in self._nums_conf]
 
-        self.Q = _compute_projection(self.nums_state, identical_states)
-        x = jnp.zeros((self.Q.shape[1]))
+        self._Q = _compute_projection(self._nums_state, identical_states)
+        x = jnp.zeros((self._Q.shape[1]))
 
         print("Solve for the mode of the likelihood")
         if method == "Newton":
@@ -71,13 +74,13 @@ class CBayesMBAR:
                 f,
                 hess,
                 x,
-                args=(self.Q, self.energies, self.nums_conf),
+                args=(self._Q, self._energies, self._nums_conf),
             )
         elif method == "L-BFGS-B":
             options = {"disp": verbose, "gtol": 1e-8}
             f = jit(value_and_grad(_compute_cmbar_loss_likelihood))
             res = optimize.minimize(
-                lambda x: [np.array(r) for r in f(x, self.Q, self.energies, self.nums_conf)],
+                lambda x: [np.array(r) for r in f(x, self._Q, self._energies, self._nums_conf)],
                 x,
                 jac=True,
                 method="L-BFGS-B",
@@ -88,32 +91,32 @@ class CBayesMBAR:
             raise ValueError("Invalid method")
 
         x_mode_ll = res["x"]
-        self._dF_mode_ll = jnp.dot(self.Q, x_mode_ll)
-        self._state_F_mode_ll = _dF_to_state_F(self._dF_mode_ll, self.nums_state)
+        self._dF_mode_ll = jnp.dot(self._Q, x_mode_ll)
+        self._state_F_mode_ll = _dF_to_state_F(self._dF_mode_ll, self._nums_state)
 
-        if self.sample_size > 0:
+        if self._sample_size > 0:
             print("=====================================================")
             print("Sample from the likelihood")
 
-            self.rng_key, subkey = random.split(self.rng_key)
+            self._rng_key, subkey = random.split(self._rng_key)
 
             def logdensity(x):
                 return _compute_cmbar_log_likelihood(
-                    x, self.Q, self.energies, self.nums_conf
+                    x, self._Q, self._energies, self._nums_conf
                 )
 
             self._x_samples_ll = _sample_from_logdensity(
                 subkey,
                 x_mode_ll,
                 logdensity,
-                self.warmup_steps,
-                self.sample_size,
-                self.verbose,
+                self._warmup_steps,
+                self._sample_size,
+                self._verbose,
             )
-            self._dF_samples_ll = self._x_samples_ll @ self.Q.T
+            self._dF_samples_ll = self._x_samples_ll @ self._Q.T
 
             self._state_F_samples_ll = vmap(_dF_to_state_F, in_axes=[0, None])(
-                self._dF_samples_ll, self.nums_state
+                self._dF_samples_ll, self._nums_state
             )
             self._state_F_mean_ll = [
                 jnp.mean(F, axis=0) for F in self._state_F_samples_ll

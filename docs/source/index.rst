@@ -17,3 +17,4 @@ This package provides a Python implementation of the BayesMBAR method.
 
    installation
    examples
+   API

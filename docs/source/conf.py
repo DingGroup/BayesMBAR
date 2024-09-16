@@ -6,10 +6,10 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'BayesMBAR'
-copyright = '2024, Xinqiang Ding'
-author = 'Xinqiang Ding'
-#release = '0.0.1'
+project = "BayesMBAR"
+copyright = "2024, Xinqiang Ding"
+author = "Xinqiang Ding"
+# release = '0.0.1'
 
 # -- Path setup --------------------------------------------------------------
 
@@ -19,55 +19,64 @@ author = 'Xinqiang Ding'
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('.'))
-sys.path.insert(0, os.path.abspath('../../'))
-sys.path.insert(0, os.path.abspath('../../../'))
+
+sys.path.insert(0, os.path.abspath("."))
+sys.path.insert(0, os.path.abspath("../../"))
+sys.path.insert(0, os.path.abspath("../../../"))
 
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    'sphinx.ext.mathjax',
-    'sphinx.ext.viewcode',
-    'sphinx.ext.autodoc',
-    'sphinx.ext.napoleon',
-    'sphinx_copybutton',
-    'nbsphinx']
+    "sphinx.ext.mathjax",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
+    "sphinx_copybutton",
+    "nbsphinx",
+#    "autoapi.extension",
+]
 
-extensions.append('autoapi.extension')
 
-
-
-templates_path = ['_templates']
+templates_path = ["_templates"]
 exclude_patterns = []
 
 # autodoc_default_options = {
 #     'member-order': 'bysource',
 # }
+autoclass_content = 'both'
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'sphinx_book_theme'
+html_theme = "sphinx_book_theme"
 html_logo = "_static/logo.png"
-#html_static_path = ['_static']
+html_static_path = ["_static"]
 
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+pygments_style = "sphinx"
 
 
-## autoapi
-autoapi_type = 'python'
-autoapi_dirs = ['../../bayesmbar']
-autoapi_python_class_content = 'both'
+# ## autoapi
+# autoapi_type = "python"
+# autoapi_dirs = ["../../src/bayesmbar"]
+# autoapi_python_class_content = "both"
+# autoapi_options = [
+#     "members",
+#     "undoc-members",
+#     "show-inheritance",
+#     "show-module-summary",
+#     "imported-members",
+# ]
 
-def skip_submodules(app, what, name, obj, skip, options):
-    if what == "module":
-        skip = True
-    return skip
+
+# def skip_submodules(app, what, name, obj, skip, options):
+#     if what == "module":
+#         skip = True
+#     return skip
 
 
-def setup(sphinx):
-    sphinx.connect("autoapi-skip-member", skip_submodules)
+# def setup(sphinx):
+#     sphinx.connect("autoapi-skip-member", skip_submodules)

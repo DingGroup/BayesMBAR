@@ -2,6 +2,7 @@ from functools import partial
 from typing import Literal
 
 import numpy as np
+from numpy.typing import NDArray
 import jax
 
 import jax.numpy as jnp
@@ -50,61 +51,63 @@ class BayesMBAR:
             optimize_steps (int, optional): Number of optimization steps used to learn the hyperparameters when normal priors are used. Defaults to 10000.
             verbose (bool, optional): Whether to print the progress bar for the optimization and sampling. Defaults to True.
             random_seed (int, optional): Random seed. Defaults to 0.
+
         """
 
-        self.energy = jnp.float64(energy)
-        self.num_conf = jnp.int32(num_conf)
+        self._energy = jnp.float64(energy)
+        self._num_conf = jnp.int32(num_conf)
 
-        self.prior = prior
-        self.mean_name = mean
-        self.kernel_name = kernel
+        self._prior = prior
+        self._mean_name = mean
+        self._kernel_name = kernel
 
         if state_cv is not None:
-            self.state_cv = state_cv
-            self._state_cv = self.state_cv[1:]
+            self._state_cv = state_cv[1:]
 
-        self.sample_size = sample_size
-        self.warmup_steps = warmup_steps
-        self.optimize_steps = optimize_steps
+        self._sample_size = sample_size
+        self._warmup_steps = warmup_steps
+        self._optimize_steps = optimize_steps
 
-        self.verbose = verbose
-        self.rng_key = jax.random.PRNGKey(random_seed)
+        self._verbose = verbose
+        self._rng_key = jax.random.PRNGKey(random_seed)
 
-        self.m = self.energy.shape[0]
-        self.n = self.energy.shape[1]
+        self._m = self._energy.shape[0]
+        self._n = self._energy.shape[1]
 
-        ## We first compute the mode estimate based on the likelihood
-        ## because it is used in both the uniform and normal priors.
-        ## The mode estimate based on the likelihood is the solution to the MBAR equation.
+        # We first compute the mode estimate based on the likelihood
+        # because it is used in both the uniform and normal priors.
+        # The mode estimate based on the likelihood is the solution to the MBAR equation.
 
         print("Solve for the mode of the likelihood")
-        dF_init = jnp.zeros((self.m - 1,))
+        dF_init = jnp.zeros((self._m - 1,))
         f = jit(value_and_grad(_compute_loss_likelihood_of_dF))
         hess = jit(hessian(_compute_loss_likelihood_of_dF))
-        res = fmin_newton(f, hess, dF_init, args=(self.energy, self.num_conf))
+        res = fmin_newton(f, hess, dF_init, args=(self._energy, self._num_conf))
         dF = res["x"]
+
         self._dF_mode_ll = dF
 
-        ## sample dF based on the likelihood.
-        ## When the uniform prior is used, the posterior distribution of dF is ## the same as the likelihood function.
-        ## Thefore so these samples are also samples from the posterior
-        ## distribution of dF when the uniform prior is used.
-        print("")
+        # sample dF based on the likelihood.
+        # When the uniform prior is used, the posterior distribution of dF is 
+        # the same as the likelihood function.
+        # Thefore so these samples are also samples from the posterior
+        # distribution of dF when the uniform prior is used.
+
         print("=====================================================")
         print("Sample from the likelihood")
 
-        self.rng_key, subkey = random.split(self.rng_key)
+        self._rng_key, subkey = random.split(self._rng_key)
 
         def logdensity(dF):
-            return _compute_log_likelihood_of_dF(dF, self.energy, self.num_conf)
+            return _compute_log_likelihood_of_dF(dF, self._energy, self._num_conf)
 
         self._dF_samples_ll = _sample_from_logdensity(
             subkey,
             self._dF_mode_ll,
             logdensity,
-            self.warmup_steps,
-            self.sample_size,
-            self.verbose,
+            self._warmup_steps,
+            self._sample_size,
+            self._verbose,
         )
 
         ## compute the mean, covariance, and precision of dF based on the samples from the likelihood
@@ -116,56 +119,56 @@ class BayesMBAR:
         self._dF_prec_ll = L_inv.T.dot(L_inv)
         # self._dF_prec_ll = jnp.linalg.inv(self._dF_cov_ll)
 
-        self._F_mode_ll = _dF_to_F(self._dF_mode_ll, self.num_conf)
-        self._F_samples_ll = _dF_to_F(self._dF_samples_ll, self.num_conf)
+        self._F_mode_ll = _dF_to_F(self._dF_mode_ll, self._num_conf)
+        self._F_samples_ll = _dF_to_F(self._dF_samples_ll, self._num_conf)
         self._F_mean_ll = jnp.mean(self._F_samples_ll, axis=0)
         self._F_cov_ll = jnp.cov(self._F_samples_ll.T)
 
         ## we are done here if the prior is uniform.
         ## When normal prior is used, we need to learn the hyperparameters of the prior and then sample dF from the posterior distribution of dF.
 
-        if self.prior == "normal":
+        if self._prior == "normal":
             _data = {
-                "energy": self.energy,
-                "num_conf": self.num_conf,
+                "energy": self._energy,
+                "num_conf": self._num_conf,
                 "dF_mean_ll": self._dF_mean_ll,
                 "dF_prec_ll": self._dF_prec_ll,
                 "state_cv": self._state_cv,
             }
 
             ## mean function of the prior
-            if self.mean_name == "constant":
+            if self._mean_name == "constant":
                 self.mean_order = 0
                 self.mean = partial(_mean, order=self.mean_order)
-            elif self.mean_name == "linear":
+            elif self._mean_name == "linear":
                 self.mean_order = 1
                 self.mean = partial(_mean, order=self.mean_order)
-            elif self.mean_name == "quadratic":
+            elif self._mean_name == "quadratic":
                 self.mean_order = 2
                 self.mean = partial(_mean, order=self.mean_order)
 
             ## learn the hyperparameters of the prior
-            if self.kernel_name == "SE":
+            if self._kernel_name == "SE":
                 self.kernel = _kernel_SE
-            elif self.kernel_name == "Matern52":
+            elif self._kernel_name == "Matern52":
                 self.kernel = _kernel_Matern52
-            elif self.kernel_name == "Matern32":
+            elif self._kernel_name == "Matern32":
                 self.kernel = _kernel_Matern32
-            elif self.kernel_name == "RQ":
+            elif self._kernel_name == "RQ":
                 self.kernel = _kernel_RQ
 
             ## initialize the hyperparameters based on the mode of the likelihood
             params = _init_params(
                 self.mean_order,
-                self.kernel_name,
+                self._kernel_name,
                 self._dF_mode_ll,
                 self._state_cv,
-                self.num_conf,
+                self._num_conf,
             )
             raw_params = _params_to_raw(params)
 
             ## optimize the hyperparameters
-            self.rng_key, subkey = random.split(self.rng_key)
+            self._rng_key, subkey = random.split(self._rng_key)
             optimizer = sgd(learning_rate=1e-3, momentum=0.9, nesterov=True)
             opt_state = optimizer.init(raw_params)
 
@@ -180,15 +183,15 @@ class BayesMBAR:
                 loss, raw_params, opt_state = step(
                     subkey, raw_params, opt_state, self.mean, self.kernel, _data
                 )
-                self.rng_key, subkey = random.split(self.rng_key)
+                self._rng_key, subkey = random.split(self._rng_key)
                 if i % 100 == 0:
                     params = _params_from_raw(raw_params)
                     print(f"step: {i:>10d}, loss: {loss:10.4f}", _print_params(params))
 
-            self.params = _params_from_raw(raw_params)
-            self._dF_mean_prior = self.mean(self.params["mean"], self._state_cv)
+            self._params = _params_from_raw(raw_params)
+            self._dF_mean_prior = self.mean(self._params["mean"], self._state_cv)
             self._dF_cov_prior = self.kernel(
-                self.params["kernel"],
+                self._params["kernel"],
                 self._state_cv,
             )
             self._dF_prec_prior = jnp.linalg.inv(self._dF_cov_prior)
@@ -201,8 +204,8 @@ class BayesMBAR:
                 hess,
                 self._dF_mode_ll,
                 args=(
-                    self.energy,
-                    self.num_conf,
+                    self._energy,
+                    self._num_conf,
                     self._dF_mean_prior,
                     self._dF_prec_prior,
                 ),
@@ -213,107 +216,107 @@ class BayesMBAR:
             def logdensity(dF):
                 return _compute_log_joint_likelihood_of_dF(
                     dF,
-                    self.energy,
-                    self.num_conf,
+                    self._energy,
+                    self._num_conf,
                     self._dF_mean_prior,
                     self._dF_prec_prior,
                 )
 
-            self.rng_key, subkey = random.split(self.rng_key)
+            self._rng_key, subkey = random.split(self._rng_key)
             self._dF_samples_posterior = _sample_from_logdensity(
                 subkey,
                 self._dF_mode_posterior,
                 logdensity,
-                self.warmup_steps,
-                self.sample_size,
-                self.verbose,
+                self._warmup_steps,
+                self._sample_size,
+                self._verbose,
             )
             self._dF_mean_posterior = jnp.mean(self._dF_samples_posterior, axis=0)
             self._dF_cov_posterior = jnp.cov(self._dF_samples_posterior.T)
             self._dF_prec_posterior = jnp.linalg.inv(self._dF_cov_posterior)
 
-            self._F_mode_posterior = _dF_to_F(self._dF_mode_posterior, self.num_conf)
+            self._F_mode_posterior = _dF_to_F(self._dF_mode_posterior, self._num_conf)
             self._F_samples_posterior = _dF_to_F(
-                self._dF_samples_posterior, self.num_conf
+                self._dF_samples_posterior, self._num_conf
             )
             self._F_mean_posterior = jnp.mean(self._F_samples_posterior, axis=0)
             self._F_cov_posterior = jnp.cov(self._F_samples_posterior.T)
 
     @property
-    def F_mode(self):
-        """The posterior mode estimate of the free energies of the states under the constraints that :math:`\\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively."""
-        if self.prior == "uniform":
+    def F_mode(self) -> NDArray:
+        r"""The posterior mode estimate of the free energies of the states under the constraints that :math:`\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively."""
+        if self._prior == "uniform":
             F_mode = self._F_mode_ll
-        elif self.prior == "normal":
+        elif self._prior == "normal":
             F_mode = self._F_mode_posterior
-        return jax.device_put(F_mode, jax.devices("cpu")[0])
+        return np.array(jax.device_put(F_mode, jax.devices("cpu")[0]))
 
     @property
-    def F_mean(self):
-        """The posterior mean of the free energies of the states under the constraints that :math:`\\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively."""
+    def F_mean(self) -> NDArray:
+        r"""The posterior mean of the free energies of the states under the constraints that :math:`\\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively."""
 
-        if self.prior == "uniform":
+        if self._prior == "uniform":
             F_mean = self._F_mean_ll
-        elif self.prior == "normal":
+        elif self._prior == "normal":
             F_mean = self._F_mean_posterior
-        return jax.device_put(F_mean, jax.devices("cpu")[0])
+        return np.array(jax.device_put(F_mean, jax.devices("cpu")[0]))
 
     @property
-    def F_cov(self):
-        """The posterior covariance matrix of the free energies of the states under the constraints that :math:`\\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively."""
-        if self.prior == "uniform":
+    def F_cov(self) -> NDArray:
+        r"""The posterior covariance matrix of the free energies of the states under the constraints that :math:`\\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively."""
+        if self._prior == "uniform":
             F_cov = self._F_cov_ll
-        elif self.prior == "normal":
+        elif self._prior == "normal":
             F_cov = self._F_cov_posterior
-        F_cov = F_cov - jnp.diag(1.0 / self.num_conf) + 1.0 / self.num_conf.sum()
+        F_cov = F_cov - jnp.diag(1.0 / self._num_conf) + 1.0 / self._num_conf.sum()
 
         ## if the diagnoal elements of F_cov are negetive, set them to 1e-4
         condition = jnp.eye(F_cov.shape[0], dtype=bool) & (F_cov <= 0)
         F_cov = jnp.where(condition, 1e-4, F_cov)
-        return jax.device_put(F_cov, jax.devices("cpu")[0])
+        return np.array(jax.device_put(F_cov, jax.devices("cpu")[0]))
 
     @property
-    def F_std(self):
-        """The posterior standard deviation of the free energies of the states under the constraints that :math:`\\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively."""
-        return jnp.sqrt(jnp.diag(self.F_cov))
+    def F_std(self) -> NDArray:
+        r"""The posterior standard deviation of the free energies of the states under the constraints that :math:`\\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively."""
+        return np.array(jnp.sqrt(jnp.diag(self.F_cov)))
 
     @property
-    def F_samples(self):
+    def F_samples(self) -> NDArray:
         """The samples of the free energies of the states from the posterior distribution under the constraints that :math:`\\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively."""
-        if self.prior == "uniform":
+        if self._prior == "uniform":
             F_samples = self._F_samples_ll
-        elif self.prior == "normal":
+        elif self._prior == "normal":
             F_samples = self._F_samples_posterior
-        return jax.device_put(F_samples, jax.devices("cpu")[0])
+        return np.array(jax.device_put(F_samples, jax.devices("cpu")[0]))
 
     @property
-    def DeltaF_mode(self):
-        """The posterior mode estimate of free energy difference between states.
+    def DeltaF_mode(self) -> NDArray:
+        r"""The posterior mode estimate of free energy difference between states.
         DeltaF_mode[i,j] is the free energy difference between state :math:`j` and state :math:`i`,
         i.e., DeltaF_mode[i,j] = F_mode[j] - F_mode[i].
         """
         return self.F_mode[None, :] - self.F_mode[:, None]
 
     @property
-    def DeltaF_mean(self):
-        """The posterior mean of free energy difference between states.
+    def DeltaF_mean(self) -> NDArray:
+        r"""The posterior mean of free energy difference between states.
         DeltaF_mean[i,j] is the free energy difference between state :math:`j` and state :math:`i`,
         i.e., DeltaF_mean[i,j] = F_mean[j] - F_mean[i].
         """
         return self.F_mean[None, :] - self.F_mean[:, None]
 
     @property
-    def DeltaF_std(self):
-        """The posterior standard deviation of free energy difference between states.
+    def DeltaF_std(self) -> NDArray:
+        r"""The posterior standard deviation of free energy difference between states.
         DeltaF_std[i,j] is the posterior standard deviation of the free energy difference between state :math:`j` and state :math:`i`,
         """
 
         DeltaF_cov = (
-            jnp.diag(self.F_cov)[:, None]
-            + jnp.diag(self.F_cov)[None, :]
+            np.diag(self.F_cov)[:, None]
+            + np.diag(self.F_cov)[None, :]
             - 2 * self.F_cov
         )
-        return jnp.sqrt(DeltaF_cov)
+        return np.sqrt(DeltaF_cov)
 
 
 def _dF_to_F(dF, num_conf):
