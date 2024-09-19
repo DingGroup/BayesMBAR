@@ -1,9 +1,1 @@
-furo
-sphinx_copybutton
-sphinx-book-theme
-nbsphinx
-ipython
-pygments
-sphinx
-pandoc
-sphinx-autoapi
+furo==2021.11.16
