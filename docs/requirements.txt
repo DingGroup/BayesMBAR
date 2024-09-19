@@ -1,18 +1,9 @@
+furo==2021.11.16
 sphinx_copybutton>=0.5.2
 sphinx-book-theme>=1.0.1
 nbsphinx
-sphinx_copybutton
 ipython
 pygments
 sphinx
 pandoc
 sphinx-autoapi
-furo==2021.11.16
-
-# optax>=0.1.9
-# jax>=0.4.24
-# blackjax>=1.1.1
-# numpy>=1.26.4
-# scipy>=1.12.0
-# tqdm>=4.66.2
-# pytest>=8.1.1
