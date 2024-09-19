@@ -1,6 +1,6 @@
-furo==2021.11.16
-sphinx_copybutton>=0.5.2
-sphinx-book-theme>=1.0.1
+furo
+sphinx_copybutton
+sphinx-book-theme
 nbsphinx
 ipython
 pygments
