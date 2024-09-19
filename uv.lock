@@ -107,7 +107,7 @@ dependencies = [
 requires-dist = [
     { name = "blackjax", specifier = ">=1.2.3" },
     { name = "ipython", specifier = ">=8.27.0" },
-    { name = "jax", specifier = ">=0.4.31" },
+    { name = "jax", specifier = ">=0.4.33" },
     { name = "jaxlib", specifier = "==0.4.33" },
     { name = "marimo", specifier = ">=0.8.15" },
     { name = "nbsphinx", specifier = ">=0.9.5" },
