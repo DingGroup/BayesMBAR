@@ -1,0 +1,784 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="./" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>API &#8212; BayesMBAR  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/sphinx-book-theme.css?v=a3416100" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'API';</script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="CBayesMBAR for harmonic oscillators" href="examples/cbayesmbar_for_harmonic_oscillators.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="_static/logo.png" class="logo__image only-light" alt="BayesMBAR  documentation - Home"/>
+    <script>document.write(`<img src="_static/logo.png" class="logo__image only-dark" alt="BayesMBAR  documentation - Home"/>`);</script>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installing BayesMBAR</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="examples.html">Examples</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="examples/bayesmbar_for_harmonic_oscillators.html">BayesMBAR for harmonic oscillators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/cbayesmbar_for_harmonic_oscillators.html">CBayesMBAR for harmonic oscillators</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">API</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="_sources/API.rst" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.rst</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>API</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.BayesBAR"><code class="docutils literal notranslate"><span class="pre">BayesBAR</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.BayesBAR.DeltaF_mean"><code class="docutils literal notranslate"><span class="pre">BayesBAR.DeltaF_mean</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.BayesBAR.DeltaF_mode"><code class="docutils literal notranslate"><span class="pre">BayesBAR.DeltaF_mode</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.BayesBAR.DeltaF_samples"><code class="docutils literal notranslate"><span class="pre">BayesBAR.DeltaF_samples</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.BayesBAR.DeltaF_std"><code class="docutils literal notranslate"><span class="pre">BayesBAR.DeltaF_std</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.BayesMBAR"><code class="docutils literal notranslate"><span class="pre">BayesMBAR</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.BayesMBAR.DeltaF_mean"><code class="docutils literal notranslate"><span class="pre">BayesMBAR.DeltaF_mean</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.BayesMBAR.DeltaF_mode"><code class="docutils literal notranslate"><span class="pre">BayesMBAR.DeltaF_mode</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.BayesMBAR.DeltaF_std"><code class="docutils literal notranslate"><span class="pre">BayesMBAR.DeltaF_std</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.BayesMBAR.F_cov"><code class="docutils literal notranslate"><span class="pre">BayesMBAR.F_cov</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.BayesMBAR.F_mean"><code class="docutils literal notranslate"><span class="pre">BayesMBAR.F_mean</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.BayesMBAR.F_mode"><code class="docutils literal notranslate"><span class="pre">BayesMBAR.F_mode</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.BayesMBAR.F_samples"><code class="docutils literal notranslate"><span class="pre">BayesMBAR.F_samples</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.BayesMBAR.F_std"><code class="docutils literal notranslate"><span class="pre">BayesMBAR.F_std</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.CBayesMBAR"><code class="docutils literal notranslate"><span class="pre">CBayesMBAR</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.CBayesMBAR.DeltaF_mean"><code class="docutils literal notranslate"><span class="pre">CBayesMBAR.DeltaF_mean</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.CBayesMBAR.DeltaF_mode"><code class="docutils literal notranslate"><span class="pre">CBayesMBAR.DeltaF_mode</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.CBayesMBAR.DeltaF_std"><code class="docutils literal notranslate"><span class="pre">CBayesMBAR.DeltaF_std</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.CBayesMBAR.F_mean"><code class="docutils literal notranslate"><span class="pre">CBayesMBAR.F_mean</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.CBayesMBAR.F_mode"><code class="docutils literal notranslate"><span class="pre">CBayesMBAR.F_mode</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.CBayesMBAR.F_samples"><code class="docutils literal notranslate"><span class="pre">CBayesMBAR.F_samples</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.FastMBAR"><code class="docutils literal notranslate"><span class="pre">FastMBAR</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.FastMBAR.DeltaF"><code class="docutils literal notranslate"><span class="pre">FastMBAR.DeltaF</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.FastMBAR.DeltaF_std"><code class="docutils literal notranslate"><span class="pre">FastMBAR.DeltaF_std</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.FastMBAR.F"><code class="docutils literal notranslate"><span class="pre">FastMBAR.F</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.FastMBAR.F_cov"><code class="docutils literal notranslate"><span class="pre">FastMBAR.F_cov</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.FastMBAR.F_std"><code class="docutils literal notranslate"><span class="pre">FastMBAR.F_std</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.FastMBAR.calculate_free_energies_of_perturbed_states"><code class="docutils literal notranslate"><span class="pre">FastMBAR.calculate_free_energies_of_perturbed_states()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.FastMBAR.log_prob_mix"><code class="docutils literal notranslate"><span class="pre">FastMBAR.log_prob_mix</span></code></a></li>
+</ul>
+</li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-bayesmbar">
+<span id="api"></span><h1>API<a class="headerlink" href="#module-bayesmbar" title="Link to this heading">#</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="bayesmbar.BayesBAR">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bayesmbar.</span></span><span class="sig-name descname"><span class="pre">BayesBAR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">energy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_conf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bayesmbar/bayesbar.html#BayesBAR"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bayesmbar.BayesBAR" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Bayesian Bennett acceptance ratio method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>energy</strong> – energy matrix in reduced units. Its size should be 2xN, where N is
+the total number of samples from the two states.</p></li>
+<li><p><strong>num_conf</strong> – number of configurations in each state. Its size should be (2,).</p></li>
+<li><p><strong>sample_size</strong> – the number of samples from the posterior distribution.</p></li>
+<li><p><strong>use_gpu</strong> – whether to use gpus.</p></li>
+<li><p><strong>verbose</strong> – whether to print running information</p></li>
+<li><p><strong>method</strong> – Newton or L-BFGS-B</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="bayesmbar.BayesBAR.DeltaF_mean">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DeltaF_mean</span></span><a class="headerlink" href="#bayesmbar.BayesBAR.DeltaF_mean" title="Link to this definition">#</a></dt>
+<dd><p>The posterior mean of the free energy difference.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="bayesmbar.BayesBAR.DeltaF_mode">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DeltaF_mode</span></span><a class="headerlink" href="#bayesmbar.BayesBAR.DeltaF_mode" title="Link to this definition">#</a></dt>
+<dd><p>The posterior mode of the free energy difference.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="bayesmbar.BayesBAR.DeltaF_samples">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DeltaF_samples</span></span><a class="headerlink" href="#bayesmbar.BayesBAR.DeltaF_samples" title="Link to this definition">#</a></dt>
+<dd><p>The samples from the posterior distribution of the free energy difference.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="bayesmbar.BayesBAR.DeltaF_std">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DeltaF_std</span></span><a class="headerlink" href="#bayesmbar.BayesBAR.DeltaF_std" title="Link to this definition">#</a></dt>
+<dd><p>The posterior standard deviation of the free energy difference.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="bayesmbar.BayesMBAR">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bayesmbar.</span></span><span class="sig-name descname"><span class="pre">BayesMBAR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">energy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_conf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'uniform'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'normal'</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'uniform'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mean</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'constant'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'linear'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'quadratic'</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'constant'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'SE'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'Matern52'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'Matern32'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'RQ'</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'SE'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_cv</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup_steps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">500</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimize_steps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bayesmbar/bayesmbar.html#BayesMBAR"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bayesmbar.BayesMBAR" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Bayesian Multistate Bennett Acceptance Ratio (BayesMBAR) method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>energy</strong> (<em>np.ndarray</em>) – Energy matrix of shape (m, n), where m is the number of states and n is the number of configurations.</p></li>
+<li><p><strong>num_conf</strong> (<em>np.ndarray</em>) – Number of configurations in each state. It is a 1D array of length m.</p></li>
+<li><p><strong>prior</strong> (<em>str</em><em>, </em><em>optional</em>) – Prior distribution of dF. It can be either “uniform” or “normal”. Defaults to “uniform”.</p></li>
+<li><p><strong>mean</strong> (<em>str</em><em>, </em><em>optional</em>) – Mean function of the prior. It can be either “constant”, “linear”, or “quadratic”. Defaults to “constant”.</p></li>
+<li><p><strong>kernel</strong> (<em>str</em><em>, </em><em>optional</em>) – Kernel function of the prior. It can be either “SE”, “Matern52”, “Matern32”, or “RQ”. Defaults to “SE”.</p></li>
+<li><p><strong>state_cv</strong> (<em>np.ndarray</em><em>, </em><em>optional</em>) – State collective variables. It is a 2D array of shape (n, d), where n is the number of configurations and d is the dimension of the collective variables. Defaults to None.</p></li>
+<li><p><strong>sample_size</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of samples drawn from the posterior distribution. Defaults to 1000.</p></li>
+<li><p><strong>warmup_steps</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of warmup steps used to find the step size and mass matrix of the NUTS sampler. Defaults to 500.</p></li>
+<li><p><strong>optimize_steps</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of optimization steps used to learn the hyperparameters when normal priors are used. Defaults to 10000.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to print the progress bar for the optimization and sampling. Defaults to True.</p></li>
+<li><p><strong>random_seed</strong> (<em>int</em><em>, </em><em>optional</em>) – Random seed. Defaults to 0.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="bayesmbar.BayesMBAR.DeltaF_mean">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DeltaF_mean</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dtype</span><span class="p"><span class="pre">[</span></span><span class="pre">_ScalarType_co</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#bayesmbar.BayesMBAR.DeltaF_mean" title="Link to this definition">#</a></dt>
+<dd><p>The posterior mean of free energy difference between states.
+DeltaF_mean[i,j] is the free energy difference between state <span class="math notranslate nohighlight">\(j\)</span> and state <span class="math notranslate nohighlight">\(i\)</span>,
+i.e., DeltaF_mean[i,j] = F_mean[j] - F_mean[i].</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="bayesmbar.BayesMBAR.DeltaF_mode">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DeltaF_mode</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dtype</span><span class="p"><span class="pre">[</span></span><span class="pre">_ScalarType_co</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#bayesmbar.BayesMBAR.DeltaF_mode" title="Link to this definition">#</a></dt>
+<dd><p>The posterior mode estimate of free energy difference between states.
+DeltaF_mode[i,j] is the free energy difference between state <span class="math notranslate nohighlight">\(j\)</span> and state <span class="math notranslate nohighlight">\(i\)</span>,
+i.e., DeltaF_mode[i,j] = F_mode[j] - F_mode[i].</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="bayesmbar.BayesMBAR.DeltaF_std">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DeltaF_std</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dtype</span><span class="p"><span class="pre">[</span></span><span class="pre">_ScalarType_co</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#bayesmbar.BayesMBAR.DeltaF_std" title="Link to this definition">#</a></dt>
+<dd><p>The posterior standard deviation of free energy difference between states.
+DeltaF_std[i,j] is the posterior standard deviation of the free energy difference between state <span class="math notranslate nohighlight">\(j\)</span> and state <span class="math notranslate nohighlight">\(i\)</span>,</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="bayesmbar.BayesMBAR.F_cov">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">F_cov</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dtype</span><span class="p"><span class="pre">[</span></span><span class="pre">_ScalarType_co</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#bayesmbar.BayesMBAR.F_cov" title="Link to this definition">#</a></dt>
+<dd><p>The posterior covariance matrix of the free energies of the states under the constraints that <span class="math notranslate nohighlight">\(\\sum_{k=1}^{M} N_k * F_k = 0\)</span>, where <span class="math notranslate nohighlight">\(N_k\)</span> and <span class="math notranslate nohighlight">\(F_k\)</span> are the number of conformations and the free energy of the k-th state, respectively.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="bayesmbar.BayesMBAR.F_mean">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">F_mean</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dtype</span><span class="p"><span class="pre">[</span></span><span class="pre">_ScalarType_co</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#bayesmbar.BayesMBAR.F_mean" title="Link to this definition">#</a></dt>
+<dd><p>The posterior mean of the free energies of the states under the constraints that <span class="math notranslate nohighlight">\(\\sum_{k=1}^{M} N_k * F_k = 0\)</span>, where <span class="math notranslate nohighlight">\(N_k\)</span> and <span class="math notranslate nohighlight">\(F_k\)</span> are the number of conformations and the free energy of the k-th state, respectively.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="bayesmbar.BayesMBAR.F_mode">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">F_mode</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dtype</span><span class="p"><span class="pre">[</span></span><span class="pre">_ScalarType_co</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#bayesmbar.BayesMBAR.F_mode" title="Link to this definition">#</a></dt>
+<dd><p>The posterior mode estimate of the free energies of the states under the constraints that <span class="math notranslate nohighlight">\(\sum_{k=1}^{M} N_k * F_k = 0\)</span>, where <span class="math notranslate nohighlight">\(N_k\)</span> and <span class="math notranslate nohighlight">\(F_k\)</span> are the number of conformations and the free energy of the k-th state, respectively.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="bayesmbar.BayesMBAR.F_samples">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">F_samples</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dtype</span><span class="p"><span class="pre">[</span></span><span class="pre">_ScalarType_co</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#bayesmbar.BayesMBAR.F_samples" title="Link to this definition">#</a></dt>
+<dd><p>The samples of the free energies of the states from the posterior distribution under the constraints that <span class="math notranslate nohighlight">\(\sum_{k=1}^{M} N_k * F_k = 0\)</span>, where <span class="math notranslate nohighlight">\(N_k\)</span> and <span class="math notranslate nohighlight">\(F_k\)</span> are the number of conformations and the free energy of the k-th state, respectively.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="bayesmbar.BayesMBAR.F_std">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">F_std</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dtype</span><span class="p"><span class="pre">[</span></span><span class="pre">_ScalarType_co</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#bayesmbar.BayesMBAR.F_std" title="Link to this definition">#</a></dt>
+<dd><p>The posterior standard deviation of the free energies of the states under the constraints that <span class="math notranslate nohighlight">\(\\sum_{k=1}^{M} N_k * F_k = 0\)</span>, where <span class="math notranslate nohighlight">\(N_k\)</span> and <span class="math notranslate nohighlight">\(F_k\)</span> are the number of conformations and the free energy of the k-th state, respectively.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="bayesmbar.CBayesMBAR">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bayesmbar.</span></span><span class="sig-name descname"><span class="pre">CBayesMBAR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">energies</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dtype</span><span class="p"><span class="pre">[</span></span><span class="pre">float64</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nums_conf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dtype</span><span class="p"><span class="pre">[</span></span><span class="pre">int64</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">identical_states</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup_steps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">500</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'Newton'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bayesmbar/cbayesmbar.html#CBayesMBAR"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bayesmbar.CBayesMBAR" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Coupled BayesMBAR (CBayesMBAR)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>energies</strong> (<em>Sequence</em><em>[</em><em>npt.NDArray</em><em>[</em><em>np.float64</em><em>]</em><em>]</em>) – A list of energies for each MBAR system. The energies should be in the unit of kT.</p></li>
+<li><p><strong>nums_conf</strong> (<em>Sequence</em><em>[</em><em>npt.NDArray</em><em>[</em><em>np.int64</em><em>]</em><em>]</em>) – A list of the number of configurations for each MBAR system.</p></li>
+<li><p><strong>identical_states</strong> (<em>Sequence</em><em>[</em><em>Sequence</em><em>[</em><em>(</em><em>int</em><em>, </em><em>int</em><em>)</em><em>]</em><em>]</em>) – A list of identical states. Each element in the outer list is a list of tuples and
+represents a group of states that are identical to each other. States are represented
+by a tuple where the first element is the index of a MBAR system and the second element
+is the index of the state in that MBAR system. For example,
+identical_states = [[(0, 3), (1, 0)], [(1, 3), (2, 0), (3, 0)]] means that state 3 in
+system 0 is identical to state 0 in system 1, and state 3 in system 1 is identical to
+state 0 in system 2, and state 0 in system 3.</p></li>
+<li><p><strong>sample_size</strong> (<em>int</em><em>, </em><em>optional</em>) – The number of samples to draw from the likelihood. The default is 1000.</p></li>
+<li><p><strong>warmup_steps</strong> (<em>int</em><em>, </em><em>optional</em>) – The number of warmup steps for the HMC sampler. The default is 500.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to print out the progress of the sampling. The default is True.</p></li>
+<li><p><strong>random_seed</strong> (<em>int</em><em>, </em><em>optional</em>) – The random seed. The default is 0.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="bayesmbar.CBayesMBAR.DeltaF_mean">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DeltaF_mean</span></span><a class="headerlink" href="#bayesmbar.CBayesMBAR.DeltaF_mean" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="bayesmbar.CBayesMBAR.DeltaF_mode">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DeltaF_mode</span></span><a class="headerlink" href="#bayesmbar.CBayesMBAR.DeltaF_mode" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="bayesmbar.CBayesMBAR.DeltaF_std">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DeltaF_std</span></span><a class="headerlink" href="#bayesmbar.CBayesMBAR.DeltaF_std" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="bayesmbar.CBayesMBAR.F_mean">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">F_mean</span></span><a class="headerlink" href="#bayesmbar.CBayesMBAR.F_mean" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="bayesmbar.CBayesMBAR.F_mode">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">F_mode</span></span><a class="headerlink" href="#bayesmbar.CBayesMBAR.F_mode" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="bayesmbar.CBayesMBAR.F_samples">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">F_samples</span></span><a class="headerlink" href="#bayesmbar.CBayesMBAR.F_samples" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="bayesmbar.FastMBAR">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bayesmbar.</span></span><span class="sig-name descname"><span class="pre">FastMBAR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">energy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dtype</span><span class="p"><span class="pre">[</span></span><span class="pre">float64</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_conf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dtype</span><span class="p"><span class="pre">[</span></span><span class="pre">int64</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bootstrap</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bootstrap_block_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bootstrap_num_rep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'Newton'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bayesmbar/fastmbar.html#FastMBAR"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bayesmbar.FastMBAR" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>The FastMBAR class is initialized with an energy matrix and an array
+of num of conformations. The corresponding MBAR equation is solved
+in the constructor. Therefore, the relative free energies of states
+used in the energy matrix is calculated in the constructor. The
+method <strong>calculate_free_energies_for_perturbed_states</strong>
+can be used to calculated the relative free energies of perturbed states.</p>
+<p>Initializer for the class FastMBAR</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>energy</strong> (<em>2D ndarray</em>) – It has a size of (M x N), where M is the number of states
+and N is the total number of conformations. The entry energy[i,j]
+is the reduced (unitless) energy of conformation j in state i.
+If bootstrapping is used to calculate the uncertainty, the order
+of conformations matters. Conformations sampled from one state
+need to occpy a continuous chunk of collumns. Conformations sampled
+from state k need to occupy collumns to the left of conformations
+sampled from state l if k &lt; l. If bootstrapping is not used, then
+the order of conformation does not matter.</p></li>
+<li><p><strong>num_conf</strong> (<em>1D int ndarray</em>) – It should have a size of M, where num_conf[i] is the num of
+conformations sampled from state i. Therefore, np.sum(num_conf)
+has to be equal to N. All entries in num_conf have to be strictly
+greater than 0.</p></li>
+<li><p><strong>bootstrap</strong> (<em>bool</em><em>, </em><em>optional</em><em> (</em><em>default=False</em><em>)</em>) – If bootstrap is True, the uncertainty of the calculated free energies
+will be estimate using block bootstraping.</p></li>
+<li><p><strong>bootstrap_block_size</strong> (<em>int</em><em>, </em><em>optional</em><em> (</em><em>default=3</em><em>)</em>) – block size used in block bootstrapping</p></li>
+<li><p><strong>bootstrap_num_rep</strong> (<em>int</em><em>, </em><em>optional</em><em> (</em><em>default=100</em><em>)</em>) – number of repreats in block bootstrapping</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em><em> (</em><em>default=False</em><em>)</em>) – if verbose is true, the detailed information of solving MBAR equations
+is printed.</p></li>
+<li><p><strong>method</strong> (<em>str</em><em>, </em><em>optional</em><em> (</em><em>default=&quot;Newton&quot;</em><em>)</em>) – the method used to solve the MBAR equation. The default is Newton’s method.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="bayesmbar.FastMBAR.DeltaF">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DeltaF</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span></em><a class="headerlink" href="#bayesmbar.FastMBAR.DeltaF" title="Link to this definition">#</a></dt>
+<dd><p>Free energy difference between states.
+<span class="math notranslate nohighlight">\(\mathrm{DeltaF}[i,j]\)</span> is the free energy difference between state j and state i,
+i.e., <span class="math notranslate nohighlight">\(\mathrm{DeltaF}[i,j] = F[j] - F[i]\)</span> .</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="bayesmbar.FastMBAR.DeltaF_std">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DeltaF_std</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span></em><a class="headerlink" href="#bayesmbar.FastMBAR.DeltaF_std" title="Link to this definition">#</a></dt>
+<dd><p>Standard deviation of the free energy difference between states.
+<span class="math notranslate nohighlight">\(\mathrm{DeltaF_std}[i,j]\)</span> is the standard deviation of the free energy
+difference <span class="math notranslate nohighlight">\(\mathrm{DeltaF}[i,j]\)</span>.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="bayesmbar.FastMBAR.F">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">F</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span></em><a class="headerlink" href="#bayesmbar.FastMBAR.F" title="Link to this definition">#</a></dt>
+<dd><p>Free energies of the states under the constraint <span class="math notranslate nohighlight">\(\sum_{k=1}^{M} N_k * F_k = 0\)</span>,
+where <span class="math notranslate nohighlight">\(N_k\)</span> is the number of conformations sampled from state k.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="bayesmbar.FastMBAR.F_cov">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">F_cov</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span></em><a class="headerlink" href="#bayesmbar.FastMBAR.F_cov" title="Link to this definition">#</a></dt>
+<dd><p>Covariance matrix of the free energies of the states under the constraint
+<span class="math notranslate nohighlight">\(\sum_{k=1}^{M} N_k * F_k = 0\)</span>,
+where <span class="math notranslate nohighlight">\(N_k\)</span> is the number of conformations sampled from state k.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="bayesmbar.FastMBAR.F_std">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">F_std</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span></em><a class="headerlink" href="#bayesmbar.FastMBAR.F_std" title="Link to this definition">#</a></dt>
+<dd><p>Standard deviation of the free energies of the states under the constraint
+<span class="math notranslate nohighlight">\(\sum_{k=1}^{M} N_k * F_k = 0\)</span>,
+where <span class="math notranslate nohighlight">\(N_k\)</span> is the number of conformations sampled from state k.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bayesmbar.FastMBAR.calculate_free_energies_of_perturbed_states">
+<span class="sig-name descname"><span class="pre">calculate_free_energies_of_perturbed_states</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">energy_perturbed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dtype</span><span class="p"><span class="pre">[</span></span><span class="pre">float64</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/bayesmbar/fastmbar.html#FastMBAR.calculate_free_energies_of_perturbed_states"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bayesmbar.FastMBAR.calculate_free_energies_of_perturbed_states" title="Link to this definition">#</a></dt>
+<dd><p>calculate free energies for perturbed states.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>energy_perturbed</strong> (<em>2-D float ndarray with size</em><em> of </em><em>(</em><em>L</em><em>,</em><em>N</em><em>)</em>) – each row of the energy_perturbed matrix represents a state and
+the value energy_perturbed[l,n] represents the reduced energy
+of the n’th conformation in the l’th perturbed state.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><p><strong>results</strong> – a dictionary containing the following keys:</p>
+<p><strong>F</strong> - the free energy of the perturbed states.</p>
+<p><strong>F_std</strong> - the standard deviation of the free energy of the perturbed states.</p>
+<p><strong>F_cov</strong> - the covariance between the free energies of the perturbed states.</p>
+<p><strong>DeltaF</strong> - <span class="math notranslate nohighlight">\(\mathrm{DeltaF}[k,l]\)</span> is the free energy difference between state
+<span class="math notranslate nohighlight">\(k\)</span> and state <span class="math notranslate nohighlight">\(l\)</span>, i.e., <span class="math notranslate nohighlight">\(\mathrm{DeltaF}[k,l] = F[l] - F[k]\)</span> .</p>
+<p><strong>DeltaF_std</strong> - the standard deviation of the free energy difference.</p>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="bayesmbar.FastMBAR.log_prob_mix">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">log_prob_mix</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span></em><a class="headerlink" href="#bayesmbar.FastMBAR.log_prob_mix" title="Link to this definition">#</a></dt>
+<dd><p>the log probability density of conformations in the mixture distribution.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="examples/cbayesmbar_for_harmonic_oscillators.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">CBayesMBAR for harmonic oscillators</p>
+      </div>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.BayesBAR"><code class="docutils literal notranslate"><span class="pre">BayesBAR</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.BayesBAR.DeltaF_mean"><code class="docutils literal notranslate"><span class="pre">BayesBAR.DeltaF_mean</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.BayesBAR.DeltaF_mode"><code class="docutils literal notranslate"><span class="pre">BayesBAR.DeltaF_mode</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.BayesBAR.DeltaF_samples"><code class="docutils literal notranslate"><span class="pre">BayesBAR.DeltaF_samples</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.BayesBAR.DeltaF_std"><code class="docutils literal notranslate"><span class="pre">BayesBAR.DeltaF_std</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.BayesMBAR"><code class="docutils literal notranslate"><span class="pre">BayesMBAR</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.BayesMBAR.DeltaF_mean"><code class="docutils literal notranslate"><span class="pre">BayesMBAR.DeltaF_mean</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.BayesMBAR.DeltaF_mode"><code class="docutils literal notranslate"><span class="pre">BayesMBAR.DeltaF_mode</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.BayesMBAR.DeltaF_std"><code class="docutils literal notranslate"><span class="pre">BayesMBAR.DeltaF_std</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.BayesMBAR.F_cov"><code class="docutils literal notranslate"><span class="pre">BayesMBAR.F_cov</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.BayesMBAR.F_mean"><code class="docutils literal notranslate"><span class="pre">BayesMBAR.F_mean</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.BayesMBAR.F_mode"><code class="docutils literal notranslate"><span class="pre">BayesMBAR.F_mode</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.BayesMBAR.F_samples"><code class="docutils literal notranslate"><span class="pre">BayesMBAR.F_samples</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.BayesMBAR.F_std"><code class="docutils literal notranslate"><span class="pre">BayesMBAR.F_std</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.CBayesMBAR"><code class="docutils literal notranslate"><span class="pre">CBayesMBAR</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.CBayesMBAR.DeltaF_mean"><code class="docutils literal notranslate"><span class="pre">CBayesMBAR.DeltaF_mean</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.CBayesMBAR.DeltaF_mode"><code class="docutils literal notranslate"><span class="pre">CBayesMBAR.DeltaF_mode</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.CBayesMBAR.DeltaF_std"><code class="docutils literal notranslate"><span class="pre">CBayesMBAR.DeltaF_std</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.CBayesMBAR.F_mean"><code class="docutils literal notranslate"><span class="pre">CBayesMBAR.F_mean</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.CBayesMBAR.F_mode"><code class="docutils literal notranslate"><span class="pre">CBayesMBAR.F_mode</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.CBayesMBAR.F_samples"><code class="docutils literal notranslate"><span class="pre">CBayesMBAR.F_samples</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.FastMBAR"><code class="docutils literal notranslate"><span class="pre">FastMBAR</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.FastMBAR.DeltaF"><code class="docutils literal notranslate"><span class="pre">FastMBAR.DeltaF</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.FastMBAR.DeltaF_std"><code class="docutils literal notranslate"><span class="pre">FastMBAR.DeltaF_std</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.FastMBAR.F"><code class="docutils literal notranslate"><span class="pre">FastMBAR.F</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.FastMBAR.F_cov"><code class="docutils literal notranslate"><span class="pre">FastMBAR.F_cov</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.FastMBAR.F_std"><code class="docutils literal notranslate"><span class="pre">FastMBAR.F_std</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.FastMBAR.calculate_free_energies_of_perturbed_states"><code class="docutils literal notranslate"><span class="pre">FastMBAR.calculate_free_energies_of_perturbed_states()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bayesmbar.FastMBAR.log_prob_mix"><code class="docutils literal notranslate"><span class="pre">FastMBAR.log_prob_mix</span></code></a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Xinqiang Ding
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2024, Xinqiang Ding.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>
