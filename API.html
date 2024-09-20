@@ -159,13 +159,15 @@
  </script></div>
         <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
     <div class="bd-toc-item navbar-nav active">
-        <ul class="current nav bd-sidenav">
+        <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installing BayesMBAR</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="examples.html">Examples</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="examples/bayesmbar_for_harmonic_oscillators.html">BayesMBAR for harmonic oscillators</a></li>
 <li class="toctree-l2"><a class="reference internal" href="examples/cbayesmbar_for_harmonic_oscillators.html">CBayesMBAR for harmonic oscillators</a></li>
 </ul>
 </details></li>
+</ul>
+<ul class="current nav bd-sidenav">
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">API</a></li>
 </ul>
 
@@ -367,43 +369,42 @@ document.write(`
 <span id="api"></span><h1>API<a class="headerlink" href="#module-bayesmbar" title="Link to this heading">#</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="bayesmbar.BayesBAR">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bayesmbar.</span></span><span class="sig-name descname"><span class="pre">BayesBAR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">energy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_conf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bayesmbar/bayesbar.html#BayesBAR"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bayesmbar.BayesBAR" title="Link to this definition">#</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bayesmbar.</span></span><span class="sig-name descname"><span class="pre">BayesBAR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">energy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_conf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'Newton'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bayesmbar/bayesbar.html#BayesBAR"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bayesmbar.BayesBAR" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Bayesian Bennett acceptance ratio method</p>
+<p>Initialize the BayesBAR class.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>energy</strong> – energy matrix in reduced units. Its size should be 2xN, where N is
-the total number of samples from the two states.</p></li>
-<li><p><strong>num_conf</strong> – number of configurations in each state. Its size should be (2,).</p></li>
-<li><p><strong>sample_size</strong> – the number of samples from the posterior distribution.</p></li>
-<li><p><strong>use_gpu</strong> – whether to use gpus.</p></li>
-<li><p><strong>verbose</strong> – whether to print running information</p></li>
-<li><p><strong>method</strong> – Newton or L-BFGS-B</p></li>
+<li><p><strong>energy</strong> (<em>ndarray</em>) – An energy matrix in reduced units. Its size should be 2xN, where N is the total number of samples from the two states.</p></li>
+<li><p><strong>num_conf</strong> (<em>ndarray</em>) – Number of configurations in each state. Its size should be (2,).</p></li>
+<li><p><strong>sample_size</strong> (<em>int</em><em>, </em><em>optional</em>) – The number of samples from the posterior distribution. Defaults to 1000.</p></li>
+<li><p><strong>method</strong> (<em>str</em><em>, </em><em>optional</em>) – Optimization method for finding the mode. Options are “Newton” or “L-BFGS-B”. Defaults to “Newton”.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to print running information. Defaults to False.</p></li>
 </ul>
 </dd>
 </dl>
 <dl class="py property">
 <dt class="sig sig-object py" id="bayesmbar.BayesBAR.DeltaF_mean">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DeltaF_mean</span></span><a class="headerlink" href="#bayesmbar.BayesBAR.DeltaF_mean" title="Link to this definition">#</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DeltaF_mean</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span></em><a class="headerlink" href="#bayesmbar.BayesBAR.DeltaF_mean" title="Link to this definition">#</a></dt>
 <dd><p>The posterior mean of the free energy difference.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="bayesmbar.BayesBAR.DeltaF_mode">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DeltaF_mode</span></span><a class="headerlink" href="#bayesmbar.BayesBAR.DeltaF_mode" title="Link to this definition">#</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DeltaF_mode</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span></em><a class="headerlink" href="#bayesmbar.BayesBAR.DeltaF_mode" title="Link to this definition">#</a></dt>
 <dd><p>The posterior mode of the free energy difference.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="bayesmbar.BayesBAR.DeltaF_samples">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DeltaF_samples</span></span><a class="headerlink" href="#bayesmbar.BayesBAR.DeltaF_samples" title="Link to this definition">#</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DeltaF_samples</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span></em><a class="headerlink" href="#bayesmbar.BayesBAR.DeltaF_samples" title="Link to this definition">#</a></dt>
 <dd><p>The samples from the posterior distribution of the free energy difference.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="bayesmbar.BayesBAR.DeltaF_std">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DeltaF_std</span></span><a class="headerlink" href="#bayesmbar.BayesBAR.DeltaF_std" title="Link to this definition">#</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DeltaF_std</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span></em><a class="headerlink" href="#bayesmbar.BayesBAR.DeltaF_std" title="Link to this definition">#</a></dt>
 <dd><p>The posterior standard deviation of the free energy difference.</p>
 </dd></dl>
 
@@ -488,15 +489,15 @@ DeltaF_std[i,j] is the posterior standard deviation of the free energy differenc
 
 <dl class="py class">
 <dt class="sig sig-object py" id="bayesmbar.CBayesMBAR">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bayesmbar.</span></span><span class="sig-name descname"><span class="pre">CBayesMBAR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">energies</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dtype</span><span class="p"><span class="pre">[</span></span><span class="pre">float64</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nums_conf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dtype</span><span class="p"><span class="pre">[</span></span><span class="pre">int64</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">identical_states</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup_steps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">500</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'Newton'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bayesmbar/cbayesmbar.html#CBayesMBAR"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bayesmbar.CBayesMBAR" title="Link to this definition">#</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bayesmbar.</span></span><span class="sig-name descname"><span class="pre">CBayesMBAR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">energies</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nums_conf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">identical_states</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup_steps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">500</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'Newton'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bayesmbar/cbayesmbar.html#CBayesMBAR"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bayesmbar.CBayesMBAR" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Coupled BayesMBAR (CBayesMBAR)</p>
+<p>Coupled BayesMBAR</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>energies</strong> (<em>Sequence</em><em>[</em><em>npt.NDArray</em><em>[</em><em>np.float64</em><em>]</em><em>]</em>) – A list of energies for each MBAR system. The energies should be in the unit of kT.</p></li>
-<li><p><strong>nums_conf</strong> (<em>Sequence</em><em>[</em><em>npt.NDArray</em><em>[</em><em>np.int64</em><em>]</em><em>]</em>) – A list of the number of configurations for each MBAR system.</p></li>
-<li><p><strong>identical_states</strong> (<em>Sequence</em><em>[</em><em>Sequence</em><em>[</em><em>(</em><em>int</em><em>, </em><em>int</em><em>)</em><em>]</em><em>]</em>) – A list of identical states. Each element in the outer list is a list of tuples and
+<li><p><strong>energies</strong> (<em>List</em><em>[</em><em>ndarray</em><em>]</em>) – A list of energies for all coupled MBAR systems. The energies should be in the unit of kT.</p></li>
+<li><p><strong>nums_conf</strong> (<em>List</em><em>[</em><em>ndarray</em><em>]</em>) – A list of the number of configurations for all coupled MBAR systems.</p></li>
+<li><p><strong>identical_states</strong> (<em>List</em><em>[</em><em>List</em><em>[</em><em>(</em><em>int</em><em>, </em><em>int</em><em>)</em><em>]</em><em>]</em>) – A list of identical states. Each element in the outer list is a list of tuples and
 represents a group of states that are identical to each other. States are represented
 by a tuple where the first element is the index of a MBAR system and the second element
 is the index of the state in that MBAR system. For example,
@@ -505,40 +506,50 @@ system 0 is identical to state 0 in system 1, and state 3 in system 1 is identic
 state 0 in system 2, and state 0 in system 3.</p></li>
 <li><p><strong>sample_size</strong> (<em>int</em><em>, </em><em>optional</em>) – The number of samples to draw from the likelihood. The default is 1000.</p></li>
 <li><p><strong>warmup_steps</strong> (<em>int</em><em>, </em><em>optional</em>) – The number of warmup steps for the HMC sampler. The default is 500.</p></li>
+<li><p><strong>method</strong> (<em>str</em><em>, </em><em>optional</em>) – The optimization method for finding the mode of the likelihood. Options are “Newton” or “L-BFGS-B”. The default is “Newton”.</p></li>
+<li><p><strong>random_seed</strong> (<em>int</em><em>, </em><em>optional</em>) – The random seed. The default is None, which means the random seed is generated from the current time.</p></li>
 <li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to print out the progress of the sampling. The default is True.</p></li>
-<li><p><strong>random_seed</strong> (<em>int</em><em>, </em><em>optional</em>) – The random seed. The default is 0.</p></li>
 </ul>
 </dd>
 </dl>
 <dl class="py property">
 <dt class="sig sig-object py" id="bayesmbar.CBayesMBAR.DeltaF_mean">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DeltaF_mean</span></span><a class="headerlink" href="#bayesmbar.CBayesMBAR.DeltaF_mean" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DeltaF_mean</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#bayesmbar.CBayesMBAR.DeltaF_mean" title="Link to this definition">#</a></dt>
+<dd><p>The mean of free energy differences between all pairs of states in every MBAR system.</p>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="bayesmbar.CBayesMBAR.DeltaF_mode">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DeltaF_mode</span></span><a class="headerlink" href="#bayesmbar.CBayesMBAR.DeltaF_mode" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DeltaF_mode</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#bayesmbar.CBayesMBAR.DeltaF_mode" title="Link to this definition">#</a></dt>
+<dd><p>The mode of free energy differences between all pairs of states in every MBAR system.</p>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="bayesmbar.CBayesMBAR.DeltaF_std">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DeltaF_std</span></span><a class="headerlink" href="#bayesmbar.CBayesMBAR.DeltaF_std" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DeltaF_std</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#bayesmbar.CBayesMBAR.DeltaF_std" title="Link to this definition">#</a></dt>
+<dd><p>The standard deviation of free energy differences between all pairs of states in every MBAR system.</p>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="bayesmbar.CBayesMBAR.F_mean">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">F_mean</span></span><a class="headerlink" href="#bayesmbar.CBayesMBAR.F_mean" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">F_mean</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#bayesmbar.CBayesMBAR.F_mean" title="Link to this definition">#</a></dt>
+<dd><p>The mean of free energies of all states in all MBAR systems. The free energy of
+state 0 in each system is set to 0.</p>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="bayesmbar.CBayesMBAR.F_mode">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">F_mode</span></span><a class="headerlink" href="#bayesmbar.CBayesMBAR.F_mode" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">F_mode</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#bayesmbar.CBayesMBAR.F_mode" title="Link to this definition">#</a></dt>
+<dd><p>The mode of free energies of all states in all MBAR systems. The free energy of
+state 0 in each system is set to 0.</p>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="bayesmbar.CBayesMBAR.F_samples">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">F_samples</span></span><a class="headerlink" href="#bayesmbar.CBayesMBAR.F_samples" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">F_samples</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#bayesmbar.CBayesMBAR.F_samples" title="Link to this definition">#</a></dt>
+<dd><p>The samples of free energies of all states in all MBAR systems. The free energy of
+state 0 in each system is set to 0.</p>
+</dd></dl>
 
 </dd></dl>
 

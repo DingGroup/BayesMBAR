@@ -14,7 +14,11 @@ This package provides a Python implementation of the BayesMBAR method.
 
 .. toctree::
    :maxdepth: 2
-
+   
    installation
    examples
+
+.. toctree::
+   :maxdepth: 1
+   
    API

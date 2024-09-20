@@ -164,6 +164,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../examples/cbayesmbar_for_harmonic_oscillators.html">CBayesMBAR for harmonic oscillators</a></li>
 </ul>
 </details></li>
+</ul>
+<ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="../../API.html">API</a></li>
 </ul>
 
@@ -269,8 +271,10 @@ document.write(`
                   
   <h1>Source code for bayesmbar.cbayesmbar</h1><div class="highlight"><pre>
 <span></span><span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">import</span> <span class="nn">time</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">numpy.typing</span> <span class="k">as</span> <span class="nn">npt</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">ndarray</span>
 <span class="kn">import</span> <span class="nn">networkx</span> <span class="k">as</span> <span class="nn">nx</span>
 <span class="kn">import</span> <span class="nn">jax</span>
 <span class="kn">import</span> <span class="nn">jax.numpy</span> <span class="k">as</span> <span class="nn">jnp</span>
@@ -279,33 +283,36 @@ document.write(`
 <span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">optimize</span>
 <span class="kn">from</span> <span class="nn">.bayesmbar</span> <span class="kn">import</span> <span class="n">_sample_from_logdensity</span>
 <span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">fmin_newton</span><span class="p">,</span> <span class="n">_compute_log_likelihood_of_dF</span>
+
 <span class="n">jax</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="s2">&quot;jax_enable_x64&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+
 
 <div class="viewcode-block" id="CBayesMBAR">
 <a class="viewcode-back" href="../../API.html#bayesmbar.CBayesMBAR">[docs]</a>
 <span class="k">class</span> <span class="nc">CBayesMBAR</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Coupled BayesMBAR (CBayesMBAR)</span>
+<span class="sd">    Coupled BayesMBAR</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">energies</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]],</span>
-        <span class="n">nums_conf</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">]],</span>
-        <span class="n">identical_states</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">)]],</span>
+        <span class="n">energies</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="n">nums_conf</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="n">identical_states</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]],</span>
         <span class="n">sample_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span>
         <span class="n">warmup_steps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">500</span><span class="p">,</span>
-        <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-        <span class="n">random_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Newton&quot;</span><span class="p">,</span>
+        <span class="n">random_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        energies : Sequence[npt.NDArray[np.float64]]</span>
-<span class="sd">            A list of energies for each MBAR system. The energies should be in the unit of kT.</span>
-<span class="sd">        nums_conf : Sequence[npt.NDArray[np.int64]]</span>
-<span class="sd">            A list of the number of configurations for each MBAR system.</span>
-<span class="sd">        identical_states : Sequence[Sequence[(int, int)]]</span>
+<span class="sd">        energies : List[ndarray]</span>
+<span class="sd">            A list of energies for all coupled MBAR systems. The energies should be in the unit of kT.</span>
+<span class="sd">        nums_conf : List[ndarray]</span>
+<span class="sd">            A list of the number of configurations for all coupled MBAR systems.</span>
+<span class="sd">        identical_states : List[List[(int, int)]]</span>
 <span class="sd">            A list of identical states. Each element in the outer list is a list of tuples and</span>
 <span class="sd">            represents a group of states that are identical to each other. States are represented</span>
 <span class="sd">            by a tuple where the first element is the index of a MBAR system and the second element</span>
@@ -317,10 +324,12 @@ document.write(`
 <span class="sd">            The number of samples to draw from the likelihood. The default is 1000.</span>
 <span class="sd">        warmup_steps : int, optional</span>
 <span class="sd">            The number of warmup steps for the HMC sampler. The default is 500.</span>
+<span class="sd">        method : str, optional</span>
+<span class="sd">            The optimization method for finding the mode of the likelihood. Options are &quot;Newton&quot; or &quot;L-BFGS-B&quot;. The default is &quot;Newton&quot;.</span>
+<span class="sd">        random_seed : int, optional</span>
+<span class="sd">            The random seed. The default is None, which means the random seed is generated from the current time.</span>
 <span class="sd">        verbose : bool, optional</span>
 <span class="sd">            Whether to print out the progress of the sampling. The default is True.</span>
-<span class="sd">        random_seed : int, optional</span>
-<span class="sd">            The random seed. The default is 0.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_energies</span> <span class="o">=</span> <span class="p">[</span><span class="n">jnp</span><span class="o">.</span><span class="n">float64</span><span class="p">(</span><span class="n">u</span><span class="p">)</span> <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">energies</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_nums_conf</span> <span class="o">=</span> <span class="p">[</span><span class="n">jnp</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">nums_conf</span><span class="p">]</span>
@@ -330,7 +339,9 @@ document.write(`
         <span class="bp">self</span><span class="o">.</span><span class="n">_warmup_steps</span> <span class="o">=</span> <span class="n">warmup_steps</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_verbose</span> <span class="o">=</span> <span class="n">verbose</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_rng_key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="n">random_seed</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">random_seed</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">random_seed</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rng_key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()))</span>
 
         <span class="c1"># number of states in each mbar system</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_nums_state</span> <span class="o">=</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nums_conf</span><span class="p">]</span>
@@ -352,7 +363,9 @@ document.write(`
             <span class="n">options</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;disp&quot;</span><span class="p">:</span> <span class="n">verbose</span><span class="p">,</span> <span class="s2">&quot;gtol&quot;</span><span class="p">:</span> <span class="mf">1e-8</span><span class="p">}</span>
             <span class="n">f</span> <span class="o">=</span> <span class="n">jit</span><span class="p">(</span><span class="n">value_and_grad</span><span class="p">(</span><span class="n">_compute_cmbar_loss_likelihood</span><span class="p">))</span>
             <span class="n">res</span> <span class="o">=</span> <span class="n">optimize</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span>
-                <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_Q</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_energies</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nums_conf</span><span class="p">)],</span>
+                <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_Q</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_energies</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nums_conf</span><span class="p">)</span>
+                <span class="p">],</span>
                 <span class="n">x</span><span class="p">,</span>
                 <span class="n">jac</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                 <span class="n">method</span><span class="o">=</span><span class="s2">&quot;L-BFGS-B&quot;</span><span class="p">,</span>
@@ -395,41 +408,56 @@ document.write(`
             <span class="p">]</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">F_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">F_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; The mode of free energies of all states in all MBAR systems. The free energy of </span>
+<span class="sd">        state 0 in each system is set to 0.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">[</span>
             <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">device_put</span><span class="p">(</span><span class="n">F</span><span class="p">,</span> <span class="n">jax</span><span class="o">.</span><span class="n">devices</span><span class="p">(</span><span class="s2">&quot;cpu&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]))</span>
             <span class="k">for</span> <span class="n">F</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state_F_mode_ll</span>
         <span class="p">]</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">F_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">F_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; The samples of free energies of all states in all MBAR systems. The free energy of</span>
+<span class="sd">        state 0 in each system is set to 0.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">[</span>
             <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">device_put</span><span class="p">(</span><span class="n">F</span><span class="p">,</span> <span class="n">jax</span><span class="o">.</span><span class="n">devices</span><span class="p">(</span><span class="s2">&quot;cpu&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]))</span>
             <span class="k">for</span> <span class="n">F</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state_F_samples_ll</span>
         <span class="p">]</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">F_mean</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">F_mean</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; The mean of free energies of all states in all MBAR systems. The free energy of</span>
+<span class="sd">        state 0 in each system is set to 0.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">[</span>
             <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">device_put</span><span class="p">(</span><span class="n">F</span><span class="p">,</span> <span class="n">jax</span><span class="o">.</span><span class="n">devices</span><span class="p">(</span><span class="s2">&quot;cpu&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]))</span>
             <span class="k">for</span> <span class="n">F</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state_F_mean_ll</span>
         <span class="p">]</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">DeltaF_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">DeltaF_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; The mode of free energy differences between all pairs of states in every MBAR system.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">F</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span> <span class="o">-</span> <span class="n">F</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="k">for</span> <span class="n">F</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">F_mode</span><span class="p">]</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">DeltaF_mean</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">DeltaF_mean</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; The mean of free energy differences between all pairs of states in every MBAR system.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">F</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span> <span class="o">-</span> <span class="n">F</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="k">for</span> <span class="n">F</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">F_mean</span><span class="p">]</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">DeltaF_std</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">DeltaF_std</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; The standard deviation of free energy differences between all pairs of states in every MBAR system.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">F</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:]</span> <span class="o">-</span> <span class="n">F</span><span class="p">[:,</span> <span class="p">:,</span> <span class="kc">None</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span> <span class="k">for</span> <span class="n">F</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">F_samples</span><span class="p">]</span></div>
 
 
 
-<span class="k">def</span> <span class="nf">_dF_to_state_F</span><span class="p">(</span><span class="n">dF</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">nums_state</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="k">def</span> <span class="nf">_dF_to_state_F</span><span class="p">(</span><span class="n">dF</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">nums_state</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
     <span class="n">state_dF</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">idx</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">nums_state</span><span class="p">:</span>
@@ -482,8 +510,8 @@ document.write(`
 
 
 <span class="k">def</span> <span class="nf">_generate_dF_graph</span><span class="p">(</span>
-    <span class="n">nums_state</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">identical_states</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">)]]</span>
-<span class="p">):</span>
+    <span class="n">nums_state</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">identical_states</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nx</span><span class="o">.</span><span class="n">Graph</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Generate a graph where each node represents a state and each edge represents a perturbation</span>
 <span class="sd">    between two states whose free energy difference is to be computed. For states that are identical</span>
@@ -512,9 +540,18 @@ document.write(`
 
 
 <span class="k">def</span> <span class="nf">_compute_projection</span><span class="p">(</span>
-    <span class="n">nums_state</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">identical_states</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">)]]</span>
-<span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the projection matrix Q&quot;&quot;&quot;</span>
+    <span class="n">nums_state</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">identical_states</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the projection matrix Q</span>
+
+<span class="sd">    This function converts contraints on the free energy differences due to identical states</span>
+<span class="sd">    to a projection matrix Q that does the following:</span>
+
+<span class="sd">    dF = Q @ x, where x is a vector of independent variables without any constraints.</span>
+<span class="sd">    dF is the vector of all free energy differences between states in all MBAR systems that satisfy</span>
+<span class="sd">    the constraints because it is generated by the projection matrix Q.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1">## map from state index (i,j), where i is the index of the MBAR system and j is the index of</span>
     <span class="c1">## the state in that system, to the index of the free energy differences in the vector dF</span>
