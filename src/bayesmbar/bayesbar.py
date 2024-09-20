@@ -5,11 +5,13 @@ from numpy import ndarray
 import scipy.optimize as optimize
 import scipy.integrate as integrate
 import jax
-jax.config.update("jax_enable_x64", True)
-from jax import grad, hessian, jit, value_and_grad
+from jax import hessian, jit, value_and_grad
 import jax.numpy as jnp
 from .utils import fmin_newton
 from tqdm import tqdm
+
+jax.config.update("jax_enable_x64", True)
+
 
 class BayesBAR:
     """Bayesian Bennett acceptance ratio method"""
@@ -18,18 +20,25 @@ class BayesBAR:
         self,
         energy: ndarray,
         num_conf: ndarray,
+        sample_size: int = 1000,
+        method: str = "Newton",
         verbose=False,
-        sample_size: int = 0,
     ):
         """
-        Args:
-          energy: energy matrix in reduced units. Its size should be 2xN, where N is
-              the total number of samples from the two states.
-          num_conf: number of configurations in each state. Its size should be (2,).
-          sample_size: the number of samples from the posterior distribution.
-          use_gpu: whether to use gpus.
-          verbose: whether to print running information
-          method: Newton or L-BFGS-B
+        Initialize the BayesBAR class.
+
+        Parameters
+        ----------
+        energy : ndarray
+            An energy matrix in reduced units. Its size should be 2xN, where N is the total number of samples from the two states.
+        num_conf : ndarray
+            Number of configurations in each state. Its size should be (2,).
+        sample_size : int, optional
+            The number of samples from the posterior distribution. Defaults to 1000.
+        method : str, optional
+            Optimization method for finding the mode. Options are "Newton" or "L-BFGS-B". Defaults to "Newton".
+        verbose : bool, optional
+            Whether to print running information. Defaults to False.
         """
 
         assert (
@@ -42,7 +51,7 @@ class BayesBAR:
 
         assert (
             energy.shape[1] == num_conf[0] + num_conf[1]
-        ), "the number of column in energy is not equal to the sum of num_conf"
+        ), f"The energy matrix has {energy.shape[1]} columns, but the sum of num_conf is {num_conf[0] + num_conf[1]}. The number of columns in the energy matrix must equal the sum of num_conf."
 
         self.energy = jnp.float64(energy)
         self.num_conf = jnp.int32(num_conf)
@@ -53,13 +62,29 @@ class BayesBAR:
         ## find the posterior mode which corresponds to the BAR solution
         dF_init = jnp.zeros(1, dtype=jnp.float64)
         dF_init = jnp.mean(self.energy[1] - self.energy[0]).reshape((-1,))
-        
-        f = jit(value_and_grad(_compute_loss))
-        hess = jit(hessian(_compute_loss))
-        res = fmin_newton(f, hess, dF_init, args=(self.energy, self.num_conf))
+
+        if method == "Newton":
+            f = jit(value_and_grad(_compute_loss))
+            hess = jit(hessian(_compute_loss))
+            res = fmin_newton(f, hess, dF_init, args=(self.energy, self.num_conf))
+        elif method == "L-BFGS-B":
+            options = {"disp": verbose, "gtol": 1e-8}
+            f = jit(value_and_grad(_compute_loss))
+            res = optimize.minimize(
+                lambda x: [np.array(r) for r in f(x, self.energy, self.num_conf)],
+                dF_init,
+                jac=True,
+                method="L-BFGS-B",
+                tol=1e-12,
+                options=options,
+            )
+        else:
+            raise ValueError(
+                f"Method {method} is not supported. It must be 'Newton' or 'L-BFGS-B'."
+            )
+
         self.dF_mode = res["x"]
 
-        # self._compute_mode(method=self.method)
         ## compute posterior mean and standard deviation using numerical integration
         self.dF_mean, self.dF_std = _compute_posterior_mean_and_std(
             self.dF_mode, self.energy, self.num_conf
@@ -98,30 +123,26 @@ class BayesBAR:
         )
         self._dF_std_bennett = jnp.sqrt(_dF_var_bennett)
 
+    @property
+    def DeltaF_mode(self) -> ndarray:
+        """The posterior mode of the free energy difference."""
+        return np.array(jax.device_put(self.dF_mode, jax.devices("cpu")[0]))
 
     @property
-    def DeltaF_mode(self):
-        """The posterior mode of the free energy difference.
-        """
-        return jax.device_put(self.dF_mode, jax.devices("cpu")[0])
+    def DeltaF_mean(self) -> ndarray:
+        """The posterior mean of the free energy difference."""
+        return np.array(jax.device_put(self.dF_mean, jax.devices("cpu")[0]))
 
     @property
-    def DeltaF_mean(self):
-        """The posterior mean of the free energy difference.
-        """
-        return jax.device_put(self.dF_mean, jax.devices("cpu")[0])
-    
+    def DeltaF_std(self) -> ndarray:
+        """The posterior standard deviation of the free energy difference."""
+        return np.array(jax.device_put(self.dF_std, jax.devices("cpu")[0]))
+
     @property
-    def DeltaF_std(self):
-        """The posterior standard deviation of the free energy difference.
-        """
-        return jax.device_put(self.dF_std, jax.devices("cpu")[0])
-    
-    @property
-    def DeltaF_samples(self):
-        """The samples from the posterior distribution of the free energy difference.
-        """
-        return jax.device_put(self.dF_samples, jax.devices("cpu")[0])
+    def DeltaF_samples(self) -> ndarray:
+        """The samples from the posterior distribution of the free energy difference."""
+        return np.array(jax.device_put(self.dF_samples, jax.devices("cpu")[0]))
+
 
 @jit
 def _compute_logp(dF, energy, num_conf):
@@ -131,12 +152,14 @@ def _compute_logp(dF, energy, num_conf):
     return jnp.reshape(logp, ())
 
 
+@jit
 def _compute_loss(dF, energy, num_conf):
     logp = _compute_logp(dF, energy, num_conf)
     loss = -logp / num_conf.sum()
     return loss
 
 
+@jit
 def _compute_posterior(dF, energy, num_conf, dF_mode):
     logp_max = _compute_logp(dF_mode, energy, num_conf)
 
@@ -149,18 +172,22 @@ def _compute_posterior(dF, energy, num_conf, dF_mode):
 
 def _compute_posterior_mean_and_std(dF_mode, energy, num_conf):
     ## compute the normalization constant Z
-    f = lambda dF: _compute_posterior(dF, energy, num_conf, dF_mode)
+    def f(dF):
+        return _compute_posterior(dF, energy, num_conf, dF_mode)
+
     Z, Z_err = integrate.quad(jit(f), -np.inf, np.inf)
 
     ## posterior mean
-    f = lambda dF: dF * _compute_posterior(dF, energy, num_conf, dF_mode)
+    def f(dF):
+        return dF * _compute_posterior(dF, energy, num_conf, dF_mode)
+
     dF, dF_err = integrate.quad(jit(f), -np.inf, np.inf)
     dF_mean = dF / Z
 
     ## posterior standard deviation
-    f = lambda dF: (dF - dF_mean) ** 2 * _compute_posterior(
-        dF, energy, num_conf, dF_mode
-    )
+    def f(dF):
+        return (dF - dF_mean) ** 2 * _compute_posterior(dF, energy, num_conf, dF_mode)
+
     dF_var, dF_var_err = integrate.quad(jit(f), -np.inf, np.inf)
     dF_var = dF_var / Z
     dF_std = math.sqrt(dF_var)

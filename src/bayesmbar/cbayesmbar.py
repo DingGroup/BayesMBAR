@@ -1,6 +1,8 @@
 from collections.abc import Sequence
+from typing import List, Tuple
+import time
 import numpy as np
-import numpy.typing as npt
+from numpy import ndarray
 import networkx as nx
 import jax
 import jax.numpy as jnp
@@ -9,31 +11,34 @@ from jax import hessian, jit, value_and_grad, vmap
 from scipy import optimize
 from .bayesmbar import _sample_from_logdensity
 from .utils import fmin_newton, _compute_log_likelihood_of_dF
+
 jax.config.update("jax_enable_x64", True)
+
 
 class CBayesMBAR:
     """
-    Coupled BayesMBAR (CBayesMBAR)
+    Coupled BayesMBAR
     """
+
     def __init__(
         self,
-        energies: Sequence[npt.NDArray[np.float64]],
-        nums_conf: Sequence[npt.NDArray[np.int64]],
-        identical_states: Sequence[Sequence[(int, int)]],
+        energies: List[ndarray],
+        nums_conf: List[ndarray],
+        identical_states: List[List[Tuple[int, int]]],
         sample_size: int = 1000,
         warmup_steps: int = 500,
-        verbose: bool = True,
-        random_seed: int = 0,
         method: str = "Newton",
+        random_seed: int = None,
+        verbose: bool = True,
     ):
         """
         Parameters
         ----------
-        energies : Sequence[npt.NDArray[np.float64]]
-            A list of energies for each MBAR system. The energies should be in the unit of kT.
-        nums_conf : Sequence[npt.NDArray[np.int64]]
-            A list of the number of configurations for each MBAR system.
-        identical_states : Sequence[Sequence[(int, int)]]
+        energies : List[ndarray]
+            A list of energies for all coupled MBAR systems. The energies should be in the unit of kT.
+        nums_conf : List[ndarray]
+            A list of the number of configurations for all coupled MBAR systems.
+        identical_states : List[List[(int, int)]]
             A list of identical states. Each element in the outer list is a list of tuples and
             represents a group of states that are identical to each other. States are represented
             by a tuple where the first element is the index of a MBAR system and the second element
@@ -45,10 +50,12 @@ class CBayesMBAR:
             The number of samples to draw from the likelihood. The default is 1000.
         warmup_steps : int, optional
             The number of warmup steps for the HMC sampler. The default is 500.
+        method : str, optional
+            The optimization method for finding the mode of the likelihood. Options are "Newton" or "L-BFGS-B". The default is "Newton".
+        random_seed : int, optional
+            The random seed. The default is None, which means the random seed is generated from the current time.
         verbose : bool, optional
             Whether to print out the progress of the sampling. The default is True.
-        random_seed : int, optional
-            The random seed. The default is 0.
         """
         self._energies = [jnp.float64(u) for u in energies]
         self._nums_conf = [jnp.int32(n) for n in nums_conf]
@@ -58,7 +65,9 @@ class CBayesMBAR:
         self._warmup_steps = warmup_steps
 
         self._verbose = verbose
-        self._rng_key = jax.random.PRNGKey(random_seed)
+        if random_seed is None:
+            random_seed = int(time.time())
+        self._rng_key = jax.random.PRNGKey(int(time.time()))
 
         # number of states in each mbar system
         self._nums_state = [len(s) for s in self._nums_conf]
@@ -80,7 +89,9 @@ class CBayesMBAR:
             options = {"disp": verbose, "gtol": 1e-8}
             f = jit(value_and_grad(_compute_cmbar_loss_likelihood))
             res = optimize.minimize(
-                lambda x: [np.array(r) for r in f(x, self._Q, self._energies, self._nums_conf)],
+                lambda x: [
+                    np.array(r) for r in f(x, self._Q, self._energies, self._nums_conf)
+                ],
                 x,
                 jac=True,
                 method="L-BFGS-B",
@@ -123,40 +134,55 @@ class CBayesMBAR:
             ]
 
     @property
-    def F_mode(self):
+    def F_mode(self) -> List[ndarray]:
+        """ The mode of free energies of all states in all MBAR systems. The free energy of 
+        state 0 in each system is set to 0.
+        """
         return [
             np.array(jax.device_put(F, jax.devices("cpu")[0]))
             for F in self._state_F_mode_ll
         ]
 
     @property
-    def F_samples(self):
+    def F_samples(self) -> List[ndarray]:
+        """ The samples of free energies of all states in all MBAR systems. The free energy of
+        state 0 in each system is set to 0.
+        """
         return [
             np.array(jax.device_put(F, jax.devices("cpu")[0]))
             for F in self._state_F_samples_ll
         ]
 
     @property
-    def F_mean(self):
+    def F_mean(self) -> List[ndarray]:
+        """ The mean of free energies of all states in all MBAR systems. The free energy of
+        state 0 in each system is set to 0.
+        """
         return [
             np.array(jax.device_put(F, jax.devices("cpu")[0]))
             for F in self._state_F_mean_ll
         ]
 
     @property
-    def DeltaF_mode(self):
+    def DeltaF_mode(self) -> List[ndarray]:
+        """ The mode of free energy differences between all pairs of states in every MBAR system.
+        """
         return [F[None, :] - F[:, None] for F in self.F_mode]
 
     @property
-    def DeltaF_mean(self):
+    def DeltaF_mean(self) -> List[ndarray]:
+        """ The mean of free energy differences between all pairs of states in every MBAR system.
+        """
         return [F[None, :] - F[:, None] for F in self.F_mean]
 
     @property
-    def DeltaF_std(self):
+    def DeltaF_std(self) -> List[ndarray]:
+        """ The standard deviation of free energy differences between all pairs of states in every MBAR system.
+        """
         return [np.std(F[:, None, :] - F[:, :, None], 0) for F in self.F_samples]
 
 
-def _dF_to_state_F(dF: jnp.ndarray, nums_state: Sequence[int]) -> list[jnp.ndarray]:
+def _dF_to_state_F(dF: jnp.ndarray, nums_state: List[int]) -> List[jnp.ndarray]:
     state_dF = []
     idx = 0
     for n in nums_state:
@@ -209,8 +235,8 @@ def _compute_cmbar_loss_likelihood(
 
 
 def _generate_dF_graph(
-    nums_state: Sequence[int], identical_states: Sequence[Sequence[(int, int)]]
-):
+    nums_state: List[int], identical_states: List[List[Tuple[int, int]]]
+) -> nx.Graph:
     """
     Generate a graph where each node represents a state and each edge represents a perturbation
     between two states whose free energy difference is to be computed. For states that are identical
@@ -239,9 +265,18 @@ def _generate_dF_graph(
 
 
 def _compute_projection(
-    nums_state: Sequence[int], identical_states: Sequence[Sequence[(int, int)]]
-):
-    """Compute the projection matrix Q"""
+    nums_state: List[int], identical_states: List[List[Tuple[int, int]]]
+) -> ndarray:
+    """Compute the projection matrix Q
+
+    This function converts contraints on the free energy differences due to identical states
+    to a projection matrix Q that does the following:
+
+    dF = Q @ x, where x is a vector of independent variables without any constraints.
+    dF is the vector of all free energy differences between states in all MBAR systems that satisfy
+    the constraints because it is generated by the projection matrix Q.
+
+    """
 
     ## map from state index (i,j), where i is the index of the MBAR system and j is the index of
     ## the state in that system, to the index of the free energy differences in the vector dF
