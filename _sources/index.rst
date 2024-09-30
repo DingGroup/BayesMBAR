@@ -13,12 +13,14 @@ BayesMBAR generalizes the MBAR method by providing a Bayesian framework for esti
 This package provides a Python implementation of the BayesMBAR method.
 
 .. toctree::
+   :hidden:
    :maxdepth: 2
    
    installation
    examples
 
 .. toctree::
-   :maxdepth: 1
+   :hidden:
+   :maxdepth: 2
    
    API
