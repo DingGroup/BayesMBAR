@@ -1,9 +1,13 @@
 name: Publish Python Package
 
 on:
-  push:
-    tags:
-      - 'v*.*.*'  # Trigger on version tags
+  push:  # Trigger the workflow on every push to any branch
+    branches:
+      - '**'  # This includes all branches
+# on:
+#   push:
+#     tags:
+#       - 'v*.*.*'  # Trigger on version tags
 
 jobs:
   publish:
