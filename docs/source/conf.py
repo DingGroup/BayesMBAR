@@ -53,30 +53,12 @@ autoclass_content = 'both'
 html_theme = "sphinx_book_theme"
 html_logo = "_static/logo.png"
 html_static_path = ["_static"]
-
+html_theme_options = {
+    'show_toc_level': 2,
+    'repository_url': 'https://github.com/DingGroup/BayesMBAR',
+    'use_repository_button': True,     # add a "link to repository" button
+    'navigation_with_keys': False,
+}
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = "sphinx"
-
-
-# ## autoapi
-# autoapi_type = "python"
-# autoapi_dirs = ["../../src/bayesmbar"]
-# autoapi_python_class_content = "both"
-# autoapi_options = [
-#     "members",
-#     "undoc-members",
-#     "show-inheritance",
-#     "show-module-summary",
-#     "imported-members",
-# ]
-
-
-# def skip_submodules(app, what, name, obj, skip, options):
-#     if what == "module":
-#         skip = True
-#     return skip
-
-
-# def setup(sphinx):
-#     sphinx.connect("autoapi-skip-member", skip_submodules)
