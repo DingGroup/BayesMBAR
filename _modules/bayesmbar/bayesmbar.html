@@ -300,6 +300,7 @@ document.write(`
 <span class="kn">from</span> <span class="nn">optax</span> <span class="kn">import</span> <span class="n">sgd</span>
 <span class="kn">import</span> <span class="nn">optax</span>
 <span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">_solve_mbar</span><span class="p">,</span>
     <span class="n">fmin_newton</span><span class="p">,</span>
     <span class="n">_compute_log_likelihood_of_dF</span><span class="p">,</span>
     <span class="n">_compute_log_likelihood_of_F</span><span class="p">,</span>
@@ -327,6 +328,7 @@ document.write(`
         <span class="n">optimize_steps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">,</span>
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">random_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">method</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;Newton&quot;</span><span class="p">,</span> <span class="s2">&quot;L-BFGS-B&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Newton&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Args:</span>
@@ -359,6 +361,7 @@ document.write(`
         <span class="bp">self</span><span class="o">.</span><span class="n">_optimize_steps</span> <span class="o">=</span> <span class="n">optimize_steps</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_verbose</span> <span class="o">=</span> <span class="n">verbose</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_method</span> <span class="o">=</span> <span class="n">method</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_rng_key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="n">random_seed</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_m</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_energy</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -370,15 +373,19 @@ document.write(`
 
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Solve for the mode of the likelihood&quot;</span><span class="p">)</span>
         <span class="n">dF_init</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">_m</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,))</span>
-        <span class="n">f</span> <span class="o">=</span> <span class="n">jit</span><span class="p">(</span><span class="n">value_and_grad</span><span class="p">(</span><span class="n">_compute_loss_likelihood_of_dF</span><span class="p">))</span>
-        <span class="n">hess</span> <span class="o">=</span> <span class="n">jit</span><span class="p">(</span><span class="n">hessian</span><span class="p">(</span><span class="n">_compute_loss_likelihood_of_dF</span><span class="p">))</span>
-        <span class="n">res</span> <span class="o">=</span> <span class="n">fmin_newton</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">hess</span><span class="p">,</span> <span class="n">dF_init</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_energy</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_conf</span><span class="p">))</span>
-        <span class="n">dF</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span>
+        <span class="n">dF</span> <span class="o">=</span> <span class="n">_solve_mbar</span><span class="p">(</span>
+            <span class="n">dF_init</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_energy</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_conf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_method</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_verbose</span>
+        <span class="p">)</span>
+
+        <span class="c1"># f = jit(value_and_grad(_compute_loss_likelihood_of_dF))</span>
+        <span class="c1"># hess = jit(hessian(_compute_loss_likelihood_of_dF))</span>
+        <span class="c1"># res = fmin_newton(f, hess, dF_init, args=(self._energy, self._num_conf))</span>
+        <span class="c1"># dF = res[&quot;x&quot;]</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_dF_mode_ll</span> <span class="o">=</span> <span class="n">dF</span>
 
         <span class="c1"># sample dF based on the likelihood.</span>
-        <span class="c1"># When the uniform prior is used, the posterior distribution of dF is </span>
+        <span class="c1"># When the uniform prior is used, the posterior distribution of dF is</span>
         <span class="c1"># the same as the likelihood function.</span>
         <span class="c1"># Thefore so these samples are also samples from the posterior</span>
         <span class="c1"># distribution of dF when the uniform prior is used.</span>
@@ -602,9 +609,7 @@ document.write(`
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">DeltaF_cov</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">F_cov</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span>
-            <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">F_cov</span><span class="p">)[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
-            <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">F_cov</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">F_cov</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">F_cov</span><span class="p">)[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">F_cov</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">DeltaF_cov</span><span class="p">)</span></div>
 
@@ -869,7 +874,7 @@ document.write(`
     <span class="c1">## sample using nuts</span>
 
     <span class="c1"># ## Use the blackjax.util.run_inference_algorithm function to run the nuts algorithm</span>
-    <span class="c1"># ## so that we can have a progress bar. It is a wrap of _sample_loop.   </span>
+    <span class="c1"># ## so that we can have a progress bar. It is a wrap of _sample_loop.</span>
     <span class="c1"># alg = blackjax.nuts(logdensity, **parameters)</span>
     <span class="c1"># _, states, _ = blackjax.util.run_inference_algorithm(</span>
     <span class="c1">#     rng_key, state, alg, num_samples, progress_bar=verbose</span>
