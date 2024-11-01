@@ -12,6 +12,7 @@ import blackjax
 from optax import sgd
 import optax
 from .utils import (
+    _solve_mbar,
     fmin_newton,
     _compute_log_likelihood_of_dF,
     _compute_log_likelihood_of_F,
@@ -37,6 +38,7 @@ class BayesMBAR:
         optimize_steps: int = 10000,
         verbose: bool = True,
         random_seed: int = 0,
+        method: Literal["Newton", "L-BFGS-B"] = "Newton",
     ) -> None:
         """
         Args:
@@ -69,6 +71,7 @@ class BayesMBAR:
         self._optimize_steps = optimize_steps
 
         self._verbose = verbose
+        self._method = method
         self._rng_key = jax.random.PRNGKey(random_seed)
 
         self._m = self._energy.shape[0]
@@ -80,15 +83,19 @@ class BayesMBAR:
 
         print("Solve for the mode of the likelihood")
         dF_init = jnp.zeros((self._m - 1,))
-        f = jit(value_and_grad(_compute_loss_likelihood_of_dF))
-        hess = jit(hessian(_compute_loss_likelihood_of_dF))
-        res = fmin_newton(f, hess, dF_init, args=(self._energy, self._num_conf))
-        dF = res["x"]
+        dF = _solve_mbar(
+            dF_init, self._energy, self._num_conf, self._method, self._verbose
+        )
+
+        # f = jit(value_and_grad(_compute_loss_likelihood_of_dF))
+        # hess = jit(hessian(_compute_loss_likelihood_of_dF))
+        # res = fmin_newton(f, hess, dF_init, args=(self._energy, self._num_conf))
+        # dF = res["x"]
 
         self._dF_mode_ll = dF
 
         # sample dF based on the likelihood.
-        # When the uniform prior is used, the posterior distribution of dF is 
+        # When the uniform prior is used, the posterior distribution of dF is
         # the same as the likelihood function.
         # Thefore so these samples are also samples from the posterior
         # distribution of dF when the uniform prior is used.
@@ -312,9 +319,7 @@ class BayesMBAR:
         """
 
         DeltaF_cov = (
-            np.diag(self.F_cov)[:, None]
-            + np.diag(self.F_cov)[None, :]
-            - 2 * self.F_cov
+            np.diag(self.F_cov)[:, None] + np.diag(self.F_cov)[None, :] - 2 * self.F_cov
         )
         return np.sqrt(DeltaF_cov)
 
@@ -578,7 +583,7 @@ def _sample_from_logdensity(
     ## sample using nuts
 
     # ## Use the blackjax.util.run_inference_algorithm function to run the nuts algorithm
-    # ## so that we can have a progress bar. It is a wrap of _sample_loop.   
+    # ## so that we can have a progress bar. It is a wrap of _sample_loop.
     # alg = blackjax.nuts(logdensity, **parameters)
     # _, states, _ = blackjax.util.run_inference_algorithm(
     #     rng_key, state, alg, num_samples, progress_bar=verbose

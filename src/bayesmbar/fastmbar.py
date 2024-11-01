@@ -6,12 +6,7 @@ import jax.numpy as jnp
 import jax.random as jr
 from jax.scipy.special import logsumexp
 import numpy.typing as npt
-import scipy.optimize as optimize
-from jax import jit, value_and_grad, hessian
-from .utils import (
-    fmin_newton,
-    _compute_loss_likelihood_of_dF,
-)
+from .utils import _solve_mbar
 
 jax.config.update("jax_enable_x64", True)
 
@@ -401,25 +396,7 @@ class FastMBAR:
         return results
 
 
-def _solve_mbar(dF_init, energy, num_conf, method, verbose=False):
-    if method == "Newton":
-        f = jit(value_and_grad(_compute_loss_likelihood_of_dF))
-        hess = jit(hessian(_compute_loss_likelihood_of_dF))
-        res = fmin_newton(f, hess, dF_init, args=(energy, num_conf))
-        dF = res["x"]
-    elif method == "L-BFGS-B":
-        options = {"disp": verbose, "gtol": 1e-8}
-        f = jit(value_and_grad(_compute_loss_likelihood_of_dF))
-        results = optimize.minimize(
-            lambda x: [np.array(r) for r in f(x, energy, num_conf)],
-            dF_init,
-            jac=True,
-            method="L-BFGS-B",
-            tol=1e-12,
-            options=options,
-        )
-        dF = results["x"]
-    return dF
+
 
 
 def _bootstrap_conf_idx(num_conf, bootstrap_block_size):

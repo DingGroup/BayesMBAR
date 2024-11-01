@@ -5,8 +5,8 @@ from bayesmbar import FastMBAR
 
 @pytest.mark.parametrize("method", ["Newton", "L-BFGS-B"])
 @pytest.mark.parametrize("bootstrap", [False, True])
-def test_FastMBAR(setup_data, method, bootstrap):
-    energy, num_conf, F_ref, energy_p, F_ref_p = setup_data
+def test_FastMBAR(setup_mbar_data, method, bootstrap):
+    energy, num_conf, F_ref, energy_p, F_ref_p = setup_mbar_data
     fastmbar = FastMBAR(
         energy,
         num_conf,
