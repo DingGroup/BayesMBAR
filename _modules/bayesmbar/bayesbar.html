@@ -158,7 +158,8 @@
         <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
     <div class="bd-toc-item navbar-nav active">
         <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installing BayesMBAR</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../examples.html">Examples</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../examples/bayesmbar_for_harmonic_oscillators.html">BayesMBAR for harmonic oscillators</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../examples/cbayesmbar_for_harmonic_oscillators.html">CBayesMBAR for harmonic oscillators</a></li>
@@ -356,7 +357,7 @@ document.write(`
         <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;Newton&quot;</span><span class="p">:</span>
             <span class="n">f</span> <span class="o">=</span> <span class="n">jit</span><span class="p">(</span><span class="n">value_and_grad</span><span class="p">(</span><span class="n">_compute_loss</span><span class="p">))</span>
             <span class="n">hess</span> <span class="o">=</span> <span class="n">jit</span><span class="p">(</span><span class="n">hessian</span><span class="p">(</span><span class="n">_compute_loss</span><span class="p">))</span>
-            <span class="n">res</span> <span class="o">=</span> <span class="n">fmin_newton</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">hess</span><span class="p">,</span> <span class="n">dF_init</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">energy</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_conf</span><span class="p">))</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">fmin_newton</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">hess</span><span class="p">,</span> <span class="n">dF_init</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">energy</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_conf</span><span class="p">),</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;L-BFGS-B&quot;</span><span class="p">:</span>
             <span class="n">options</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;disp&quot;</span><span class="p">:</span> <span class="n">verbose</span><span class="p">,</span> <span class="s2">&quot;gtol&quot;</span><span class="p">:</span> <span class="mf">1e-8</span><span class="p">}</span>
             <span class="n">f</span> <span class="o">=</span> <span class="n">jit</span><span class="p">(</span><span class="n">value_and_grad</span><span class="p">(</span><span class="n">_compute_loss</span><span class="p">))</span>
