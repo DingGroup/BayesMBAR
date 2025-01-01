@@ -66,7 +66,7 @@ class BayesBAR:
         if method == "Newton":
             f = jit(value_and_grad(_compute_loss))
             hess = jit(hessian(_compute_loss))
-            res = fmin_newton(f, hess, dF_init, args=(self.energy, self.num_conf))
+            res = fmin_newton(f, hess, dF_init, args=(self.energy, self.num_conf), verbose=verbose)
         elif method == "L-BFGS-B":
             options = {"disp": verbose, "gtol": 1e-8}
             f = jit(value_and_grad(_compute_loss))
