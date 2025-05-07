@@ -1,12 +1,12 @@
 [project]
 name = "bayesmbar"
-version = "0.0.6"
+version = "0.0.7"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "jax>=0.4.33",
-    "jaxlib==0.4.33",
+    "jax>=0.6.0",
+    "jaxlib>=0.6.0",
     "blackjax>=1.2.3",
     "networkx>=3.3",
     "tqdm>=4.66.5",

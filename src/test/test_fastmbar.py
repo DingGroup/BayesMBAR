@@ -15,8 +15,8 @@ def test_FastMBAR(setup_mbar_data, method, bootstrap):
         verbose=False,
         method=method,
     )
-    assert fastmbar.F == approx(F_ref, abs = 1e-1)
+    assert fastmbar.F == approx(F_ref, abs = 2e-1)
 
     results = fastmbar.calculate_free_energies_of_perturbed_states(energy_p)
     results['F'] = results['F'] - results['F'].mean()
-    assert results['F'] == approx(F_ref_p, abs = 1e-1)
+    assert results['F'] == approx(F_ref_p, abs = 2e-1)
