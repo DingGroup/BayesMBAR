@@ -26,4 +26,3 @@ jobs:
           pip install .[testing]
       - name: Run tests with pytest
         run: pytest src/test 
-        
