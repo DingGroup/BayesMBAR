@@ -1,7 +1,7 @@
 [project]
 name = "bayesmbar"
-version = "0.0.7"
-description = "Add your description here"
+version = "0.0.8"
+description = "Bayesian Multistate Bennett Acceptance Ratio (BayesMBAR) methods for free energy calculations."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
