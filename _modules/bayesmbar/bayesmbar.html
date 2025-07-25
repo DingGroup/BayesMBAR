@@ -27,8 +27,8 @@
 <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
 <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
 
-    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
-    <link rel="stylesheet" type="text/css" href="../../_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/sphinx-book-theme.css?v=a3416100" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
   
   <!-- Pre-loaded scripts that we'll load fully later -->
@@ -37,7 +37,7 @@
   <script src="../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
 
     <script src="../../_static/documentation_options.js?v=9eb32ce0"></script>
-    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../_static/copybutton.js?v=f281be69"></script>
@@ -158,12 +158,10 @@
         <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
     <div class="bd-toc-item navbar-nav active">
         <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="../../overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installing BayesMBAR</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../examples.html">Examples</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../examples/bayesmbar_for_harmonic_oscillators.html">BayesMBAR for harmonic oscillators</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../examples/cbayesmbar_for_harmonic_oscillators.html">CBayesMBAR for harmonic oscillators</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../examples/cbayesmbar_for_protein_ligand/main.html">Compute relative protein-ligand binding free energy</a></li>
 </ul>
 </details></li>
 </ul>
@@ -287,21 +285,20 @@ document.write(`
                 <article class="bd-article">
                   
   <h1>Source code for bayesmbar.bayesmbar</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span>
+<span></span><span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Literal</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">numpy.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">NDArray</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">numpy.typing</span> <span class="kn">import</span> <span class="n">NDArray</span>
+<span class="kn">import</span> <span class="nn">jax</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">hessian</span><span class="p">,</span> <span class="n">jit</span><span class="p">,</span> <span class="n">value_and_grad</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">random</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">blackjax</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">optax</span><span class="w"> </span><span class="kn">import</span> <span class="n">sgd</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">optax</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">_solve_mbar</span><span class="p">,</span>
+<span class="kn">import</span> <span class="nn">jax.numpy</span> <span class="k">as</span> <span class="nn">jnp</span>
+<span class="kn">from</span> <span class="nn">jax</span> <span class="kn">import</span> <span class="n">hessian</span><span class="p">,</span> <span class="n">jit</span><span class="p">,</span> <span class="n">value_and_grad</span>
+<span class="kn">from</span> <span class="nn">jax</span> <span class="kn">import</span> <span class="n">random</span>
+<span class="kn">import</span> <span class="nn">blackjax</span>
+<span class="kn">from</span> <span class="nn">optax</span> <span class="kn">import</span> <span class="n">sgd</span>
+<span class="kn">import</span> <span class="nn">optax</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="n">fmin_newton</span><span class="p">,</span>
     <span class="n">_compute_log_likelihood_of_dF</span><span class="p">,</span>
     <span class="n">_compute_log_likelihood_of_F</span><span class="p">,</span>
@@ -313,10 +310,10 @@ document.write(`
 
 <div class="viewcode-block" id="BayesMBAR">
 <a class="viewcode-back" href="../../API.html#bayesmbar.BayesMBAR">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">BayesMBAR</span><span class="p">:</span>
+<span class="k">class</span> <span class="nc">BayesMBAR</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Bayesian Multistate Bennett Acceptance Ratio (BayesMBAR) method&quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">energy</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
         <span class="n">num_conf</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
@@ -329,7 +326,6 @@ document.write(`
         <span class="n">optimize_steps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">,</span>
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">random_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-        <span class="n">method</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;Newton&quot;</span><span class="p">,</span> <span class="s2">&quot;L-BFGS-B&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Newton&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Args:</span>
@@ -362,7 +358,6 @@ document.write(`
         <span class="bp">self</span><span class="o">.</span><span class="n">_optimize_steps</span> <span class="o">=</span> <span class="n">optimize_steps</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_verbose</span> <span class="o">=</span> <span class="n">verbose</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_method</span> <span class="o">=</span> <span class="n">method</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_rng_key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="n">random_seed</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_m</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_energy</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -374,19 +369,15 @@ document.write(`
 
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Solve for the mode of the likelihood&quot;</span><span class="p">)</span>
         <span class="n">dF_init</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">_m</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,))</span>
-        <span class="n">dF</span> <span class="o">=</span> <span class="n">_solve_mbar</span><span class="p">(</span>
-            <span class="n">dF_init</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_energy</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_conf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_method</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_verbose</span>
-        <span class="p">)</span>
-
-        <span class="c1"># f = jit(value_and_grad(_compute_loss_likelihood_of_dF))</span>
-        <span class="c1"># hess = jit(hessian(_compute_loss_likelihood_of_dF))</span>
-        <span class="c1"># res = fmin_newton(f, hess, dF_init, args=(self._energy, self._num_conf))</span>
-        <span class="c1"># dF = res[&quot;x&quot;]</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">jit</span><span class="p">(</span><span class="n">value_and_grad</span><span class="p">(</span><span class="n">_compute_loss_likelihood_of_dF</span><span class="p">))</span>
+        <span class="n">hess</span> <span class="o">=</span> <span class="n">jit</span><span class="p">(</span><span class="n">hessian</span><span class="p">(</span><span class="n">_compute_loss_likelihood_of_dF</span><span class="p">))</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">fmin_newton</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">hess</span><span class="p">,</span> <span class="n">dF_init</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_energy</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_conf</span><span class="p">))</span>
+        <span class="n">dF</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_dF_mode_ll</span> <span class="o">=</span> <span class="n">dF</span>
 
         <span class="c1"># sample dF based on the likelihood.</span>
-        <span class="c1"># When the uniform prior is used, the posterior distribution of dF is</span>
+        <span class="c1"># When the uniform prior is used, the posterior distribution of dF is </span>
         <span class="c1"># the same as the likelihood function.</span>
         <span class="c1"># Thefore so these samples are also samples from the posterior</span>
         <span class="c1"># distribution of dF when the uniform prior is used.</span>
@@ -396,7 +387,7 @@ document.write(`
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_rng_key</span><span class="p">,</span> <span class="n">subkey</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rng_key</span><span class="p">)</span>
 
-        <span class="k">def</span><span class="w"> </span><span class="nf">logdensity</span><span class="p">(</span><span class="n">dF</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">logdensity</span><span class="p">(</span><span class="n">dF</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">_compute_log_likelihood_of_dF</span><span class="p">(</span><span class="n">dF</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_energy</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_conf</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_dF_samples_ll</span> <span class="o">=</span> <span class="n">_sample_from_logdensity</span><span class="p">(</span>
@@ -471,7 +462,7 @@ document.write(`
             <span class="n">opt_state</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">raw_params</span><span class="p">)</span>
 
             <span class="nd">@partial</span><span class="p">(</span><span class="n">jit</span><span class="p">,</span> <span class="n">static_argnames</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;mean&quot;</span><span class="p">,</span> <span class="s2">&quot;kernel&quot;</span><span class="p">])</span>
-            <span class="k">def</span><span class="w"> </span><span class="nf">step</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">raw_params</span><span class="p">,</span> <span class="n">opt_state</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+            <span class="k">def</span> <span class="nf">step</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">raw_params</span><span class="p">,</span> <span class="n">opt_state</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
                 <span class="n">loss</span><span class="p">,</span> <span class="n">grads</span> <span class="o">=</span> <span class="n">_compute_elbo_loss</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">raw_params</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
                 <span class="n">update</span><span class="p">,</span> <span class="n">opt_state</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">grads</span><span class="p">,</span> <span class="n">opt_state</span><span class="p">)</span>
                 <span class="n">raw_params</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">apply_updates</span><span class="p">(</span><span class="n">raw_params</span><span class="p">,</span> <span class="n">update</span><span class="p">)</span>
@@ -511,7 +502,7 @@ document.write(`
             <span class="bp">self</span><span class="o">.</span><span class="n">_dF_mode_posterior</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span>
 
             <span class="c1">## sample dF from the posterior</span>
-            <span class="k">def</span><span class="w"> </span><span class="nf">logdensity</span><span class="p">(</span><span class="n">dF</span><span class="p">):</span>
+            <span class="k">def</span> <span class="nf">logdensity</span><span class="p">(</span><span class="n">dF</span><span class="p">):</span>
                 <span class="k">return</span> <span class="n">_compute_log_joint_likelihood_of_dF</span><span class="p">(</span>
                     <span class="n">dF</span><span class="p">,</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_energy</span><span class="p">,</span>
@@ -541,7 +532,7 @@ document.write(`
             <span class="bp">self</span><span class="o">.</span><span class="n">_F_cov_posterior</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">cov</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_F_samples_posterior</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">F_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">F_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">:</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;The posterior mode estimate of the free energies of the states under the constraints that :math:`\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prior</span> <span class="o">==</span> <span class="s2">&quot;uniform&quot;</span><span class="p">:</span>
             <span class="n">F_mode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_F_mode_ll</span>
@@ -550,7 +541,7 @@ document.write(`
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">device_put</span><span class="p">(</span><span class="n">F_mode</span><span class="p">,</span> <span class="n">jax</span><span class="o">.</span><span class="n">devices</span><span class="p">(</span><span class="s2">&quot;cpu&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]))</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">F_mean</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">F_mean</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">:</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;The posterior mean of the free energies of the states under the constraints that :math:`\\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively.&quot;&quot;&quot;</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prior</span> <span class="o">==</span> <span class="s2">&quot;uniform&quot;</span><span class="p">:</span>
@@ -560,7 +551,7 @@ document.write(`
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">device_put</span><span class="p">(</span><span class="n">F_mean</span><span class="p">,</span> <span class="n">jax</span><span class="o">.</span><span class="n">devices</span><span class="p">(</span><span class="s2">&quot;cpu&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]))</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">F_cov</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">F_cov</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">:</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;The posterior covariance matrix of the free energies of the states under the constraints that :math:`\\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prior</span> <span class="o">==</span> <span class="s2">&quot;uniform&quot;</span><span class="p">:</span>
             <span class="n">F_cov</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_F_cov_ll</span>
@@ -574,12 +565,12 @@ document.write(`
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">device_put</span><span class="p">(</span><span class="n">F_cov</span><span class="p">,</span> <span class="n">jax</span><span class="o">.</span><span class="n">devices</span><span class="p">(</span><span class="s2">&quot;cpu&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]))</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">F_std</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">F_std</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">:</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;The posterior standard deviation of the free energies of the states under the constraints that :math:`\\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">F_cov</span><span class="p">)))</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">F_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">F_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The samples of the free energies of the states from the posterior distribution under the constraints that :math:`\\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prior</span> <span class="o">==</span> <span class="s2">&quot;uniform&quot;</span><span class="p">:</span>
             <span class="n">F_samples</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_F_samples_ll</span>
@@ -588,7 +579,7 @@ document.write(`
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">device_put</span><span class="p">(</span><span class="n">F_samples</span><span class="p">,</span> <span class="n">jax</span><span class="o">.</span><span class="n">devices</span><span class="p">(</span><span class="s2">&quot;cpu&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]))</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">DeltaF_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">DeltaF_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">:</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;The posterior mode estimate of free energy difference between states.</span>
 <span class="sd">        DeltaF_mode[i,j] is the free energy difference between state :math:`j` and state :math:`i`,</span>
 <span class="sd">        i.e., DeltaF_mode[i,j] = F_mode[j] - F_mode[i].</span>
@@ -596,7 +587,7 @@ document.write(`
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">F_mode</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">F_mode</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">DeltaF_mean</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">DeltaF_mean</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">:</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;The posterior mean of free energy difference between states.</span>
 <span class="sd">        DeltaF_mean[i,j] is the free energy difference between state :math:`j` and state :math:`i`,</span>
 <span class="sd">        i.e., DeltaF_mean[i,j] = F_mean[j] - F_mean[i].</span>
@@ -604,19 +595,21 @@ document.write(`
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">F_mean</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">F_mean</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">DeltaF_std</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">DeltaF_std</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">:</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;The posterior standard deviation of free energy difference between states.</span>
 <span class="sd">        DeltaF_std[i,j] is the posterior standard deviation of the free energy difference between state :math:`j` and state :math:`i`,</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">DeltaF_cov</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">F_cov</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">F_cov</span><span class="p">)[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">F_cov</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">F_cov</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span>
+            <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">F_cov</span><span class="p">)[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+            <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">F_cov</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">DeltaF_cov</span><span class="p">)</span></div>
 
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_dF_to_F</span><span class="p">(</span><span class="n">dF</span><span class="p">,</span> <span class="n">num_conf</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_dF_to_F</span><span class="p">(</span><span class="n">dF</span><span class="p">,</span> <span class="n">num_conf</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">dF</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
         <span class="n">F</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,)),</span> <span class="n">dF</span><span class="p">])</span>
     <span class="k">elif</span> <span class="n">dF</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
@@ -626,7 +619,7 @@ document.write(`
     <span class="k">return</span> <span class="n">F</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_compute_loss_joint_likelihood_of_dF</span><span class="p">(</span><span class="n">dF</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">num_conf</span><span class="p">,</span> <span class="n">mean_prior</span><span class="p">,</span> <span class="n">prec_prior</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_compute_loss_joint_likelihood_of_dF</span><span class="p">(</span><span class="n">dF</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">num_conf</span><span class="p">,</span> <span class="n">mean_prior</span><span class="p">,</span> <span class="n">prec_prior</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Compute the loss function of dF based on the joint likelihood.</span>
 
@@ -642,7 +635,7 @@ document.write(`
     <span class="k">return</span> <span class="n">loss</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_compute_log_joint_likelihood_of_dF</span><span class="p">(</span><span class="n">dF</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">num_conf</span><span class="p">,</span> <span class="n">mean_prior</span><span class="p">,</span> <span class="n">prec_prior</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_compute_log_joint_likelihood_of_dF</span><span class="p">(</span><span class="n">dF</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">num_conf</span><span class="p">,</span> <span class="n">mean_prior</span><span class="p">,</span> <span class="n">prec_prior</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Compute the logarithm of the joint likelihood of dF when the prior is a normal distribution.</span>
 
@@ -666,7 +659,7 @@ document.write(`
 
 
 <span class="nd">@partial</span><span class="p">(</span><span class="n">value_and_grad</span><span class="p">,</span> <span class="n">argnums</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">_compute_elbo_loss</span><span class="p">(</span><span class="n">rng_key</span><span class="p">,</span> <span class="n">raw_params</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_compute_elbo_loss</span><span class="p">(</span><span class="n">rng_key</span><span class="p">,</span> <span class="n">raw_params</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
     <span class="n">energy</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">]</span>
     <span class="n">num_conf</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;num_conf&quot;</span><span class="p">]</span>
     <span class="n">state_cv</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;state_cv&quot;</span><span class="p">]</span>
@@ -689,7 +682,7 @@ document.write(`
     <span class="k">return</span> <span class="o">-</span><span class="n">elbo</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_compute_kl_divergence</span><span class="p">(</span><span class="n">mu0</span><span class="p">,</span> <span class="n">cov0</span><span class="p">,</span> <span class="n">mu1</span><span class="p">,</span> <span class="n">cov1</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_compute_kl_divergence</span><span class="p">(</span><span class="n">mu0</span><span class="p">,</span> <span class="n">cov0</span><span class="p">,</span> <span class="n">mu1</span><span class="p">,</span> <span class="n">cov1</span><span class="p">):</span>
     <span class="n">L0</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">cholesky</span><span class="p">(</span><span class="n">cov0</span><span class="p">)</span>
     <span class="n">L1</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">cholesky</span><span class="p">(</span><span class="n">cov1</span><span class="p">)</span>
 
@@ -705,7 +698,7 @@ document.write(`
     <span class="k">return</span> <span class="n">kl</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_compute_proposal_dist</span><span class="p">(</span><span class="n">mean_prior</span><span class="p">,</span> <span class="n">cov_prior</span><span class="p">,</span> <span class="n">dF_mean_ll</span><span class="p">,</span> <span class="n">dF_prec_ll</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_compute_proposal_dist</span><span class="p">(</span><span class="n">mean_prior</span><span class="p">,</span> <span class="n">cov_prior</span><span class="p">,</span> <span class="n">dF_mean_ll</span><span class="p">,</span> <span class="n">dF_prec_ll</span><span class="p">):</span>
     <span class="n">prec_prior</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">cov_prior</span><span class="p">)</span>
     <span class="n">prec</span> <span class="o">=</span> <span class="n">dF_prec_ll</span> <span class="o">+</span> <span class="n">prec_prior</span>
     <span class="n">cov</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">prec</span><span class="p">)</span>
@@ -713,7 +706,7 @@ document.write(`
     <span class="k">return</span> <span class="n">mu</span><span class="p">,</span> <span class="n">cov</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_print_params</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_print_params</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
     <span class="n">res</span> <span class="o">=</span> <span class="s2">&quot;beta: &quot;</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;mean&quot;</span><span class="p">][</span><span class="s2">&quot;beta&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
         <span class="n">res</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;mean&quot;</span><span class="p">][</span><span class="s2">&quot;beta&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s1">.4f</span><span class="si">}</span><span class="s1">, &#39;</span>
@@ -733,7 +726,7 @@ document.write(`
     <span class="k">return</span> <span class="n">res</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_expand</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">order</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_expand</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">order</span><span class="p">):</span>
     <span class="n">xx</span> <span class="o">=</span> <span class="p">[</span><span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">))]</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">order</span><span class="p">):</span>
         <span class="n">xx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x</span> <span class="o">**</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
@@ -741,40 +734,40 @@ document.write(`
     <span class="k">return</span> <span class="n">xx</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_mean</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">order</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_mean</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">order</span><span class="p">):</span>
     <span class="n">xx</span> <span class="o">=</span> <span class="n">_expand</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">order</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;beta&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">xx</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_params_from_raw</span><span class="p">(</span><span class="n">raw_params</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_params_from_raw</span><span class="p">(</span><span class="n">raw_params</span><span class="p">):</span>
     <span class="n">params</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="n">params</span><span class="p">[</span><span class="s2">&quot;mean&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">raw_params</span><span class="p">[</span><span class="s2">&quot;mean&quot;</span><span class="p">]</span>
     <span class="n">params</span><span class="p">[</span><span class="s2">&quot;kernel&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_kernel_params_from_raw</span><span class="p">(</span><span class="n">raw_params</span><span class="p">[</span><span class="s2">&quot;kernel&quot;</span><span class="p">])</span>
     <span class="k">return</span> <span class="n">params</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_params_to_raw</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_params_to_raw</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
     <span class="n">raw_params</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="n">raw_params</span><span class="p">[</span><span class="s2">&quot;mean&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;mean&quot;</span><span class="p">]</span>
     <span class="n">raw_params</span><span class="p">[</span><span class="s2">&quot;kernel&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_kernel_params_to_raw</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;kernel&quot;</span><span class="p">])</span>
     <span class="k">return</span> <span class="n">raw_params</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_init_mean_params</span><span class="p">(</span><span class="n">order</span><span class="p">,</span> <span class="n">dF</span><span class="p">,</span> <span class="n">state_cv</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_init_mean_params</span><span class="p">(</span><span class="n">order</span><span class="p">,</span> <span class="n">dF</span><span class="p">,</span> <span class="n">state_cv</span><span class="p">):</span>
     <span class="n">x</span> <span class="o">=</span> <span class="n">_expand</span><span class="p">(</span><span class="n">state_cv</span><span class="p">,</span> <span class="n">order</span><span class="p">)</span>
     <span class="n">beta</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">lstsq</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">dF</span><span class="p">,</span> <span class="n">rcond</span><span class="o">=</span><span class="kc">None</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;beta&quot;</span><span class="p">:</span> <span class="n">beta</span><span class="p">}</span>
     <span class="k">return</span> <span class="n">params</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_init_params</span><span class="p">(</span><span class="n">mean_order</span><span class="p">,</span> <span class="n">kernel_name</span><span class="p">,</span> <span class="n">dF</span><span class="p">,</span> <span class="n">state_cv</span><span class="p">,</span> <span class="n">num_conf</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_init_params</span><span class="p">(</span><span class="n">mean_order</span><span class="p">,</span> <span class="n">kernel_name</span><span class="p">,</span> <span class="n">dF</span><span class="p">,</span> <span class="n">state_cv</span><span class="p">,</span> <span class="n">num_conf</span><span class="p">):</span>
     <span class="n">params</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="n">params</span><span class="p">[</span><span class="s2">&quot;mean&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_init_mean_params</span><span class="p">(</span><span class="n">mean_order</span><span class="p">,</span> <span class="n">dF</span><span class="p">,</span> <span class="n">state_cv</span><span class="p">)</span>
     <span class="n">params</span><span class="p">[</span><span class="s2">&quot;kernel&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_init_kernel_params</span><span class="p">(</span><span class="n">kernel_name</span><span class="p">,</span> <span class="n">dF</span><span class="p">,</span> <span class="n">state_cv</span><span class="p">,</span> <span class="n">num_conf</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">params</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_init_kernel_params</span><span class="p">(</span><span class="n">kernel_name</span><span class="p">,</span> <span class="n">dF</span><span class="p">,</span> <span class="n">state_cv</span><span class="p">,</span> <span class="n">num_conf</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_init_kernel_params</span><span class="p">(</span><span class="n">kernel_name</span><span class="p">,</span> <span class="n">dF</span><span class="p">,</span> <span class="n">state_cv</span><span class="p">,</span> <span class="n">num_conf</span><span class="p">):</span>
     <span class="n">params</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="n">params</span><span class="p">[</span><span class="s2">&quot;scale&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">dF</span><span class="p">)</span>
     <span class="n">params</span><span class="p">[</span><span class="s2">&quot;length_scale&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">state_cv</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">-</span> <span class="n">state_cv</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span> <span class="o">/</span> <span class="n">state_cv</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -786,7 +779,7 @@ document.write(`
     <span class="k">return</span> <span class="n">params</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_kernel_RQ</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_kernel_RQ</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
     <span class="n">scale</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;scale&quot;</span><span class="p">]</span>
     <span class="n">length_scale</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;length_scale&quot;</span><span class="p">]</span>
     <span class="n">dscale</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;dscale&quot;</span><span class="p">]</span>
@@ -798,7 +791,7 @@ document.write(`
     <span class="p">)</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_kernel_SE</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_kernel_SE</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
     <span class="n">scale</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;scale&quot;</span><span class="p">]</span>
     <span class="n">length_scale</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;length_scale&quot;</span><span class="p">]</span>
     <span class="n">dscale</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;dscale&quot;</span><span class="p">]</span>
@@ -807,7 +800,7 @@ document.write(`
     <span class="k">return</span> <span class="n">scale</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">ds</span><span class="p">)</span> <span class="o">+</span> <span class="n">dscale</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_kernel_Matern52</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_kernel_Matern52</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
     <span class="n">scale</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;scale&quot;</span><span class="p">]</span>
     <span class="n">length_scale</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;length_scale&quot;</span><span class="p">]</span>
     <span class="n">dscale</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;dscale&quot;</span><span class="p">]</span>
@@ -819,7 +812,7 @@ document.write(`
     <span class="p">)</span> <span class="o">+</span> <span class="n">dscale</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_kernel_Matern32</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_kernel_Matern32</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
     <span class="n">scale</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;scale&quot;</span><span class="p">]</span>
     <span class="n">length_scale</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;length_scale&quot;</span><span class="p">]</span>
     <span class="n">dscale</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;dscale&quot;</span><span class="p">]</span>
@@ -831,7 +824,7 @@ document.write(`
     <span class="p">)</span> <span class="o">+</span> <span class="n">dscale</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_kernel_params_from_raw</span><span class="p">(</span><span class="n">raw_params</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_kernel_params_from_raw</span><span class="p">(</span><span class="n">raw_params</span><span class="p">):</span>
     <span class="n">params</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="n">params</span><span class="p">[</span><span class="s2">&quot;scale&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">raw_params</span><span class="p">[</span><span class="s2">&quot;raw_scale&quot;</span><span class="p">])</span>
     <span class="n">params</span><span class="p">[</span><span class="s2">&quot;length_scale&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">raw_params</span><span class="p">[</span><span class="s2">&quot;raw_length_scale&quot;</span><span class="p">])</span>
@@ -841,7 +834,7 @@ document.write(`
     <span class="k">return</span> <span class="n">params</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_kernel_params_to_raw</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_kernel_params_to_raw</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
     <span class="n">raw_params</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="n">raw_params</span><span class="p">[</span><span class="s2">&quot;raw_scale&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;scale&quot;</span><span class="p">])</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
     <span class="n">raw_params</span><span class="p">[</span><span class="s2">&quot;raw_length_scale&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;length_scale&quot;</span><span class="p">])</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
@@ -851,13 +844,13 @@ document.write(`
     <span class="k">return</span> <span class="n">raw_params</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_compute_squared_distance</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_compute_squared_distance</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
     <span class="n">x1</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
     <span class="n">x2</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
     <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">x1</span> <span class="o">-</span> <span class="n">x2</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_sample_from_logdensity</span><span class="p">(</span>
+<span class="k">def</span> <span class="nf">_sample_from_logdensity</span><span class="p">(</span>
     <span class="n">rng_key</span><span class="p">,</span> <span class="n">init_dF</span><span class="p">,</span> <span class="n">logdensity</span><span class="p">,</span> <span class="n">warmup_steps</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">,</span> <span class="n">verbose</span>
 <span class="p">):</span>
     <span class="c1">## warmup to find step size and mass matrix</span>
@@ -875,7 +868,7 @@ document.write(`
     <span class="c1">## sample using nuts</span>
 
     <span class="c1"># ## Use the blackjax.util.run_inference_algorithm function to run the nuts algorithm</span>
-    <span class="c1"># ## so that we can have a progress bar. It is a wrap of _sample_loop.</span>
+    <span class="c1"># ## so that we can have a progress bar. It is a wrap of _sample_loop.   </span>
     <span class="c1"># alg = blackjax.nuts(logdensity, **parameters)</span>
     <span class="c1"># _, states, _ = blackjax.util.run_inference_algorithm(</span>
     <span class="c1">#     rng_key, state, alg, num_samples, progress_bar=verbose</span>
@@ -889,9 +882,9 @@ document.write(`
     <span class="k">return</span> <span class="n">states</span><span class="o">.</span><span class="n">position</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_sample_loop</span><span class="p">(</span><span class="n">rng_key</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">init_state</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_sample_loop</span><span class="p">(</span><span class="n">rng_key</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">init_state</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">):</span>
     <span class="nd">@jax</span><span class="o">.</span><span class="n">jit</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">one_step</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">rng_key</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">one_step</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">rng_key</span><span class="p">):</span>
         <span class="n">state</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">kernel</span><span class="p">(</span><span class="n">rng_key</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">state</span><span class="p">,</span> <span class="n">state</span>
 

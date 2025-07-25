@@ -27,8 +27,8 @@
 <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
 <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
 
-    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
-    <link rel="stylesheet" type="text/css" href="../../_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/sphinx-book-theme.css?v=a3416100" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
   
   <!-- Pre-loaded scripts that we'll load fully later -->
@@ -37,7 +37,7 @@
   <script src="../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
 
     <script src="../../_static/documentation_options.js?v=9eb32ce0"></script>
-    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../_static/copybutton.js?v=f281be69"></script>
@@ -158,12 +158,10 @@
         <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
     <div class="bd-toc-item navbar-nav active">
         <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="../../overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installing BayesMBAR</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../examples.html">Examples</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../examples/bayesmbar_for_harmonic_oscillators.html">BayesMBAR for harmonic oscillators</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../examples/cbayesmbar_for_harmonic_oscillators.html">CBayesMBAR for harmonic oscillators</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../examples/cbayesmbar_for_protein_ligand/main.html">Compute relative protein-ligand binding free energy</a></li>
 </ul>
 </details></li>
 </ul>
@@ -287,27 +285,27 @@ document.write(`
                 <article class="bd-article">
                   
   <h1>Source code for bayesmbar.bayesbar</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">ndarray</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">scipy.optimize</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">optimize</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">scipy.integrate</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">integrate</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">hessian</span><span class="p">,</span> <span class="n">jit</span><span class="p">,</span> <span class="n">value_and_grad</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">fmin_newton</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">tqdm</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
+<span></span><span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">ndarray</span>
+<span class="kn">import</span> <span class="nn">scipy.optimize</span> <span class="k">as</span> <span class="nn">optimize</span>
+<span class="kn">import</span> <span class="nn">scipy.integrate</span> <span class="k">as</span> <span class="nn">integrate</span>
+<span class="kn">import</span> <span class="nn">jax</span>
+<span class="kn">from</span> <span class="nn">jax</span> <span class="kn">import</span> <span class="n">hessian</span><span class="p">,</span> <span class="n">jit</span><span class="p">,</span> <span class="n">value_and_grad</span>
+<span class="kn">import</span> <span class="nn">jax.numpy</span> <span class="k">as</span> <span class="nn">jnp</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">fmin_newton</span>
+<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
 
 <span class="n">jax</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="s2">&quot;jax_enable_x64&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="BayesBAR">
 <a class="viewcode-back" href="../../API.html#bayesmbar.BayesBAR">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">BayesBAR</span><span class="p">:</span>
+<span class="k">class</span> <span class="nc">BayesBAR</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Bayesian Bennett acceptance ratio method&quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">energy</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
         <span class="n">num_conf</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
@@ -357,9 +355,7 @@ document.write(`
         <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;Newton&quot;</span><span class="p">:</span>
             <span class="n">f</span> <span class="o">=</span> <span class="n">jit</span><span class="p">(</span><span class="n">value_and_grad</span><span class="p">(</span><span class="n">_compute_loss</span><span class="p">))</span>
             <span class="n">hess</span> <span class="o">=</span> <span class="n">jit</span><span class="p">(</span><span class="n">hessian</span><span class="p">(</span><span class="n">_compute_loss</span><span class="p">))</span>
-            <span class="n">res</span> <span class="o">=</span> <span class="n">fmin_newton</span><span class="p">(</span>
-                <span class="n">f</span><span class="p">,</span> <span class="n">hess</span><span class="p">,</span> <span class="n">dF_init</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">energy</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_conf</span><span class="p">),</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span>
-            <span class="p">)</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">fmin_newton</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">hess</span><span class="p">,</span> <span class="n">dF_init</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">energy</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_conf</span><span class="p">))</span>
         <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;L-BFGS-B&quot;</span><span class="p">:</span>
             <span class="n">options</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;disp&quot;</span><span class="p">:</span> <span class="n">verbose</span><span class="p">,</span> <span class="s2">&quot;gtol&quot;</span><span class="p">:</span> <span class="mf">1e-8</span><span class="p">}</span>
             <span class="n">f</span> <span class="o">=</span> <span class="n">jit</span><span class="p">(</span><span class="n">value_and_grad</span><span class="p">(</span><span class="n">_compute_loss</span><span class="p">))</span>
@@ -378,14 +374,9 @@ document.write(`
 
         <span class="bp">self</span><span class="o">.</span><span class="n">dF_mode</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span>
 
-        <span class="c1">## compute asymptotic standard deviation</span>
-        <span class="n">H</span> <span class="o">=</span> <span class="n">hessian</span><span class="p">(</span><span class="n">_compute_logp</span><span class="p">)(</span><span class="bp">self</span><span class="o">.</span><span class="n">dF_mode</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_conf</span><span class="p">)</span>
-        <span class="n">_dF_var_asymptotic</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span> <span class="o">/</span> <span class="n">H</span> <span class="o">-</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_0</span> <span class="o">-</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_1</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_dF_std_asymptotic</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">_dF_var_asymptotic</span><span class="p">),</span> <span class="p">())</span>
-
         <span class="c1">## compute posterior mean and standard deviation using numerical integration</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dF_mean</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dF_std</span> <span class="o">=</span> <span class="n">_compute_posterior_mean_and_std</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">dF_mode</span><span class="p">,</span> <span class="mi">10</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_dF_std_asymptotic</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_conf</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dF_mode</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_conf</span>
         <span class="p">)</span>
 
         <span class="c1">## sampling from the posterior distribution</span>
@@ -398,6 +389,11 @@ document.write(`
                 <span class="bp">self</span><span class="o">.</span><span class="n">num_conf</span><span class="p">,</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">sample_size</span><span class="p">,</span>
             <span class="p">)</span>
+
+        <span class="c1">## compute asymptotic standard deviation</span>
+        <span class="n">H</span> <span class="o">=</span> <span class="n">hessian</span><span class="p">(</span><span class="n">_compute_logp</span><span class="p">)(</span><span class="bp">self</span><span class="o">.</span><span class="n">dF_mode</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_conf</span><span class="p">)</span>
+        <span class="n">_dF_var_asymptotic</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span> <span class="o">/</span> <span class="n">H</span> <span class="o">-</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_0</span> <span class="o">-</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dF_std_asymptotic</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">_dF_var_asymptotic</span><span class="p">),</span> <span class="p">())</span>
 
         <span class="c1">## Bennett&#39;s uncertainty</span>
         <span class="n">du</span> <span class="o">=</span> <span class="p">(</span>
@@ -417,29 +413,29 @@ document.write(`
         <span class="bp">self</span><span class="o">.</span><span class="n">_dF_std_bennett</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">_dF_var_bennett</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">DeltaF_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">DeltaF_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The posterior mode of the free energy difference.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">device_put</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dF_mode</span><span class="p">,</span> <span class="n">jax</span><span class="o">.</span><span class="n">devices</span><span class="p">(</span><span class="s2">&quot;cpu&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]))</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">DeltaF_mean</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">DeltaF_mean</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The posterior mean of the free energy difference.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">device_put</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dF_mean</span><span class="p">,</span> <span class="n">jax</span><span class="o">.</span><span class="n">devices</span><span class="p">(</span><span class="s2">&quot;cpu&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]))</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">DeltaF_std</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">DeltaF_std</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The posterior standard deviation of the free energy difference.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">device_put</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dF_std</span><span class="p">,</span> <span class="n">jax</span><span class="o">.</span><span class="n">devices</span><span class="p">(</span><span class="s2">&quot;cpu&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]))</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">DeltaF_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">DeltaF_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The samples from the posterior distribution of the free energy difference.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">device_put</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dF_samples</span><span class="p">,</span> <span class="n">jax</span><span class="o">.</span><span class="n">devices</span><span class="p">(</span><span class="s2">&quot;cpu&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]))</span></div>
 
 
 
 <span class="nd">@jit</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">_compute_logp</span><span class="p">(</span><span class="n">dF</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">num_conf</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_compute_logp</span><span class="p">(</span><span class="n">dF</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">num_conf</span><span class="p">):</span>
     <span class="n">n_0</span><span class="p">,</span> <span class="n">n_1</span> <span class="o">=</span> <span class="n">num_conf</span>
     <span class="n">du</span> <span class="o">=</span> <span class="n">energy</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span> <span class="o">-</span> <span class="n">energy</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:]</span> <span class="o">-</span> <span class="n">jnp</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">n_1</span> <span class="o">/</span> <span class="n">n_0</span><span class="p">)</span>
     <span class="n">logp</span> <span class="o">=</span> <span class="n">n_1</span> <span class="o">*</span> <span class="n">dF</span> <span class="o">-</span> <span class="n">jnp</span><span class="o">.</span><span class="n">logaddexp</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">dF</span> <span class="o">-</span> <span class="n">du</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
@@ -447,14 +443,14 @@ document.write(`
 
 
 <span class="nd">@jit</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">_compute_loss</span><span class="p">(</span><span class="n">dF</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">num_conf</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_compute_loss</span><span class="p">(</span><span class="n">dF</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">num_conf</span><span class="p">):</span>
     <span class="n">logp</span> <span class="o">=</span> <span class="n">_compute_logp</span><span class="p">(</span><span class="n">dF</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">num_conf</span><span class="p">)</span>
     <span class="n">loss</span> <span class="o">=</span> <span class="o">-</span><span class="n">logp</span> <span class="o">/</span> <span class="n">num_conf</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">loss</span>
 
 
 <span class="nd">@jit</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">_compute_posterior</span><span class="p">(</span><span class="n">dF</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">num_conf</span><span class="p">,</span> <span class="n">dF_mode</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_compute_posterior</span><span class="p">(</span><span class="n">dF</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">num_conf</span><span class="p">,</span> <span class="n">dF_mode</span><span class="p">):</span>
     <span class="n">logp_max</span> <span class="o">=</span> <span class="n">_compute_logp</span><span class="p">(</span><span class="n">dF_mode</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">num_conf</span><span class="p">)</span>
 
     <span class="c1">## The prior is chosen to be the uniform distribution over R,</span>
@@ -464,67 +460,31 @@ document.write(`
     <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">_compute_logp</span><span class="p">(</span><span class="n">dF</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">num_conf</span><span class="p">)</span> <span class="o">-</span> <span class="n">logp_max</span><span class="p">)</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_compute_posterior_mean_and_std</span><span class="p">(</span><span class="n">dF_mode</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">num_conf</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_compute_posterior_mean_and_std</span><span class="p">(</span><span class="n">dF_mode</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">num_conf</span><span class="p">):</span>
     <span class="c1">## compute the normalization constant Z</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">f</span><span class="p">(</span><span class="n">dF</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">dF</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">_compute_posterior</span><span class="p">(</span><span class="n">dF</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">num_conf</span><span class="p">,</span> <span class="n">dF_mode</span><span class="p">)</span>
 
-    <span class="c1"># Z, Z_err = integrate.quad(jit(f), -np.inf, np.inf)</span>
-
-    <span class="n">Z1</span><span class="p">,</span> <span class="n">Z1_err</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">quad</span><span class="p">(</span><span class="n">jit</span><span class="p">(</span><span class="n">f</span><span class="p">),</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">dF_mode</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">-</span> <span class="n">width</span><span class="p">)</span>
-    <span class="n">Z2</span><span class="p">,</span> <span class="n">Z2_err</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">quad</span><span class="p">(</span>
-        <span class="n">jit</span><span class="p">(</span><span class="n">f</span><span class="p">),</span>
-        <span class="n">dF_mode</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">-</span> <span class="n">width</span><span class="p">,</span>
-        <span class="n">dF_mode</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">+</span> <span class="n">width</span><span class="p">,</span>
-        <span class="n">limit</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
-        <span class="n">epsabs</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span>
-        <span class="n">epsrel</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="n">Z3</span><span class="p">,</span> <span class="n">Z3_err</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">quad</span><span class="p">(</span><span class="n">jit</span><span class="p">(</span><span class="n">f</span><span class="p">),</span> <span class="n">dF_mode</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">+</span> <span class="n">width</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
-    <span class="n">Z</span> <span class="o">=</span> <span class="n">Z1</span> <span class="o">+</span> <span class="n">Z2</span> <span class="o">+</span> <span class="n">Z3</span>
+    <span class="n">Z</span><span class="p">,</span> <span class="n">Z_err</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">quad</span><span class="p">(</span><span class="n">jit</span><span class="p">(</span><span class="n">f</span><span class="p">),</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
 
     <span class="c1">## posterior mean</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">f</span><span class="p">(</span><span class="n">dF</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">dF</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">dF</span> <span class="o">*</span> <span class="n">_compute_posterior</span><span class="p">(</span><span class="n">dF</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">num_conf</span><span class="p">,</span> <span class="n">dF_mode</span><span class="p">)</span>
 
-    <span class="c1"># dF, dF_err = integrate.quad(jit(f), -np.inf, np.inf)</span>
-    <span class="n">dF1</span><span class="p">,</span> <span class="n">dF1_err</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">quad</span><span class="p">(</span><span class="n">jit</span><span class="p">(</span><span class="n">f</span><span class="p">),</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">dF_mode</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">-</span> <span class="n">width</span><span class="p">)</span>
-    <span class="n">dF2</span><span class="p">,</span> <span class="n">dF2_err</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">quad</span><span class="p">(</span>
-        <span class="n">jit</span><span class="p">(</span><span class="n">f</span><span class="p">),</span>
-        <span class="n">dF_mode</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">-</span> <span class="n">width</span><span class="p">,</span>
-        <span class="n">dF_mode</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">+</span> <span class="n">width</span><span class="p">,</span>
-        <span class="n">limit</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
-        <span class="n">epsabs</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span>
-        <span class="n">epsrel</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="n">dF3</span><span class="p">,</span> <span class="n">dF3_err</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">quad</span><span class="p">(</span><span class="n">jit</span><span class="p">(</span><span class="n">f</span><span class="p">),</span> <span class="n">dF_mode</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">+</span> <span class="n">width</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
-    <span class="n">dF</span> <span class="o">=</span> <span class="n">dF1</span> <span class="o">+</span> <span class="n">dF2</span> <span class="o">+</span> <span class="n">dF3</span>
-
+    <span class="n">dF</span><span class="p">,</span> <span class="n">dF_err</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">quad</span><span class="p">(</span><span class="n">jit</span><span class="p">(</span><span class="n">f</span><span class="p">),</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
     <span class="n">dF_mean</span> <span class="o">=</span> <span class="n">dF</span> <span class="o">/</span> <span class="n">Z</span>
 
     <span class="c1">## posterior standard deviation</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">f</span><span class="p">(</span><span class="n">dF</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">dF</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">(</span><span class="n">dF</span> <span class="o">-</span> <span class="n">dF_mean</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">_compute_posterior</span><span class="p">(</span><span class="n">dF</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">num_conf</span><span class="p">,</span> <span class="n">dF_mode</span><span class="p">)</span>
 
-    <span class="c1"># dF_var, dF_var_err = integrate.quad(jit(f), -np.inf, np.inf)</span>
-    <span class="n">dF_var1</span><span class="p">,</span> <span class="n">dF_var1_err</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">quad</span><span class="p">(</span><span class="n">jit</span><span class="p">(</span><span class="n">f</span><span class="p">),</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">dF_mode</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">-</span> <span class="n">width</span><span class="p">)</span>
-    <span class="n">dF_var2</span><span class="p">,</span> <span class="n">dF_var2_err</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">quad</span><span class="p">(</span>
-        <span class="n">jit</span><span class="p">(</span><span class="n">f</span><span class="p">),</span>
-        <span class="n">dF_mode</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">-</span> <span class="n">width</span><span class="p">,</span>
-        <span class="n">dF_mode</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">+</span> <span class="n">width</span><span class="p">,</span>
-        <span class="n">limit</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
-        <span class="n">epsabs</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span>
-        <span class="n">epsrel</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="n">dF_var3</span><span class="p">,</span> <span class="n">dF_var3_err</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">quad</span><span class="p">(</span><span class="n">jit</span><span class="p">(</span><span class="n">f</span><span class="p">),</span> <span class="n">dF_mode</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">+</span> <span class="n">width</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
-    <span class="n">dF_var</span> <span class="o">=</span> <span class="n">dF_var1</span> <span class="o">+</span> <span class="n">dF_var2</span> <span class="o">+</span> <span class="n">dF_var3</span>
-
+    <span class="n">dF_var</span><span class="p">,</span> <span class="n">dF_var_err</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">quad</span><span class="p">(</span><span class="n">jit</span><span class="p">(</span><span class="n">f</span><span class="p">),</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
     <span class="n">dF_var</span> <span class="o">=</span> <span class="n">dF_var</span> <span class="o">/</span> <span class="n">Z</span>
     <span class="n">dF_std</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">dF_var</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">dF_mean</span><span class="p">,</span> <span class="n">dF_std</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_sample_from_posterior</span><span class="p">(</span><span class="n">dF_mode</span><span class="p">,</span> <span class="n">dF_std</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">num_conf</span><span class="p">,</span> <span class="n">size</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_sample_from_posterior</span><span class="p">(</span><span class="n">dF_mode</span><span class="p">,</span> <span class="n">dF_std</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">num_conf</span><span class="p">,</span> <span class="n">size</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;sample from the posterior using slice sampling</span>
 <span class="sd">    (https://www.jstor.org/stable/3448413 )</span>
 <span class="sd">    &quot;&quot;&quot;</span>

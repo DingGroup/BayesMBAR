@@ -1,5 +1,5 @@
-Installation
-============
+Installing BayesMBAR
+====================
 
 BayesMBAR is written in pure Python and can be installed using the pip package manager.
 BayesMBAR depends on several Python packages.

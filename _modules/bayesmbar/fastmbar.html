@@ -27,8 +27,8 @@
 <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
 <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
 
-    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
-    <link rel="stylesheet" type="text/css" href="../../_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/sphinx-book-theme.css?v=a3416100" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
   
   <!-- Pre-loaded scripts that we'll load fully later -->
@@ -37,7 +37,7 @@
   <script src="../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
 
     <script src="../../_static/documentation_options.js?v=9eb32ce0"></script>
-    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../_static/copybutton.js?v=f281be69"></script>
@@ -158,12 +158,10 @@
         <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
     <div class="bd-toc-item navbar-nav active">
         <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="../../overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installing BayesMBAR</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../examples.html">Examples</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../examples/bayesmbar_for_harmonic_oscillators.html">BayesMBAR for harmonic oscillators</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../examples/cbayesmbar_for_harmonic_oscillators.html">CBayesMBAR for harmonic oscillators</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../examples/cbayesmbar_for_protein_ligand/main.html">Compute relative protein-ligand binding free energy</a></li>
 </ul>
 </details></li>
 </ul>
@@ -287,15 +285,20 @@ document.write(`
                 <article class="bd-article">
                   
   <h1>Source code for bayesmbar.fastmbar</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">copy</span><span class="w"> </span><span class="kn">import</span> <span class="n">deepcopy</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">time</span><span class="w"> </span><span class="kn">import</span> <span class="n">time</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">jax.random</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jr</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">jax.scipy.special</span><span class="w"> </span><span class="kn">import</span> <span class="n">logsumexp</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">numpy.typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">npt</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">_solve_mbar</span>
+<span></span><span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+<span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">time</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">jax</span>
+<span class="kn">import</span> <span class="nn">jax.numpy</span> <span class="k">as</span> <span class="nn">jnp</span>
+<span class="kn">import</span> <span class="nn">jax.random</span> <span class="k">as</span> <span class="nn">jr</span>
+<span class="kn">from</span> <span class="nn">jax.scipy.special</span> <span class="kn">import</span> <span class="n">logsumexp</span>
+<span class="kn">import</span> <span class="nn">numpy.typing</span> <span class="k">as</span> <span class="nn">npt</span>
+<span class="kn">import</span> <span class="nn">scipy.optimize</span> <span class="k">as</span> <span class="nn">optimize</span>
+<span class="kn">from</span> <span class="nn">jax</span> <span class="kn">import</span> <span class="n">jit</span><span class="p">,</span> <span class="n">value_and_grad</span><span class="p">,</span> <span class="n">hessian</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">fmin_newton</span><span class="p">,</span>
+    <span class="n">_compute_loss_likelihood_of_dF</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="n">jax</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="s2">&quot;jax_enable_x64&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
 
@@ -309,7 +312,7 @@ document.write(`
 
 <div class="viewcode-block" id="FastMBAR">
 <a class="viewcode-back" href="../../API.html#bayesmbar.FastMBAR">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">FastMBAR</span><span class="p">:</span>
+<span class="k">class</span> <span class="nc">FastMBAR</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    The FastMBAR class is initialized with an energy matrix and an array</span>
 <span class="sd">    of num of conformations. The corresponding MBAR equation is solved</span>
@@ -319,7 +322,7 @@ document.write(`
 <span class="sd">    can be used to calculated the relative free energies of perturbed states.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">energy</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">],</span>
         <span class="n">num_conf</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">],</span>
@@ -548,14 +551,14 @@ document.write(`
             <span class="bp">self</span><span class="o">.</span><span class="n">_DeltaF_std</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">DeltaF</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">F</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">F</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Free energies of the states under the constraint :math:`\sum_{k=1}^{M} N_k * F_k = 0`,</span>
 <span class="sd">        where :math:`N_k` is the number of conformations sampled from state k.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_F</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">F_std</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">F_std</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Standard deviation of the free energies of the states under the constraint</span>
 <span class="sd">        :math:`\sum_{k=1}^{M} N_k * F_k = 0`,</span>
 <span class="sd">        where :math:`N_k` is the number of conformations sampled from state k.</span>
@@ -563,7 +566,7 @@ document.write(`
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_F_std</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">F_cov</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">F_cov</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Covariance matrix of the free energies of the states under the constraint</span>
 <span class="sd">        :math:`\sum_{k=1}^{M} N_k * F_k = 0`,</span>
 <span class="sd">        where :math:`N_k` is the number of conformations sampled from state k.</span>
@@ -571,7 +574,7 @@ document.write(`
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_F_cov</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">DeltaF</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">DeltaF</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Free energy difference between states.</span>
 <span class="sd">        :math:`\mathrm{DeltaF}[i,j]` is the free energy difference between state j and state i,</span>
 <span class="sd">        i.e., :math:`\mathrm{DeltaF}[i,j] = F[j] - F[i]` .</span>
@@ -579,7 +582,7 @@ document.write(`
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_DeltaF</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">DeltaF_std</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">DeltaF_std</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Standard deviation of the free energy difference between states.</span>
 <span class="sd">        :math:`\mathrm{DeltaF_std}[i,j]` is the standard deviation of the free energy</span>
 <span class="sd">        difference :math:`\mathrm{DeltaF}[i,j]`.</span>
@@ -587,13 +590,13 @@ document.write(`
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_DeltaF_std</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">log_prob_mix</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">log_prob_mix</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;the log probability density of conformations in the mixture distribution.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_log_prob_mix</span><span class="p">)</span>
 
 <div class="viewcode-block" id="FastMBAR.calculate_free_energies_of_perturbed_states">
 <a class="viewcode-back" href="../../API.html#bayesmbar.FastMBAR.calculate_free_energies_of_perturbed_states">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">calculate_free_energies_of_perturbed_states</span><span class="p">(</span>
+    <span class="k">def</span> <span class="nf">calculate_free_energies_of_perturbed_states</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">energy_perturbed</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;calculate free energies for perturbed states.</span>
@@ -691,10 +694,28 @@ document.write(`
 
 
 
+<span class="k">def</span> <span class="nf">_solve_mbar</span><span class="p">(</span><span class="n">dF_init</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">num_conf</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;Newton&quot;</span><span class="p">:</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">jit</span><span class="p">(</span><span class="n">value_and_grad</span><span class="p">(</span><span class="n">_compute_loss_likelihood_of_dF</span><span class="p">))</span>
+        <span class="n">hess</span> <span class="o">=</span> <span class="n">jit</span><span class="p">(</span><span class="n">hessian</span><span class="p">(</span><span class="n">_compute_loss_likelihood_of_dF</span><span class="p">))</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">fmin_newton</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">hess</span><span class="p">,</span> <span class="n">dF_init</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">energy</span><span class="p">,</span> <span class="n">num_conf</span><span class="p">))</span>
+        <span class="n">dF</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;L-BFGS-B&quot;</span><span class="p">:</span>
+        <span class="n">options</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;disp&quot;</span><span class="p">:</span> <span class="n">verbose</span><span class="p">,</span> <span class="s2">&quot;gtol&quot;</span><span class="p">:</span> <span class="mf">1e-8</span><span class="p">}</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">jit</span><span class="p">(</span><span class="n">value_and_grad</span><span class="p">(</span><span class="n">_compute_loss_likelihood_of_dF</span><span class="p">))</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">optimize</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">num_conf</span><span class="p">)],</span>
+            <span class="n">dF_init</span><span class="p">,</span>
+            <span class="n">jac</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">method</span><span class="o">=</span><span class="s2">&quot;L-BFGS-B&quot;</span><span class="p">,</span>
+            <span class="n">tol</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span>
+            <span class="n">options</span><span class="o">=</span><span class="n">options</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">dF</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">dF</span>
 
 
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_bootstrap_conf_idx</span><span class="p">(</span><span class="n">num_conf</span><span class="p">,</span> <span class="n">bootstrap_block_size</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_bootstrap_conf_idx</span><span class="p">(</span><span class="n">num_conf</span><span class="p">,</span> <span class="n">bootstrap_block_size</span><span class="p">):</span>
     <span class="n">num_conf_cumsum</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">num_conf</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
     <span class="n">num_conf_cumsum</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
     <span class="n">num_conf_cumsum</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">num_conf_cumsum</span>
