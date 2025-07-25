@@ -66,7 +66,9 @@ class BayesBAR:
         if method == "Newton":
             f = jit(value_and_grad(_compute_loss))
             hess = jit(hessian(_compute_loss))
-            res = fmin_newton(f, hess, dF_init, args=(self.energy, self.num_conf), verbose=verbose)
+            res = fmin_newton(
+                f, hess, dF_init, args=(self.energy, self.num_conf), verbose=verbose
+            )
         elif method == "L-BFGS-B":
             options = {"disp": verbose, "gtol": 1e-8}
             f = jit(value_and_grad(_compute_loss))
@@ -85,9 +87,14 @@ class BayesBAR:
 
         self.dF_mode = res["x"]
 
+        ## compute asymptotic standard deviation
+        H = hessian(_compute_logp)(self.dF_mode, self.energy, self.num_conf)
+        _dF_var_asymptotic = -1.0 / H - 1.0 / self.n_0 - 1.0 / self.n_1
+        self._dF_std_asymptotic = jnp.reshape(jnp.sqrt(_dF_var_asymptotic), ())
+
         ## compute posterior mean and standard deviation using numerical integration
         self.dF_mean, self.dF_std = _compute_posterior_mean_and_std(
-            self.dF_mode, self.energy, self.num_conf
+            self.dF_mode, 10*self._dF_std_asymptotic, self.energy, self.num_conf
         )
 
         ## sampling from the posterior distribution
@@ -100,11 +107,6 @@ class BayesBAR:
                 self.num_conf,
                 self.sample_size,
             )
-
-        ## compute asymptotic standard deviation
-        H = hessian(_compute_logp)(self.dF_mode, self.energy, self.num_conf)
-        _dF_var_asymptotic = -1.0 / H - 1.0 / self.n_0 - 1.0 / self.n_1
-        self._dF_std_asymptotic = jnp.reshape(jnp.sqrt(_dF_var_asymptotic), ())
 
         ## Bennett's uncertainty
         du = (
@@ -170,25 +172,61 @@ def _compute_posterior(dF, energy, num_conf, dF_mode):
     return jnp.exp(_compute_logp(dF, energy, num_conf) - logp_max)
 
 
-def _compute_posterior_mean_and_std(dF_mode, energy, num_conf):
+def _compute_posterior_mean_and_std(dF_mode, width, energy, num_conf):
     ## compute the normalization constant Z
     def f(dF):
         return _compute_posterior(dF, energy, num_conf, dF_mode)
 
-    Z, Z_err = integrate.quad(jit(f), -np.inf, np.inf)
+    # Z, Z_err = integrate.quad(jit(f), -np.inf, np.inf)
+
+    Z1, Z1_err = integrate.quad(jit(f), -np.inf, dF_mode.item() - width)
+    Z2, Z2_err = integrate.quad(
+        jit(f),
+        dF_mode.item() - width,
+        dF_mode.item() + width,
+        limit=1000,
+        epsabs=1e-12,
+        epsrel=1e-12,
+    )
+    Z3, Z3_err = integrate.quad(jit(f), dF_mode.item() + width, np.inf)
+    Z = Z1 + Z2 + Z3
 
     ## posterior mean
     def f(dF):
         return dF * _compute_posterior(dF, energy, num_conf, dF_mode)
 
-    dF, dF_err = integrate.quad(jit(f), -np.inf, np.inf)
+    # dF, dF_err = integrate.quad(jit(f), -np.inf, np.inf)
+    dF1, dF1_err = integrate.quad(jit(f), -np.inf, dF_mode.item() - width)
+    dF2, dF2_err = integrate.quad(
+        jit(f),
+        dF_mode.item() - width,
+        dF_mode.item() + width,
+        limit=1000,
+        epsabs=1e-12,
+        epsrel=1e-12,
+    )
+    dF3, dF3_err = integrate.quad(jit(f), dF_mode.item() + width, np.inf)
+    dF = dF1 + dF2 + dF3
+
     dF_mean = dF / Z
 
     ## posterior standard deviation
     def f(dF):
         return (dF - dF_mean) ** 2 * _compute_posterior(dF, energy, num_conf, dF_mode)
 
-    dF_var, dF_var_err = integrate.quad(jit(f), -np.inf, np.inf)
+    # dF_var, dF_var_err = integrate.quad(jit(f), -np.inf, np.inf)
+    dF_var1, dF_var1_err = integrate.quad(jit(f), -np.inf, dF_mode.item() - width)
+    dF_var2, dF_var2_err = integrate.quad(
+        jit(f),
+        dF_mode.item() - width,
+        dF_mode.item() + width,
+        limit=1000,
+        epsabs=1e-12,
+        epsrel=1e-12,
+    )
+    dF_var3, dF_var3_err = integrate.quad(jit(f), dF_mode.item() + width, np.inf)
+    dF_var = dF_var1 + dF_var2 + dF_var3
+
     dF_var = dF_var / Z
     dF_std = math.sqrt(dF_var)
     return dF_mean, dF_std

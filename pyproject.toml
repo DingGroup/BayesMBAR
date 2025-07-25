@@ -1,6 +1,6 @@
 [project]
 name = "bayesmbar"
-version = "0.0.8"
+version = "0.0.9"
 description = "Bayesian Multistate Bennett Acceptance Ratio (BayesMBAR) methods for free energy calculations."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -10,6 +10,7 @@ dependencies = [
     "blackjax>=1.2.3",
     "networkx>=3.3",
     "tqdm>=4.66.5",
+    "scipy==1.16.0",
 ]
 
 [dependency-groups]
@@ -20,6 +21,7 @@ dev = [
     "nbsphinx>=0.9.5",
     "sphinx-autoapi>=3.3.1",
     "sphinx-book-theme>=1.1.3",
+    "matplotlib>=3.10.3",
 ]
 
 [project.optional-dependencies]
