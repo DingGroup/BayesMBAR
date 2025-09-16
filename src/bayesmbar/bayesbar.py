@@ -185,8 +185,8 @@ def _compute_posterior_mean_and_std(dF_mode, width, energy, num_conf):
         dF_mode.item() - width,
         dF_mode.item() + width,
         limit=1000,
-        epsabs=1e-12,
-        epsrel=1e-12,
+        epsabs=1e-6,
+        epsrel=1e-6,
     )
     Z3, Z3_err = integrate.quad(jit(f), dF_mode.item() + width, np.inf)
     Z = Z1 + Z2 + Z3
@@ -202,9 +202,11 @@ def _compute_posterior_mean_and_std(dF_mode, width, energy, num_conf):
         dF_mode.item() - width,
         dF_mode.item() + width,
         limit=1000,
-        epsabs=1e-12,
-        epsrel=1e-12,
+        epsabs=1e-6,
+        epsrel=1e-6,
     )
+
+
     dF3, dF3_err = integrate.quad(jit(f), dF_mode.item() + width, np.inf)
     dF = dF1 + dF2 + dF3
 
@@ -221,8 +223,8 @@ def _compute_posterior_mean_and_std(dF_mode, width, energy, num_conf):
         dF_mode.item() - width,
         dF_mode.item() + width,
         limit=1000,
-        epsabs=1e-12,
-        epsrel=1e-12,
+        epsabs=1e-6,
+        epsrel=1e-6,
     )
     dF_var3, dF_var3_err = integrate.quad(jit(f), dF_mode.item() + width, np.inf)
     dF_var = dF_var1 + dF_var2 + dF_var3
