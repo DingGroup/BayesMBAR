@@ -1,0 +1,1345 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Compute relative protein-ligand binding free energy &#8212; BayesMBAR  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nbsphinx-code-cells.css?v=2aa19091" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../../_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'examples/cbayesmbar_for_protein_ligand/main';</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="API" href="../../API.html" />
+    <link rel="prev" title="CBayesMBAR for harmonic oscillators" href="../cbayesmbar_for_harmonic_oscillators.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/logo.png" class="logo__image only-light" alt="BayesMBAR  documentation - Home"/>
+    <script>document.write(`<img src="../../_static/logo.png" class="logo__image only-dark" alt="BayesMBAR  documentation - Home"/>`);</script>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../../examples.html">Examples</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../bayesmbar_for_harmonic_oscillators.html">BayesMBAR for harmonic oscillators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cbayesmbar_for_harmonic_oscillators.html">CBayesMBAR for harmonic oscillators</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">Compute relative protein-ligand binding free energy</a></li>
+</ul>
+</details></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../API.html">API</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+<a href="https://github.com/DingGroup/BayesMBAR" target="_blank"
+   class="btn btn-sm btn-source-repository-button"
+   title="Source repository"
+   data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+
+</a>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="../../_sources/examples/cbayesmbar_for_protein_ligand/main.ipynb" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.ipynb</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>Compute relative protein-ligand binding free energy</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="Compute-relative-protein-ligand-binding-free-energy">
+<h1>Compute relative protein-ligand binding free energy<a class="headerlink" href="#Compute-relative-protein-ligand-binding-free-energy" title="Link to this heading">#</a></h1>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="kn">import</span> <span class="n">product</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">openmm</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mm</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">openmm.app</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">app</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">openatom.functions</span><span class="w"> </span><span class="kn">import</span> <span class="n">compute_mcs_VF2</span><span class="p">,</span> <span class="n">make_alchemical_system</span><span class="p">,</span> <span class="n">make_psf_from_topology</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pickle</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">openmm.unit</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">unit</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">mdtraj</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">openmm</span><span class="w"> </span><span class="kn">import</span> <span class="n">XmlSerializer</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">xml.etree.ElementTree</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ET</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">pairs</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="s2">&quot;ejm_31&quot;</span><span class="p">,</span> <span class="s2">&quot;ejm_42&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;ejm_42&quot;</span><span class="p">,</span> <span class="s2">&quot;ejm_50&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;ejm_50&quot;</span><span class="p">,</span> <span class="s2">&quot;ejm_31&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;ejm_31&quot;</span><span class="p">,</span> <span class="s2">&quot;ejm_55&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;ejm_55&quot;</span><span class="p">,</span> <span class="s2">&quot;ejm_50&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;ejm_55&quot;</span><span class="p">,</span> <span class="s2">&quot;ejm_54&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;ejm_54&quot;</span><span class="p">,</span> <span class="s2">&quot;ejm_43&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;ejm_43&quot;</span><span class="p">,</span> <span class="s2">&quot;ejm_42&quot;</span><span class="p">),</span>
+<span class="p">]</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">liga</span><span class="p">,</span> <span class="n">ligb</span> <span class="ow">in</span> <span class="n">pairs</span><span class="p">:</span>
+    <span class="c1"># load prmtop and inpcrd files</span>
+    <span class="n">prmtopa</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">AmberPrmtopFile</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;./structure/water_phase/</span><span class="si">{</span><span class="n">liga</span><span class="si">}</span><span class="s2">.prmtop&quot;</span>
+    <span class="p">)</span>
+    <span class="n">prmtopb</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">AmberPrmtopFile</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;./structure/water_phase/</span><span class="si">{</span><span class="n">ligb</span><span class="si">}</span><span class="s2">.prmtop&quot;</span>
+    <span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">atom</span> <span class="ow">in</span> <span class="n">prmtopa</span><span class="o">.</span><span class="n">topology</span><span class="o">.</span><span class="n">atoms</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">atom</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;C14&#39;</span><span class="p">:</span>
+            <span class="n">atom</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">liga</span>
+    <span class="k">for</span> <span class="n">atom</span> <span class="ow">in</span> <span class="n">prmtopb</span><span class="o">.</span><span class="n">topology</span><span class="o">.</span><span class="n">atoms</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">atom</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;C14&#39;</span><span class="p">:</span>
+            <span class="n">atom</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">ligb</span>
+
+    <span class="n">mcs</span> <span class="o">=</span> <span class="n">compute_mcs_VF2</span><span class="p">(</span><span class="n">prmtopa</span><span class="o">.</span><span class="n">topology</span><span class="p">,</span> <span class="n">prmtopb</span><span class="o">.</span><span class="n">topology</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+
+
+    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;./output/</span><span class="si">{</span><span class="n">liga</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ligb</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;./output/</span><span class="si">{</span><span class="n">liga</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ligb</span><span class="si">}</span><span class="s2">/mcs.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">mcs</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">liga</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">ligb</span><span class="si">}</span><span class="s2"> MCS: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mcs</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">mcs</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+ejm_31 and ejm_42 MCS: 28
+{0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10, 11: 11, 12: 12, 13: 13, 14: 14, 15: 15, 16: 16, 17: 17, 18: 18, 20: 20, 22: 22, 23: 23, 24: 24, 25: 25, 26: 26, 27: 27, 28: 28, 29: 29}
+ejm_42 and ejm_50 MCS: 28
+{0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10, 11: 11, 12: 12, 13: 13, 14: 14, 15: 15, 16: 16, 17: 17, 18: 18, 20: 20, 22: 22, 23: 23, 24: 24, 25: 25, 26: 26, 27: 27, 28: 28, 29: 29}
+ejm_50 and ejm_31 MCS: 28
+{0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10, 11: 11, 12: 12, 13: 13, 14: 14, 15: 15, 16: 16, 17: 17, 18: 18, 20: 20, 22: 22, 23: 23, 24: 24, 25: 25, 26: 26, 27: 27, 28: 28, 29: 29}
+ejm_31 and ejm_55 MCS: 28
+{0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10, 11: 11, 12: 12, 13: 13, 14: 14, 15: 15, 16: 16, 17: 17, 18: 18, 20: 19, 22: 20, 23: 21, 24: 22, 25: 23, 26: 24, 27: 25, 28: 26, 29: 27}
+ejm_55 and ejm_50 MCS: 28
+{0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10, 11: 11, 12: 12, 13: 13, 14: 14, 15: 15, 16: 16, 17: 17, 18: 18, 19: 20, 20: 22, 21: 23, 22: 24, 23: 25, 24: 26, 25: 27, 26: 28, 27: 29}
+ejm_55 and ejm_54 MCS: 28
+{0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10, 11: 11, 12: 12, 13: 13, 14: 14, 15: 15, 16: 16, 17: 17, 18: 18, 19: 19, 20: 20, 21: 21, 22: 22, 23: 23, 24: 24, 25: 25, 26: 26, 27: 27}
+ejm_54 and ejm_43 MCS: 28
+{0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10, 11: 11, 12: 12, 13: 13, 14: 14, 15: 15, 16: 16, 17: 17, 18: 18, 19: 20, 20: 22, 21: 23, 22: 24, 23: 25, 24: 26, 25: 27, 26: 28, 27: 29}
+ejm_43 and ejm_42 MCS: 28
+{0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10, 11: 11, 12: 12, 13: 13, 14: 14, 15: 15, 16: 16, 17: 17, 18: 18, 20: 20, 22: 22, 23: 23, 24: 24, 25: 25, 26: 26, 27: 27, 28: 28, 29: 29}
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">lambdas_list</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">[(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)],</span>
+    <span class="p">[(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)],</span>
+    <span class="p">[(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)],</span>
+    <span class="p">[(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">),</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)],</span>
+    <span class="p">[(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">),</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">)],</span>
+    <span class="p">[(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">),</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)],</span>
+    <span class="p">[(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">),</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">)],</span>
+    <span class="p">[(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">),</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">)],</span>
+    <span class="p">[(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)],</span>
+    <span class="p">[(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span> <span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)],</span>
+    <span class="p">[(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span> <span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)],</span>
+<span class="p">]</span>
+
+<span class="k">for</span> <span class="n">phase</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;water&quot;</span><span class="p">,</span> <span class="s2">&quot;protein&quot;</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">phase</span> <span class="o">==</span> <span class="s2">&quot;protein&quot;</span><span class="p">:</span>
+        <span class="n">envi_prmtop</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">AmberPrmtopFile</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;./structure/</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">_phase/env.prmtop&quot;</span>
+        <span class="p">)</span>
+        <span class="n">envi_coor</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">PDBFile</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;./structure/</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">_phase/env.pdb&quot;</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">getPositions</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">envi_prmtop</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">AmberPrmtopFile</span><span class="p">(</span>
+            <span class="s2">&quot;./structure/water_phase/env.prmtop&quot;</span>
+        <span class="p">)</span>
+        <span class="n">envi_coor</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">PDBFile</span><span class="p">(</span>
+            <span class="s2">&quot;./structure/water_phase/env.pdb&quot;</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">getPositions</span><span class="p">()</span>
+
+    <span class="n">envi_system</span> <span class="o">=</span> <span class="n">envi_prmtop</span><span class="o">.</span><span class="n">createSystem</span><span class="p">(</span>
+        <span class="n">nonbondedMethod</span><span class="o">=</span><span class="n">app</span><span class="o">.</span><span class="n">PME</span><span class="p">,</span>
+        <span class="n">nonbondedCutoff</span><span class="o">=</span><span class="mf">1.0</span> <span class="o">*</span> <span class="n">unit</span><span class="o">.</span><span class="n">nanometer</span><span class="p">,</span>
+        <span class="n">constraints</span><span class="o">=</span><span class="n">app</span><span class="o">.</span><span class="n">HBonds</span><span class="p">,</span>
+        <span class="n">switchDistance</span><span class="o">=</span><span class="mf">0.9</span> <span class="o">*</span> <span class="n">unit</span><span class="o">.</span><span class="n">nanometer</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">envi_top</span> <span class="o">=</span> <span class="n">envi_prmtop</span><span class="o">.</span><span class="n">topology</span>
+    <span class="n">envi_coor</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">envi_coor</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">unit</span><span class="o">.</span><span class="n">nanometer</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">liga_name</span><span class="p">,</span> <span class="n">ligb_name</span> <span class="ow">in</span> <span class="n">pairs</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">phase</span><span class="p">,</span> <span class="n">liga_name</span><span class="p">,</span> <span class="n">ligb_name</span><span class="p">)</span>
+
+        <span class="c1"># load prmtop and xyz files</span>
+        <span class="k">if</span> <span class="n">phase</span> <span class="o">==</span> <span class="s2">&quot;protein&quot;</span><span class="p">:</span>
+            <span class="n">liga_prmtop</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">AmberPrmtopFile</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;./structure/</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">_phase/</span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s2">.prmtop&quot;</span><span class="p">,</span>
+                <span class="n">envi_top</span><span class="o">.</span><span class="n">getPeriodicBoxVectors</span><span class="p">(),</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">liga_prmtop</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">AmberPrmtopFile</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;./structure/water_phase/</span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s2">.prmtop&quot;</span><span class="p">,</span>
+                <span class="n">envi_top</span><span class="o">.</span><span class="n">getPeriodicBoxVectors</span><span class="p">(),</span>
+            <span class="p">)</span>
+
+        <span class="n">liga_top</span> <span class="o">=</span> <span class="n">liga_prmtop</span><span class="o">.</span><span class="n">topology</span>
+        <span class="n">liga_system</span> <span class="o">=</span> <span class="n">liga_prmtop</span><span class="o">.</span><span class="n">createSystem</span><span class="p">(</span>
+            <span class="n">nonbondedMethod</span><span class="o">=</span><span class="n">app</span><span class="o">.</span><span class="n">PME</span><span class="p">,</span>
+            <span class="n">nonbondedCutoff</span><span class="o">=</span><span class="mf">1.0</span> <span class="o">*</span> <span class="n">unit</span><span class="o">.</span><span class="n">nanometer</span><span class="p">,</span>
+            <span class="n">constraints</span><span class="o">=</span><span class="n">app</span><span class="o">.</span><span class="n">HBonds</span><span class="p">,</span>
+            <span class="n">switchDistance</span><span class="o">=</span><span class="mf">0.9</span> <span class="o">*</span> <span class="n">unit</span><span class="o">.</span><span class="n">nanometer</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">phase</span> <span class="o">==</span> <span class="s2">&quot;protein&quot;</span><span class="p">:</span>
+            <span class="n">ligb_prmtop</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">AmberPrmtopFile</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;./structure/</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">_phase/</span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="s2">.prmtop&quot;</span><span class="p">,</span>
+                <span class="n">envi_top</span><span class="o">.</span><span class="n">getPeriodicBoxVectors</span><span class="p">(),</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ligb_prmtop</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">AmberPrmtopFile</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;./structure/water_phase/</span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="s2">.prmtop&quot;</span><span class="p">,</span>
+                <span class="n">envi_top</span><span class="o">.</span><span class="n">getPeriodicBoxVectors</span><span class="p">(),</span>
+            <span class="p">)</span>
+
+        <span class="n">ligb_top</span> <span class="o">=</span> <span class="n">ligb_prmtop</span><span class="o">.</span><span class="n">topology</span>
+        <span class="n">ligb_system</span> <span class="o">=</span> <span class="n">ligb_prmtop</span><span class="o">.</span><span class="n">createSystem</span><span class="p">(</span>
+            <span class="n">nonbondedMethod</span><span class="o">=</span><span class="n">app</span><span class="o">.</span><span class="n">PME</span><span class="p">,</span>
+            <span class="n">nonbondedCutoff</span><span class="o">=</span><span class="mf">1.0</span> <span class="o">*</span> <span class="n">unit</span><span class="o">.</span><span class="n">nanometer</span><span class="p">,</span>
+            <span class="n">constraints</span><span class="o">=</span><span class="n">app</span><span class="o">.</span><span class="n">HBonds</span><span class="p">,</span>
+            <span class="n">switchDistance</span><span class="o">=</span><span class="mf">0.9</span> <span class="o">*</span> <span class="n">unit</span><span class="o">.</span><span class="n">nanometer</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">phase</span> <span class="o">==</span> <span class="s2">&quot;protein&quot;</span><span class="p">:</span>
+            <span class="n">liga_coor</span> <span class="o">=</span> <span class="n">mdtraj</span><span class="o">.</span><span class="n">load_xyz</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;./structure/</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">_phase/</span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s2">_aligned.xyz&quot;</span><span class="p">,</span>
+                <span class="n">top</span><span class="o">=</span><span class="n">mdtraj</span><span class="o">.</span><span class="n">Topology</span><span class="o">.</span><span class="n">from_openmm</span><span class="p">(</span><span class="n">liga_prmtop</span><span class="o">.</span><span class="n">topology</span><span class="p">),</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">xyz</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">ligb_coor</span> <span class="o">=</span> <span class="n">mdtraj</span><span class="o">.</span><span class="n">load_xyz</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;./structure/</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">_phase/</span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="s2">_aligned.xyz&quot;</span><span class="p">,</span>
+                <span class="n">top</span><span class="o">=</span><span class="n">mdtraj</span><span class="o">.</span><span class="n">Topology</span><span class="o">.</span><span class="n">from_openmm</span><span class="p">(</span><span class="n">ligb_prmtop</span><span class="o">.</span><span class="n">topology</span><span class="p">),</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">xyz</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">liga_coor</span> <span class="o">=</span> <span class="n">mdtraj</span><span class="o">.</span><span class="n">load_xyz</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;./structure/water_phase/</span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s2">_aligned.xyz&quot;</span><span class="p">,</span>
+                <span class="n">top</span><span class="o">=</span><span class="n">mdtraj</span><span class="o">.</span><span class="n">Topology</span><span class="o">.</span><span class="n">from_openmm</span><span class="p">(</span><span class="n">liga_prmtop</span><span class="o">.</span><span class="n">topology</span><span class="p">),</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">xyz</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">ligb_coor</span> <span class="o">=</span> <span class="n">mdtraj</span><span class="o">.</span><span class="n">load_xyz</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;./structure/water_phase/</span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="s2">_aligned.xyz&quot;</span><span class="p">,</span>
+                <span class="n">top</span><span class="o">=</span><span class="n">mdtraj</span><span class="o">.</span><span class="n">Topology</span><span class="o">.</span><span class="n">from_openmm</span><span class="p">(</span><span class="n">ligb_prmtop</span><span class="o">.</span><span class="n">topology</span><span class="p">),</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">xyz</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">ligs_coor</span> <span class="o">=</span> <span class="p">[</span><span class="n">liga_coor</span><span class="p">,</span> <span class="n">ligb_coor</span><span class="p">]</span>
+
+        <span class="n">envi_xml</span> <span class="o">=</span> <span class="n">XmlSerializer</span><span class="o">.</span><span class="n">serializeSystem</span><span class="p">(</span><span class="n">envi_system</span><span class="p">)</span>
+        <span class="n">liga_xml</span> <span class="o">=</span> <span class="n">XmlSerializer</span><span class="o">.</span><span class="n">serializeSystem</span><span class="p">(</span><span class="n">liga_system</span><span class="p">)</span>
+        <span class="n">ligb_xml</span> <span class="o">=</span> <span class="n">XmlSerializer</span><span class="o">.</span><span class="n">serializeSystem</span><span class="p">(</span><span class="n">ligb_system</span><span class="p">)</span>
+
+        <span class="n">envi_et</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">fromstring</span><span class="p">(</span><span class="n">envi_xml</span><span class="p">)</span>
+        <span class="n">liga_et</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">fromstring</span><span class="p">(</span><span class="n">liga_xml</span><span class="p">)</span>
+        <span class="n">ligb_et</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">fromstring</span><span class="p">(</span><span class="n">ligb_xml</span><span class="p">)</span>
+        <span class="n">ligs_et</span> <span class="o">=</span> <span class="p">[</span><span class="n">liga_et</span><span class="p">,</span> <span class="n">ligb_et</span><span class="p">]</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;./output/</span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="s2">/mcs.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">mcs</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+        <span class="n">liga_common_atoms</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">mcs</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="n">ligb_common_atoms</span> <span class="o">=</span> <span class="p">[</span><span class="n">mcs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">liga_common_atoms</span><span class="p">]</span>
+        <span class="n">ligs_common_atoms</span> <span class="o">=</span> <span class="p">[</span><span class="n">liga_common_atoms</span><span class="p">,</span> <span class="n">ligb_common_atoms</span><span class="p">]</span>
+
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;./output/</span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">_phase&quot;</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;./output/</span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">_phase/lambdas.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span>
+        <span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">lambdas_list</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">lambdas</span> <span class="ow">in</span> <span class="n">lambdas_list</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">lambdas</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">phase</span> <span class="o">==</span> <span class="s2">&quot;vacuum&quot;</span><span class="p">:</span>
+                <span class="n">system_xml</span><span class="p">,</span> <span class="n">top</span><span class="p">,</span> <span class="n">coor</span> <span class="o">=</span> <span class="n">make_alchemical_system</span><span class="p">(</span>
+                    <span class="n">ligs_et</span><span class="p">,</span>
+                    <span class="p">[</span><span class="n">liga_top</span><span class="p">,</span> <span class="n">ligb_top</span><span class="p">],</span>
+                    <span class="n">ligs_common_atoms</span><span class="p">,</span>
+                    <span class="n">ligs_coor</span><span class="p">,</span>
+                    <span class="n">lambdas</span><span class="p">,</span>
+                    <span class="kc">None</span><span class="p">,</span>
+                    <span class="kc">None</span><span class="p">,</span>
+                    <span class="kc">None</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">system_xml</span><span class="p">,</span> <span class="n">top</span><span class="p">,</span> <span class="n">coor</span> <span class="o">=</span> <span class="n">make_alchemical_system</span><span class="p">(</span>
+                    <span class="n">ligs_et</span><span class="p">,</span>
+                    <span class="p">[</span><span class="n">liga_top</span><span class="p">,</span> <span class="n">ligb_top</span><span class="p">],</span>
+                    <span class="n">ligs_common_atoms</span><span class="p">,</span>
+                    <span class="n">ligs_coor</span><span class="p">,</span>
+                    <span class="n">lambdas</span><span class="p">,</span>
+                    <span class="n">envi_et</span><span class="p">,</span>
+                    <span class="n">envi_top</span><span class="p">,</span>
+                    <span class="n">envi_coor</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="n">tree</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">ElementTree</span><span class="p">(</span><span class="n">system_xml</span><span class="p">)</span>
+            <span class="n">ET</span><span class="o">.</span><span class="n">indent</span><span class="p">(</span><span class="n">tree</span><span class="o">.</span><span class="n">getroot</span><span class="p">())</span>
+            <span class="p">(</span><span class="n">elec0</span><span class="p">,</span> <span class="n">vdw0</span><span class="p">),</span> <span class="p">(</span><span class="n">elec1</span><span class="p">,</span> <span class="n">vdw1</span><span class="p">)</span> <span class="o">=</span> <span class="n">lambdas</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;./output/</span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">_phase/sys&quot;</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span>
+            <span class="p">)</span>
+            <span class="n">tree</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;./output/</span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">_phase/sys/</span><span class="si">{</span><span class="n">elec0</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">vdw0</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">elec1</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">vdw1</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">.xml&quot;</span><span class="p">,</span>
+                <span class="n">xml_declaration</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">method</span><span class="o">=</span><span class="s2">&quot;xml&quot;</span><span class="p">,</span>
+                <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;./output/</span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">_phase/system.xyz&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span>
+            <span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">coor</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">atom</span><span class="p">,</span> <span class="n">xyz</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">top</span><span class="o">.</span><span class="n">atoms</span><span class="p">(),</span> <span class="n">coor</span><span class="p">):</span>
+                    <span class="n">xyz</span> <span class="o">=</span> <span class="n">xyz</span> <span class="o">*</span> <span class="mi">10</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">atom</span><span class="o">.</span><span class="n">element</span><span class="o">.</span><span class="n">symbol</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">xyz</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.5f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">xyz</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.5f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">xyz</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">:</span><span class="s2">.5f</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+
+            <span class="n">mm</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">PDBFile</span><span class="o">.</span><span class="n">writeFile</span><span class="p">(</span>
+                <span class="n">top</span><span class="p">,</span>
+                <span class="n">coor</span> <span class="o">*</span> <span class="mi">10</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;./output/</span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">_phase/system.pdb&quot;</span><span class="p">,</span>
+                <span class="n">keepIds</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;./output/</span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">_phase/topology.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span>
+            <span class="p">)</span> <span class="k">as</span> <span class="n">file_handle</span><span class="p">:</span>
+                <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">top</span><span class="p">,</span> <span class="n">file_handle</span><span class="p">)</span>
+
+            <span class="n">make_psf_from_topology</span><span class="p">(</span>
+                <span class="n">top</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;./output/</span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">_phase/topology.psf&quot;</span>
+            <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+water ejm_31 ejm_42
+[(1.0, 1.0), (0.0, 0.0)]
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+&lt;class &#39;networkx.utils.decorators.argmap&#39;&gt; compilation 17:3: FutureWarning:
+
+single_target_shortest_path_length will return a dict instead of
+an iterator in version 3.5
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[(0.5, 1.0), (0.0, 0.0)]
+[(0.0, 1.0), (0.0, 0.0)]
+[(0.0, 0.9), (0.0, 0.1)]
+[(0.0, 0.7), (0.0, 0.3)]
+[(0.0, 0.5), (0.0, 0.5)]
+[(0.0, 0.3), (0.0, 0.7)]
+[(0.0, 0.1), (0.0, 0.9)]
+[(0.0, 0.0), (0.0, 1.0)]
+[(0.0, 0.0), (0.5, 1.0)]
+[(0.0, 0.0), (1.0, 1.0)]
+water ejm_42 ejm_50
+[(1.0, 1.0), (0.0, 0.0)]
+[(0.5, 1.0), (0.0, 0.0)]
+[(0.0, 1.0), (0.0, 0.0)]
+[(0.0, 0.9), (0.0, 0.1)]
+[(0.0, 0.7), (0.0, 0.3)]
+[(0.0, 0.5), (0.0, 0.5)]
+[(0.0, 0.3), (0.0, 0.7)]
+[(0.0, 0.1), (0.0, 0.9)]
+[(0.0, 0.0), (0.0, 1.0)]
+[(0.0, 0.0), (0.5, 1.0)]
+[(0.0, 0.0), (1.0, 1.0)]
+water ejm_50 ejm_31
+[(1.0, 1.0), (0.0, 0.0)]
+[(0.5, 1.0), (0.0, 0.0)]
+[(0.0, 1.0), (0.0, 0.0)]
+[(0.0, 0.9), (0.0, 0.1)]
+[(0.0, 0.7), (0.0, 0.3)]
+[(0.0, 0.5), (0.0, 0.5)]
+[(0.0, 0.3), (0.0, 0.7)]
+[(0.0, 0.1), (0.0, 0.9)]
+[(0.0, 0.0), (0.0, 1.0)]
+[(0.0, 0.0), (0.5, 1.0)]
+[(0.0, 0.0), (1.0, 1.0)]
+water ejm_31 ejm_55
+[(1.0, 1.0), (0.0, 0.0)]
+[(0.5, 1.0), (0.0, 0.0)]
+[(0.0, 1.0), (0.0, 0.0)]
+[(0.0, 0.9), (0.0, 0.1)]
+[(0.0, 0.7), (0.0, 0.3)]
+[(0.0, 0.5), (0.0, 0.5)]
+[(0.0, 0.3), (0.0, 0.7)]
+[(0.0, 0.1), (0.0, 0.9)]
+[(0.0, 0.0), (0.0, 1.0)]
+[(0.0, 0.0), (0.5, 1.0)]
+[(0.0, 0.0), (1.0, 1.0)]
+water ejm_55 ejm_50
+[(1.0, 1.0), (0.0, 0.0)]
+[(0.5, 1.0), (0.0, 0.0)]
+[(0.0, 1.0), (0.0, 0.0)]
+[(0.0, 0.9), (0.0, 0.1)]
+[(0.0, 0.7), (0.0, 0.3)]
+[(0.0, 0.5), (0.0, 0.5)]
+[(0.0, 0.3), (0.0, 0.7)]
+[(0.0, 0.1), (0.0, 0.9)]
+[(0.0, 0.0), (0.0, 1.0)]
+[(0.0, 0.0), (0.5, 1.0)]
+[(0.0, 0.0), (1.0, 1.0)]
+water ejm_55 ejm_54
+[(1.0, 1.0), (0.0, 0.0)]
+[(0.5, 1.0), (0.0, 0.0)]
+[(0.0, 1.0), (0.0, 0.0)]
+[(0.0, 0.9), (0.0, 0.1)]
+[(0.0, 0.7), (0.0, 0.3)]
+[(0.0, 0.5), (0.0, 0.5)]
+[(0.0, 0.3), (0.0, 0.7)]
+[(0.0, 0.1), (0.0, 0.9)]
+[(0.0, 0.0), (0.0, 1.0)]
+[(0.0, 0.0), (0.5, 1.0)]
+[(0.0, 0.0), (1.0, 1.0)]
+water ejm_54 ejm_43
+[(1.0, 1.0), (0.0, 0.0)]
+[(0.5, 1.0), (0.0, 0.0)]
+[(0.0, 1.0), (0.0, 0.0)]
+[(0.0, 0.9), (0.0, 0.1)]
+[(0.0, 0.7), (0.0, 0.3)]
+[(0.0, 0.5), (0.0, 0.5)]
+[(0.0, 0.3), (0.0, 0.7)]
+[(0.0, 0.1), (0.0, 0.9)]
+[(0.0, 0.0), (0.0, 1.0)]
+[(0.0, 0.0), (0.5, 1.0)]
+[(0.0, 0.0), (1.0, 1.0)]
+water ejm_43 ejm_42
+[(1.0, 1.0), (0.0, 0.0)]
+[(0.5, 1.0), (0.0, 0.0)]
+[(0.0, 1.0), (0.0, 0.0)]
+[(0.0, 0.9), (0.0, 0.1)]
+[(0.0, 0.7), (0.0, 0.3)]
+[(0.0, 0.5), (0.0, 0.5)]
+[(0.0, 0.3), (0.0, 0.7)]
+[(0.0, 0.1), (0.0, 0.9)]
+[(0.0, 0.0), (0.0, 1.0)]
+[(0.0, 0.0), (0.5, 1.0)]
+[(0.0, 0.0), (1.0, 1.0)]
+protein ejm_31 ejm_42
+[(1.0, 1.0), (0.0, 0.0)]
+[(0.5, 1.0), (0.0, 0.0)]
+[(0.0, 1.0), (0.0, 0.0)]
+[(0.0, 0.9), (0.0, 0.1)]
+[(0.0, 0.7), (0.0, 0.3)]
+[(0.0, 0.5), (0.0, 0.5)]
+[(0.0, 0.3), (0.0, 0.7)]
+[(0.0, 0.1), (0.0, 0.9)]
+[(0.0, 0.0), (0.0, 1.0)]
+[(0.0, 0.0), (0.5, 1.0)]
+[(0.0, 0.0), (1.0, 1.0)]
+protein ejm_42 ejm_50
+[(1.0, 1.0), (0.0, 0.0)]
+[(0.5, 1.0), (0.0, 0.0)]
+[(0.0, 1.0), (0.0, 0.0)]
+[(0.0, 0.9), (0.0, 0.1)]
+[(0.0, 0.7), (0.0, 0.3)]
+[(0.0, 0.5), (0.0, 0.5)]
+[(0.0, 0.3), (0.0, 0.7)]
+[(0.0, 0.1), (0.0, 0.9)]
+[(0.0, 0.0), (0.0, 1.0)]
+[(0.0, 0.0), (0.5, 1.0)]
+[(0.0, 0.0), (1.0, 1.0)]
+protein ejm_50 ejm_31
+[(1.0, 1.0), (0.0, 0.0)]
+[(0.5, 1.0), (0.0, 0.0)]
+[(0.0, 1.0), (0.0, 0.0)]
+[(0.0, 0.9), (0.0, 0.1)]
+[(0.0, 0.7), (0.0, 0.3)]
+[(0.0, 0.5), (0.0, 0.5)]
+[(0.0, 0.3), (0.0, 0.7)]
+[(0.0, 0.1), (0.0, 0.9)]
+[(0.0, 0.0), (0.0, 1.0)]
+[(0.0, 0.0), (0.5, 1.0)]
+[(0.0, 0.0), (1.0, 1.0)]
+protein ejm_31 ejm_55
+[(1.0, 1.0), (0.0, 0.0)]
+[(0.5, 1.0), (0.0, 0.0)]
+[(0.0, 1.0), (0.0, 0.0)]
+[(0.0, 0.9), (0.0, 0.1)]
+[(0.0, 0.7), (0.0, 0.3)]
+[(0.0, 0.5), (0.0, 0.5)]
+[(0.0, 0.3), (0.0, 0.7)]
+[(0.0, 0.1), (0.0, 0.9)]
+[(0.0, 0.0), (0.0, 1.0)]
+[(0.0, 0.0), (0.5, 1.0)]
+[(0.0, 0.0), (1.0, 1.0)]
+protein ejm_55 ejm_50
+[(1.0, 1.0), (0.0, 0.0)]
+[(0.5, 1.0), (0.0, 0.0)]
+[(0.0, 1.0), (0.0, 0.0)]
+[(0.0, 0.9), (0.0, 0.1)]
+[(0.0, 0.7), (0.0, 0.3)]
+[(0.0, 0.5), (0.0, 0.5)]
+[(0.0, 0.3), (0.0, 0.7)]
+[(0.0, 0.1), (0.0, 0.9)]
+[(0.0, 0.0), (0.0, 1.0)]
+[(0.0, 0.0), (0.5, 1.0)]
+[(0.0, 0.0), (1.0, 1.0)]
+protein ejm_55 ejm_54
+[(1.0, 1.0), (0.0, 0.0)]
+[(0.5, 1.0), (0.0, 0.0)]
+[(0.0, 1.0), (0.0, 0.0)]
+[(0.0, 0.9), (0.0, 0.1)]
+[(0.0, 0.7), (0.0, 0.3)]
+[(0.0, 0.5), (0.0, 0.5)]
+[(0.0, 0.3), (0.0, 0.7)]
+[(0.0, 0.1), (0.0, 0.9)]
+[(0.0, 0.0), (0.0, 1.0)]
+[(0.0, 0.0), (0.5, 1.0)]
+[(0.0, 0.0), (1.0, 1.0)]
+protein ejm_54 ejm_43
+[(1.0, 1.0), (0.0, 0.0)]
+[(0.5, 1.0), (0.0, 0.0)]
+[(0.0, 1.0), (0.0, 0.0)]
+[(0.0, 0.9), (0.0, 0.1)]
+[(0.0, 0.7), (0.0, 0.3)]
+[(0.0, 0.5), (0.0, 0.5)]
+[(0.0, 0.3), (0.0, 0.7)]
+[(0.0, 0.1), (0.0, 0.9)]
+[(0.0, 0.0), (0.0, 1.0)]
+[(0.0, 0.0), (0.5, 1.0)]
+[(0.0, 0.0), (1.0, 1.0)]
+protein ejm_43 ejm_42
+[(1.0, 1.0), (0.0, 0.0)]
+[(0.5, 1.0), (0.0, 0.0)]
+[(0.0, 1.0), (0.0, 0.0)]
+[(0.0, 0.9), (0.0, 0.1)]
+[(0.0, 0.7), (0.0, 0.3)]
+[(0.0, 0.5), (0.0, 0.5)]
+[(0.0, 0.3), (0.0, 0.7)]
+[(0.0, 0.1), (0.0, 0.9)]
+[(0.0, 0.0), (0.0, 1.0)]
+[(0.0, 0.0), (0.5, 1.0)]
+[(0.0, 0.0), (1.0, 1.0)]
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">run_simulation</span><span class="p">(</span><span class="n">liga_name</span><span class="p">,</span> <span class="n">ligb_name</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">idx_lambda</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Running simulation for </span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">lambdas</span> <span class="o">=</span> <span class="n">lambdas_list</span><span class="p">[</span><span class="n">idx_lambda</span><span class="p">]</span>
+    <span class="p">(</span><span class="n">elec0</span><span class="p">,</span> <span class="n">vdw0</span><span class="p">),</span> <span class="p">(</span><span class="n">elec1</span><span class="p">,</span> <span class="n">vdw1</span><span class="p">)</span> <span class="o">=</span> <span class="n">lambdas</span>
+    <span class="n">lambdas_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">elec0</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">vdw0</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">elec1</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">vdw1</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Running simulation for lambdas </span><span class="si">{</span><span class="n">lambdas_str</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1">## deserialize the system</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;./output/</span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">_phase/sys/</span><span class="si">{</span><span class="n">elec0</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">vdw0</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">elec1</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">vdw1</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">.xml&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;r&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">system</span> <span class="o">=</span> <span class="n">mm</span><span class="o">.</span><span class="n">XmlSerializer</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+
+
+    <span class="c1">## add barostat</span>
+    <span class="n">system</span><span class="o">.</span><span class="n">addForce</span><span class="p">(</span><span class="n">mm</span><span class="o">.</span><span class="n">MonteCarloBarostat</span><span class="p">(</span><span class="mi">1</span> <span class="o">*</span> <span class="n">unit</span><span class="o">.</span><span class="n">atmospheres</span><span class="p">,</span> <span class="mf">298.15</span> <span class="o">*</span> <span class="n">unit</span><span class="o">.</span><span class="n">kelvin</span><span class="p">))</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;./output/</span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">_phase/topology.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">topology</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+    <span class="n">pdb</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">PDBFile</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;./output/</span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">_phase/system.pdb&quot;</span><span class="p">)</span>
+
+    <span class="n">integrator</span> <span class="o">=</span> <span class="n">mm</span><span class="o">.</span><span class="n">LangevinMiddleIntegrator</span><span class="p">(</span>
+        <span class="mf">298.15</span> <span class="o">*</span> <span class="n">unit</span><span class="o">.</span><span class="n">kelvin</span><span class="p">,</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">unit</span><span class="o">.</span><span class="n">picosecond</span><span class="p">,</span> <span class="mf">0.002</span> <span class="o">*</span> <span class="n">unit</span><span class="o">.</span><span class="n">picoseconds</span>
+    <span class="p">)</span>
+    <span class="n">platform</span> <span class="o">=</span> <span class="n">mm</span><span class="o">.</span><span class="n">Platform</span><span class="o">.</span><span class="n">getPlatformByName</span><span class="p">(</span><span class="s2">&quot;CPU&quot;</span><span class="p">)</span>
+    <span class="n">simulation</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">Simulation</span><span class="p">(</span><span class="n">topology</span><span class="p">,</span> <span class="n">system</span><span class="p">,</span> <span class="n">integrator</span><span class="p">,</span> <span class="n">platform</span><span class="p">)</span>
+
+    <span class="n">simulation</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">setPositions</span><span class="p">(</span><span class="n">pdb</span><span class="o">.</span><span class="n">positions</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Minimizing energy&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">simulation</span><span class="o">.</span><span class="n">minimizeEnergy</span><span class="p">()</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Equilibrating&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="c1">#simulation.step(100_000)</span>
+    <span class="n">simulation</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="mi">1_000</span><span class="p">)</span>
+
+    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;./output/</span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">_phase/traj&quot;</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">simulation</span><span class="o">.</span><span class="n">reporters</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">app</span><span class="o">.</span><span class="n">DCDReporter</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;./output/</span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">_phase/traj/</span><span class="si">{</span><span class="n">lambdas_str</span><span class="si">}</span><span class="s2">.dcd&quot;</span><span class="p">,</span>
+            <span class="mi">1_000</span><span class="p">,</span>
+            <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Running simulation&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="c1">#simulation.step(12_500_000)</span>
+    <span class="n">simulation</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="mi">5_000</span><span class="p">)</span>
+
+    <span class="n">simulation</span><span class="o">.</span><span class="n">saveCheckpoint</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;./output/</span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">_phase/traj/</span><span class="si">{</span><span class="n">lambdas_str</span><span class="si">}</span><span class="s2">.chk&quot;</span>
+    <span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Simulation finished in </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start_time</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> seconds&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[29]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="p">(</span><span class="n">liga_name</span><span class="p">,</span> <span class="n">ligb_name</span><span class="p">),</span> <span class="n">phase</span><span class="p">,</span> <span class="n">idx_lambda</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span>
+    <span class="n">pairs</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;water&quot;</span><span class="p">,</span> <span class="s2">&quot;protein&quot;</span><span class="p">],</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lambdas_list</span><span class="p">))</span>
+<span class="p">):</span>
+    <span class="n">run_simulation</span><span class="p">(</span><span class="n">liga_name</span><span class="p">,</span> <span class="n">ligb_name</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">idx_lambda</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Running simulation for ejm_31 and ejm_42 in water
+Running simulation for lambdas 1.00_1.00_0.00_0.00
+here
+Minimizing energy
+Equilibrating
+Running simulation
+Simulation finished in 23.91 seconds
+Running simulation for ejm_31 and ejm_42 in water
+Running simulation for lambdas 0.50_1.00_0.00_0.00
+here
+Minimizing energy
+Equilibrating
+Running simulation
+Simulation finished in 26.05 seconds
+Running simulation for ejm_31 and ejm_42 in water
+Running simulation for lambdas 0.00_1.00_0.00_0.00
+here
+Minimizing energy
+Equilibrating
+Running simulation
+Simulation finished in 24.64 seconds
+Running simulation for ejm_31 and ejm_42 in water
+Running simulation for lambdas 0.00_0.90_0.00_0.10
+here
+Minimizing energy
+Equilibrating
+Running simulation
+Simulation finished in 24.69 seconds
+Running simulation for ejm_31 and ejm_42 in water
+Running simulation for lambdas 0.00_0.70_0.00_0.30
+here
+Minimizing energy
+Equilibrating
+Running simulation
+Simulation finished in 25.04 seconds
+Running simulation for ejm_31 and ejm_42 in water
+Running simulation for lambdas 0.00_0.50_0.00_0.50
+here
+Minimizing energy
+Equilibrating
+Running simulation
+Simulation finished in 25.96 seconds
+Running simulation for ejm_31 and ejm_42 in water
+Running simulation for lambdas 0.00_0.30_0.00_0.70
+here
+Minimizing energy
+Equilibrating
+Running simulation
+Simulation finished in 26.08 seconds
+Running simulation for ejm_31 and ejm_42 in water
+Running simulation for lambdas 0.00_0.10_0.00_0.90
+here
+Minimizing energy
+Equilibrating
+Running simulation
+Simulation finished in 26.92 seconds
+Running simulation for ejm_31 and ejm_42 in water
+Running simulation for lambdas 0.00_0.00_0.00_1.00
+here
+Minimizing energy
+Equilibrating
+Running simulation
+Simulation finished in 25.62 seconds
+Running simulation for ejm_31 and ejm_42 in water
+Running simulation for lambdas 0.00_0.00_0.50_1.00
+here
+Minimizing energy
+Equilibrating
+Running simulation
+Simulation finished in 24.39 seconds
+Running simulation for ejm_31 and ejm_42 in water
+Running simulation for lambdas 0.00_0.00_1.00_1.00
+here
+Minimizing energy
+Equilibrating
+Running simulation
+Simulation finished in 24.51 seconds
+Running simulation for ejm_31 and ejm_42 in protein
+Running simulation for lambdas 1.00_1.00_0.00_0.00
+here
+Minimizing energy
+Equilibrating
+Running simulation
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">KeyboardInterrupt</span>                         Traceback (most recent call last)
+<span class="ansi-green-fg">/var/folders/gm/khlf0vn90q162bnc2c48bwfsyk_2dr/T/ipykernel_75472/3005229222.py</span> in <span class="ansi-cyan-fg">?</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-intense-fg ansi-bold">      1</span> for (liga_name, ligb_name), phase, idx_lambda in product(
+<span class="ansi-green-intense-fg ansi-bold">      2</span>     pairs<span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">[</span><span class="ansi-blue-fg">&#34;water&#34;</span><span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">&#34;protein&#34;</span><span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">,</span> range<span class="ansi-blue-fg">(</span>len<span class="ansi-blue-fg">(</span>lambdas_list<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">      3</span> <span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">:</span>
+<span class="ansi-green-fg">----&gt; 4</span><span class="ansi-red-fg">     </span>run_simulation<span class="ansi-blue-fg">(</span>liga_name<span class="ansi-blue-fg">,</span> ligb_name<span class="ansi-blue-fg">,</span> phase<span class="ansi-blue-fg">,</span> idx_lambda<span class="ansi-blue-fg">)</span>
+
+<span class="ansi-green-fg">/var/folders/gm/khlf0vn90q162bnc2c48bwfsyk_2dr/T/ipykernel_75472/2715927706.py</span> in <span class="ansi-cyan-fg">?</span><span class="ansi-blue-fg">(liga_name, ligb_name, phase, idx_lambda)</span>
+<span class="ansi-green-intense-fg ansi-bold">     48</span>
+<span class="ansi-green-intense-fg ansi-bold">     49</span>     print<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">&#34;Running simulation&#34;</span><span class="ansi-blue-fg">,</span> flush<span class="ansi-blue-fg">=</span><span class="ansi-green-fg">True</span><span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">     50</span>     start_time <span class="ansi-blue-fg">=</span> time<span class="ansi-blue-fg">.</span>time<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">     51</span>     <span class="ansi-red-fg">#simulation.step(12_500_000)</span>
+<span class="ansi-green-fg">---&gt; 52</span><span class="ansi-red-fg">     </span>simulation<span class="ansi-blue-fg">.</span>step<span class="ansi-blue-fg">(</span><span class="ansi-cyan-fg">5_000</span><span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">     53</span>
+<span class="ansi-green-intense-fg ansi-bold">     54</span>     simulation.saveCheckpoint(
+<span class="ansi-green-intense-fg ansi-bold">     55</span>         <span class="ansi-blue-fg">f&#34;</span><span class="ansi-blue-fg">./output/</span><span class="ansi-blue-fg">{</span>liga_name<span class="ansi-blue-fg">}</span><span class="ansi-blue-fg">_</span><span class="ansi-blue-fg">{</span>ligb_name<span class="ansi-blue-fg">}</span><span class="ansi-blue-fg">/</span><span class="ansi-blue-fg">{</span>phase<span class="ansi-blue-fg">}</span><span class="ansi-blue-fg">_phase/traj/</span><span class="ansi-blue-fg">{</span>lambdas_str<span class="ansi-blue-fg">}</span><span class="ansi-blue-fg">.chk</span><span class="ansi-blue-fg">&#34;</span>
+
+<span class="ansi-green-fg">~/apps/miniconda3/envs/xd/lib/python3.12/site-packages/openmm/app/simulation.py</span> in <span class="ansi-cyan-fg">?</span><span class="ansi-blue-fg">(self, steps)</span>
+<span class="ansi-green-intense-fg ansi-bold">    145</span>     <span class="ansi-green-fg">def</span> step<span class="ansi-blue-fg">(</span>self<span class="ansi-blue-fg">,</span> steps<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">:</span>
+<span class="ansi-green-intense-fg ansi-bold">    146</span>         <span class="ansi-blue-fg">&#34;&#34;&#34;Advance the simulation by integrating a specified number of time steps.&#34;&#34;&#34;</span>
+<span class="ansi-green-fg">--&gt; 147</span><span class="ansi-red-fg">         </span>self<span class="ansi-blue-fg">.</span>_simulate<span class="ansi-blue-fg">(</span>endStep<span class="ansi-blue-fg">=</span>self<span class="ansi-blue-fg">.</span>currentStep<span class="ansi-blue-fg">+</span>steps<span class="ansi-blue-fg">)</span>
+
+<span class="ansi-green-fg">~/apps/miniconda3/envs/xd/lib/python3.12/site-packages/openmm/app/simulation.py</span> in <span class="ansi-cyan-fg">?</span><span class="ansi-blue-fg">(self, endStep, endTime)</span>
+<span class="ansi-green-intense-fg ansi-bold">    208</span>                     nextSteps <span class="ansi-blue-fg">=</span> nextReport<span class="ansi-blue-fg">[</span>i<span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">[</span><span class="ansi-cyan-fg">0</span><span class="ansi-blue-fg">]</span>
+<span class="ansi-green-intense-fg ansi-bold">    209</span>                     anyReport <span class="ansi-blue-fg">=</span> <span class="ansi-green-fg">True</span>
+<span class="ansi-green-intense-fg ansi-bold">    210</span>             stepsToGo <span class="ansi-blue-fg">=</span> nextSteps
+<span class="ansi-green-intense-fg ansi-bold">    211</span>             <span class="ansi-green-fg">while</span> stepsToGo <span class="ansi-blue-fg">&gt;</span> <span class="ansi-cyan-fg">10</span><span class="ansi-blue-fg">:</span>
+<span class="ansi-green-fg">--&gt; 212</span><span class="ansi-red-fg">                 </span>self<span class="ansi-blue-fg">.</span>integrator<span class="ansi-blue-fg">.</span>step<span class="ansi-blue-fg">(</span><span class="ansi-cyan-fg">10</span><span class="ansi-blue-fg">)</span> <span class="ansi-red-fg"># Only take 10 steps at a time, to give Python more chances to respond to a control-c.</span>
+<span class="ansi-green-intense-fg ansi-bold">    213</span>                 stepsToGo <span class="ansi-blue-fg">-=</span> <span class="ansi-cyan-fg">10</span>
+<span class="ansi-green-intense-fg ansi-bold">    214</span>                 <span class="ansi-green-fg">if</span> endTime <span class="ansi-green-fg">is</span> <span class="ansi-green-fg">not</span> <span class="ansi-green-fg">None</span> <span class="ansi-green-fg">and</span> datetime<span class="ansi-blue-fg">.</span>now<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span> <span class="ansi-blue-fg">&gt;=</span> endTime<span class="ansi-blue-fg">:</span>
+<span class="ansi-green-intense-fg ansi-bold">    215</span>                     <span class="ansi-green-fg">return</span>
+
+<span class="ansi-green-fg">~/apps/miniconda3/envs/xd/lib/python3.12/site-packages/openmm/openmm.py</span> in <span class="ansi-cyan-fg">?</span><span class="ansi-blue-fg">(self, steps)</span>
+<span class="ansi-green-intense-fg ansi-bold">  11952</span>         <span class="ansi-blue-fg">-</span><span class="ansi-blue-fg">-</span><span class="ansi-blue-fg">-</span><span class="ansi-blue-fg">-</span><span class="ansi-blue-fg">-</span><span class="ansi-blue-fg">-</span><span class="ansi-blue-fg">-</span><span class="ansi-blue-fg">-</span><span class="ansi-blue-fg">-</span><span class="ansi-blue-fg">-</span>
+<span class="ansi-green-intense-fg ansi-bold">  11953</span>         steps <span class="ansi-blue-fg">:</span> int
+<span class="ansi-green-intense-fg ansi-bold">  11954</span>             the number of time steps to take
+<span class="ansi-green-intense-fg ansi-bold">  11955</span>         &#34;&#34;&#34;
+<span class="ansi-green-fg">&gt; 11956</span><span class="ansi-red-fg">         </span><span class="ansi-green-fg">return</span> _openmm<span class="ansi-blue-fg">.</span>LangevinMiddleIntegrator_step<span class="ansi-blue-fg">(</span>self<span class="ansi-blue-fg">,</span> steps<span class="ansi-blue-fg">)</span>
+
+<span class="ansi-red-fg">KeyboardInterrupt</span>:
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">liga_name</span><span class="p">,</span> <span class="n">ligb_name</span><span class="p">)</span> <span class="o">=</span> <span class="n">pairs</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">idx_pair</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;compute energy for </span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s1"> and </span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;./output/</span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">_phase/lambdas.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">lambdas_list</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+<span class="n">lambdas</span> <span class="o">=</span> <span class="n">lambdas_list</span><span class="p">[</span><span class="n">idx_lambda</span><span class="p">]</span>
+<span class="p">(</span><span class="n">elec0</span><span class="p">,</span> <span class="n">vdw0</span><span class="p">),</span> <span class="p">(</span><span class="n">elec1</span><span class="p">,</span> <span class="n">vdw1</span><span class="p">)</span> <span class="o">=</span> <span class="n">lambdas</span>
+<span class="n">lambdas_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">elec0</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">vdw0</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">elec1</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">vdw1</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;for lambdas </span><span class="si">{</span><span class="n">lambdas_str</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<span class="c1">## deserialize the system</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">&quot;./output/</span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">_phase/sys/</span><span class="si">{</span><span class="n">elec0</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">vdw0</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">elec1</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">vdw1</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">.xml&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;r&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">system</span> <span class="o">=</span> <span class="n">mm</span><span class="o">.</span><span class="n">XmlSerializer</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+
+<span class="c1">## add barostat</span>
+<span class="k">if</span> <span class="n">phase</span> <span class="o">!=</span> <span class="s1">&#39;vacuum&#39;</span><span class="p">:</span>
+    <span class="n">system</span><span class="o">.</span><span class="n">addForce</span><span class="p">(</span><span class="n">mm</span><span class="o">.</span><span class="n">MonteCarloBarostat</span><span class="p">(</span><span class="mi">1</span> <span class="o">*</span> <span class="n">unit</span><span class="o">.</span><span class="n">atmospheres</span><span class="p">,</span> <span class="mf">298.15</span> <span class="o">*</span> <span class="n">unit</span><span class="o">.</span><span class="n">kelvin</span><span class="p">))</span>
+
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;./output/</span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">_phase/topology.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">topology</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+<span class="n">topology</span> <span class="o">=</span> <span class="n">mdtraj</span><span class="o">.</span><span class="n">Topology</span><span class="o">.</span><span class="n">from_openmm</span><span class="p">(</span><span class="n">topology</span><span class="p">)</span>
+
+<span class="n">pdb</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">PDBFile</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;./output/</span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">_phase/system.pdb&quot;</span><span class="p">)</span>
+
+<span class="n">integrator</span> <span class="o">=</span> <span class="n">mm</span><span class="o">.</span><span class="n">LangevinMiddleIntegrator</span><span class="p">(</span>
+    <span class="mf">298.15</span> <span class="o">*</span> <span class="n">unit</span><span class="o">.</span><span class="n">kelvin</span><span class="p">,</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">unit</span><span class="o">.</span><span class="n">picosecond</span><span class="p">,</span> <span class="mf">0.002</span> <span class="o">*</span> <span class="n">unit</span><span class="o">.</span><span class="n">picoseconds</span>
+<span class="p">)</span>
+<span class="n">kbT</span> <span class="o">=</span> <span class="mf">298.15</span> <span class="o">*</span> <span class="n">unit</span><span class="o">.</span><span class="n">kelvin</span> <span class="o">*</span> <span class="n">unit</span><span class="o">.</span><span class="n">BOLTZMANN_CONSTANT_kB</span> <span class="o">*</span> <span class="n">unit</span><span class="o">.</span><span class="n">AVOGADRO_CONSTANT_NA</span>
+
+<span class="n">platform</span> <span class="o">=</span> <span class="n">mm</span><span class="o">.</span><span class="n">Platform</span><span class="o">.</span><span class="n">getPlatformByName</span><span class="p">(</span><span class="s2">&quot;CPU&quot;</span><span class="p">)</span>
+<span class="n">simulation</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">Simulation</span><span class="p">(</span><span class="n">topology</span><span class="p">,</span> <span class="n">system</span><span class="p">,</span> <span class="n">integrator</span><span class="p">,</span> <span class="n">platform</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Simulation object created&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+<span class="c1">## load trajectories</span>
+<span class="n">reduced_u</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">lambdas</span> <span class="ow">in</span> <span class="n">lambdas_list</span><span class="p">:</span>
+    <span class="p">(</span><span class="n">elec0</span><span class="p">,</span> <span class="n">vdw0</span><span class="p">),</span> <span class="p">(</span><span class="n">elec1</span><span class="p">,</span> <span class="n">vdw1</span><span class="p">)</span> <span class="o">=</span> <span class="n">lambdas</span>
+    <span class="n">lambdas_str_traj</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">elec0</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">vdw0</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">elec1</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">vdw1</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">traj_0</span> <span class="o">=</span> <span class="n">mdtraj</span><span class="o">.</span><span class="n">load_dcd</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;./output/</span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">_phase/traj/</span><span class="si">{</span><span class="n">lambdas_str_traj</span><span class="si">}</span><span class="s2">.dcd&quot;</span><span class="p">,</span>
+        <span class="n">top</span><span class="o">=</span><span class="n">topology</span><span class="p">,</span>
+        <span class="n">stride</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="p">)</span>
+
+    <span class="n">traj_1</span> <span class="o">=</span> <span class="n">mdtraj</span><span class="o">.</span><span class="n">load_dcd</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;./output/</span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">_phase/traj_1/</span><span class="si">{</span><span class="n">lambdas_str_traj</span><span class="si">}</span><span class="s2">.dcd&quot;</span><span class="p">,</span>
+        <span class="n">top</span><span class="o">=</span><span class="n">topology</span><span class="p">,</span>
+        <span class="n">stride</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="p">)</span>
+
+    <span class="n">traj</span> <span class="o">=</span> <span class="n">mdtraj</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">traj_0</span><span class="p">,</span> <span class="n">traj_1</span><span class="p">])</span>
+
+
+    <span class="n">reduced_u</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
+    <span class="k">for</span> <span class="n">xyz</span><span class="p">,</span> <span class="n">unit_cell_vectors</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">traj</span><span class="o">.</span><span class="n">xyz</span><span class="p">,</span> <span class="n">traj</span><span class="o">.</span><span class="n">unitcell_vectors</span><span class="p">):</span>
+        <span class="n">simulation</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">setPositions</span><span class="p">(</span><span class="n">xyz</span><span class="p">)</span>
+        <span class="n">simulation</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">setPeriodicBoxVectors</span><span class="p">(</span><span class="o">*</span><span class="n">unit_cell_vectors</span><span class="p">)</span>
+        <span class="n">u</span> <span class="o">=</span> <span class="n">simulation</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">getState</span><span class="p">(</span><span class="n">getEnergy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">getPotentialEnergy</span><span class="p">()</span> <span class="o">/</span> <span class="n">kbT</span>
+        <span class="n">reduced_u</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Computed energies for </span><span class="si">{</span><span class="n">lambdas_str_traj</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<span class="n">reduced_u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">reduced_u</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Time taken: </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start_time</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;./output/</span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">_phase/reduced_potentials&quot;</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;./output/</span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">_phase/reduced_potentials/</span><span class="si">{</span><span class="n">lambdas_str</span><span class="si">}</span><span class="s2">.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">reduced_u</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">pairs</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;./script/pairs.csv&quot;</span><span class="p">)</span>
+
+<span class="n">kbT</span> <span class="o">=</span> <span class="mf">298.15</span> <span class="o">*</span> <span class="n">unit</span><span class="o">.</span><span class="n">kelvin</span> <span class="o">*</span> <span class="n">unit</span><span class="o">.</span><span class="n">BOLTZMANN_CONSTANT_kB</span> <span class="o">*</span> <span class="n">unit</span><span class="o">.</span><span class="n">AVOGADRO_CONSTANT_NA</span>
+<span class="n">kbT</span> <span class="o">=</span> <span class="n">kbT</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">unit</span><span class="o">.</span><span class="n">kilocalorie_per_mole</span><span class="p">)</span>
+
+<span class="c1">#task_id = int(os.environ[&quot;SLURM_ARRAY_TASK_ID&quot;])</span>
+<span class="n">task_id</span> <span class="o">=</span> <span class="mi">7</span>
+<span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="mi">10</span><span class="p">),</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">2500</span><span class="p">),</span> <span class="n">num</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+<span class="n">n_list</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">t</span><span class="o">**</span><span class="mi">2</span>
+<span class="n">n_list</span> <span class="o">=</span> <span class="n">n_list</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+<span class="n">n</span> <span class="o">=</span> <span class="n">n_list</span><span class="p">[</span><span class="n">task_id</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">n_list</span><span class="p">)]</span>
+<span class="n">repeat_id</span> <span class="o">=</span> <span class="n">task_id</span> <span class="o">//</span> <span class="nb">len</span><span class="p">(</span><span class="n">n_list</span><span class="p">)</span>
+<span class="n">repeat_size</span> <span class="o">=</span> <span class="mi">2500</span>
+
+<span class="n">start_frame</span> <span class="o">=</span> <span class="n">repeat_id</span> <span class="o">*</span> <span class="n">repeat_size</span>
+<span class="n">end_frame</span> <span class="o">=</span> <span class="n">repeat_id</span> <span class="o">*</span> <span class="n">repeat_size</span> <span class="o">+</span> <span class="n">n</span>
+
+
+<span class="c1">## read potential energy</span>
+<span class="n">us</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">liga_name</span><span class="p">,</span> <span class="n">ligb_name</span><span class="p">),</span> <span class="n">phase</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span>
+    <span class="n">pairs</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;water&quot;</span><span class="p">,</span> <span class="s2">&quot;protein&quot;</span><span class="p">]</span>
+<span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;./output/</span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">_phase/lambdas.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">lambdas_list</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+    <span class="n">us_tmp</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">lambdas</span> <span class="ow">in</span> <span class="n">lambdas_list</span><span class="p">:</span>
+        <span class="p">(</span><span class="n">elec0</span><span class="p">,</span> <span class="n">vdw0</span><span class="p">),</span> <span class="p">(</span><span class="n">elec1</span><span class="p">,</span> <span class="n">vdw1</span><span class="p">)</span> <span class="o">=</span> <span class="n">lambdas</span>
+        <span class="n">lambdas_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">elec0</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">vdw0</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">elec1</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">vdw1</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;./output/</span><span class="si">{</span><span class="n">liga_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ligb_name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">_phase/reduced_potentials/</span><span class="si">{</span><span class="n">lambdas_str</span><span class="si">}</span><span class="s2">.pkl&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;rb&quot;</span><span class="p">,</span>
+        <span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">u</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+            <span class="n">u</span> <span class="o">=</span> <span class="n">u</span><span class="p">[:,</span> <span class="n">start_frame</span><span class="p">:</span><span class="n">end_frame</span><span class="p">]</span>
+            <span class="n">u</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">us_tmp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+    <span class="n">us</span><span class="p">[(</span><span class="n">liga_name</span><span class="p">,</span> <span class="n">ligb_name</span><span class="p">,</span> <span class="n">phase</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">us_tmp</span><span class="p">)</span>
+
+
+<span class="c1"># ## run fastmbar for each edge seperately</span>
+<span class="c1"># deltaF_mbar = {}</span>
+<span class="c1"># for k, u in us.items():</span>
+<span class="c1">#     num_conf = np.array([u.shape[1] // u.shape[0] for _ in range(u.shape[0])])</span>
+<span class="c1">#     mbar = FastMBAR(u, num_conf, verbose=True, method=&quot;L-BFGS-B&quot;)</span>
+<span class="c1">#     deltaF_mbar[k] = {</span>
+<span class="c1">#         &quot;mode&quot;: mbar.DeltaF[0, -1].item()*kbT,</span>
+<span class="c1">#     }</span>
+
+
+<span class="c1">## run bayesmbar for each edge seperately</span>
+<span class="n">deltaF_bmbar</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">us</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">num_conf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">u</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">//</span> <span class="n">u</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">u</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])])</span>
+    <span class="n">bayesmbar</span> <span class="o">=</span> <span class="n">BayesMBAR</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">num_conf</span><span class="p">,</span> <span class="n">random_seed</span><span class="o">=</span><span class="n">task_id</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">deltaF_bmbar</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="n">bayesmbar</span><span class="o">.</span><span class="n">DeltaF_mode</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">*</span> <span class="n">kbT</span><span class="p">,</span>
+        <span class="s2">&quot;mean&quot;</span><span class="p">:</span> <span class="n">bayesmbar</span><span class="o">.</span><span class="n">DeltaF_mean</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">*</span> <span class="n">kbT</span><span class="p">,</span>
+        <span class="s2">&quot;std&quot;</span><span class="p">:</span> <span class="n">bayesmbar</span><span class="o">.</span><span class="n">DeltaF_std</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">*</span> <span class="n">kbT</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="c1">## run bayescmbar</span>
+<span class="n">deltaF_bcmbar</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">phase</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;water&quot;</span><span class="p">,</span> <span class="s2">&quot;protein&quot;</span><span class="p">]:</span>
+    <span class="n">u_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">us</span><span class="p">[(</span><span class="n">liga</span><span class="p">,</span> <span class="n">ligb</span><span class="p">,</span> <span class="n">phase</span><span class="p">)]</span> <span class="k">for</span> <span class="p">(</span><span class="n">liga</span><span class="p">,</span> <span class="n">ligb</span><span class="p">)</span> <span class="ow">in</span> <span class="n">pairs</span><span class="o">.</span><span class="n">values</span><span class="p">]</span>
+    <span class="n">num_conf_list</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">[</span><span class="n">u</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">//</span> <span class="n">u</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">u</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span> <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">u_list</span>
+    <span class="p">]</span>
+
+    <span class="n">end_states</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">liga</span><span class="p">,</span> <span class="n">ligb</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pairs</span><span class="o">.</span><span class="n">values</span><span class="p">):</span>
+        <span class="n">end_states</span><span class="p">[</span><span class="n">liga</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+        <span class="n">end_states</span><span class="p">[</span><span class="n">ligb</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">lambdas_list</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+
+    <span class="n">identical_states</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">end_states</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
+    <span class="n">bcmbar</span> <span class="o">=</span> <span class="n">BayesCMBAR</span><span class="p">(</span>
+        <span class="n">u_list</span><span class="p">,</span>
+        <span class="n">num_conf_list</span><span class="p">,</span>
+        <span class="n">identical_states</span><span class="p">,</span>
+        <span class="n">random_seed</span><span class="o">=</span><span class="n">task_id</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">sample_size</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">liga</span><span class="p">,</span> <span class="n">ligb</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pairs</span><span class="o">.</span><span class="n">values</span><span class="p">):</span>
+        <span class="n">deltaF_bcmbar</span><span class="p">[(</span><span class="n">liga</span><span class="p">,</span> <span class="n">ligb</span><span class="p">,</span> <span class="n">phase</span><span class="p">)]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="n">bcmbar</span><span class="o">.</span><span class="n">DeltaF_mode</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">*</span> <span class="n">kbT</span><span class="p">,</span>
+            <span class="s2">&quot;mean&quot;</span><span class="p">:</span> <span class="n">bcmbar</span><span class="o">.</span><span class="n">DeltaF_mean</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="o">*</span><span class="n">kbT</span><span class="p">,</span>
+            <span class="s2">&quot;std&quot;</span><span class="p">:</span> <span class="n">bcmbar</span><span class="o">.</span><span class="n">DeltaF_std</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="o">*</span><span class="n">kbT</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">phase</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">results</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;bmbar&#39;</span><span class="p">:</span> <span class="n">deltaF_bmbar</span><span class="p">,</span> <span class="s1">&#39;bcmbar&#39;</span><span class="p">:</span> <span class="n">deltaF_bcmbar</span><span class="p">}</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Time:&#39;</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">)</span>
+
+<span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="s2">&quot;./output/results&quot;</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;./output/results/n_</span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2">_repeat_</span><span class="si">{</span><span class="n">repeat_id</span><span class="si">}</span><span class="s2">.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="../cbayesmbar_for_harmonic_oscillators.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">CBayesMBAR for harmonic oscillators</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="../../API.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">API</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Xinqiang Ding
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2024, Xinqiang Ding.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>
