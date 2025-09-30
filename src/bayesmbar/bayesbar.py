@@ -7,13 +7,13 @@ import scipy.integrate as integrate
 import jax
 from jax import hessian, jit, value_and_grad
 import jax.numpy as jnp
-from .utils import fmin_newton
+from .utils import JAXClearCaches, fmin_newton
 from tqdm import tqdm
 
 jax.config.update("jax_enable_x64", True)
 
 
-class BayesBAR:
+class BayesBAR(JAXClearCaches):
     """Bayesian Bennett acceptance ratio method"""
 
     def __init__(

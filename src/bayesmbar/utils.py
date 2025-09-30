@@ -1,9 +1,17 @@
+import jax
 import numpy as np
 import jax.numpy as jnp
 from jax import jit, value_and_grad
 from jax import hessian
 from scipy import optimize
 from jax.scipy.special import logsumexp
+
+
+class JAXClearCaches:
+    def __del__(self):
+        """Clear JAX caches when the object is deleted."""
+        jax.clear_caches()
+
 
 def _solve_mbar(dF_init, energy, num_conf, method, verbose=False):
     if method == "Newton":

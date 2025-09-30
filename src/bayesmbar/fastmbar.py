@@ -6,7 +6,7 @@ import jax.numpy as jnp
 import jax.random as jr
 from jax.scipy.special import logsumexp
 import numpy.typing as npt
-from .utils import _solve_mbar
+from .utils import JAXClearCaches, _solve_mbar
 
 jax.config.update("jax_enable_x64", True)
 
@@ -18,7 +18,7 @@ __version__ = "1.4.5"
 __EPS__ = 1e-16
 
 
-class FastMBAR:
+class FastMBAR(JAXClearCaches):
     """
     The FastMBAR class is initialized with an energy matrix and an array
     of num of conformations. The corresponding MBAR equation is solved

@@ -12,6 +12,7 @@ import blackjax
 from optax import sgd
 import optax
 from .utils import (
+    JAXClearCaches,
     _solve_mbar,
     fmin_newton,
     _compute_log_likelihood_of_dF,
@@ -22,7 +23,7 @@ from .utils import (
 jax.config.update("jax_enable_x64", True)
 
 
-class BayesMBAR:
+class BayesMBAR(JAXClearCaches):
     """Bayesian Multistate Bennett Acceptance Ratio (BayesMBAR) method"""
 
     def __init__(
