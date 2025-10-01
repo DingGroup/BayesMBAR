@@ -338,7 +338,7 @@ document.write(`
 <span class="sd">            prior (str, optional): Prior distribution of dF. It can be either &quot;uniform&quot; or &quot;normal&quot;. Defaults to &quot;uniform&quot;.</span>
 <span class="sd">            mean (str, optional): Mean function of the prior. It can be either &quot;constant&quot;, &quot;linear&quot;, or &quot;quadratic&quot;. Defaults to &quot;constant&quot;.</span>
 <span class="sd">            kernel (str, optional): Kernel function of the prior. It can be either &quot;SE&quot;, &quot;Matern52&quot;, &quot;Matern32&quot;, or &quot;RQ&quot;. Defaults to &quot;SE&quot;.</span>
-<span class="sd">            state_cv (np.ndarray, optional): State collective variables. It is a 2D array of shape (n, d), where n is the number of configurations and d is the dimension of the collective variables. Defaults to None.</span>
+<span class="sd">            state_cv (np.ndarray, optional): State collective variables. It is a 2D array of shape (m, d), where m is the number of states and d is the dimension of the collective variables. Defaults to None.</span>
 <span class="sd">            sample_size (int, optional): Number of samples drawn from the posterior distribution. Defaults to 1000.</span>
 <span class="sd">            warmup_steps (int, optional): Number of warmup steps used to find the step size and mass matrix of the NUTS sampler. Defaults to 500.</span>
 <span class="sd">            optimize_steps (int, optional): Number of optimization steps used to learn the hyperparameters when normal priors are used. Defaults to 10000.</span>
