@@ -47,7 +47,7 @@ class BayesMBAR:
             prior (str, optional): Prior distribution of dF. It can be either "uniform" or "normal". Defaults to "uniform".
             mean (str, optional): Mean function of the prior. It can be either "constant", "linear", or "quadratic". Defaults to "constant".
             kernel (str, optional): Kernel function of the prior. It can be either "SE", "Matern52", "Matern32", or "RQ". Defaults to "SE".
-            state_cv (np.ndarray, optional): State collective variables. It is a 2D array of shape (n, d), where n is the number of configurations and d is the dimension of the collective variables. Defaults to None.
+            state_cv (np.ndarray, optional): State collective variables. It is a 2D array of shape (m, d), where m is the number of states and d is the dimension of the collective variables. Defaults to None.
             sample_size (int, optional): Number of samples drawn from the posterior distribution. Defaults to 1000.
             warmup_steps (int, optional): Number of warmup steps used to find the step size and mass matrix of the NUTS sampler. Defaults to 500.
             optimize_steps (int, optional): Number of optimization steps used to learn the hyperparameters when normal priors are used. Defaults to 10000.
