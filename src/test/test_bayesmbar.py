@@ -1,6 +1,8 @@
+import numpy as np
 import pytest
 from pytest import approx
 from bayesmbar import BayesMBAR
+
 
 @pytest.mark.parametrize("method", ["Newton", "L-BFGS-B"])
 def test_BayesMBAR(setup_mbar_data, method):
@@ -11,12 +13,41 @@ def test_BayesMBAR(setup_mbar_data, method):
         verbose=True,
         method=method,
     )
-    assert mbar.F_mode == approx(F_ref, abs = 1e-1)
-    assert mbar.F_mean == approx(F_ref, abs = 1e-1)
+    assert mbar.F_mode == approx(F_ref, abs=1e-1)
+    assert mbar.F_mean == approx(F_ref, abs=1e-1)
 
-    #results = fastmbar.calculate_free_energies_of_perturbed_states(energy_p)
-    #results['F'] = results['F'] - results['F'].mean()
-    #assert results['F'] == approx(F_ref_p, abs = 1e-1)
+
+def test_two_states():
+    M = 2  ## number of states
+    mu = np.linspace(0, 1, M)  ## equilibrium positions
+    k = np.random.uniform(10, 30, M)  ## force constants
+    sigma = np.sqrt(1.0 / k)
+    F_reference = -np.log(sigma)
+    F_reference -= F_reference[0]
+    n = 100
+    x = [np.random.normal(mu[i], sigma[i], (n,)) for i in range(M)]
+    x = np.concatenate(x)
+    u = 0.5 * k.reshape((-1, 1)) * (x - mu.reshape((-1, 1))) ** 2
+    num_conf = np.array([n for i in range(M)])
+    mbar = BayesMBAR(
+        u,
+        num_conf,
+        prior="uniform",
+        mean=None,
+        state_cv=None,
+        kernel=None,
+        sample_size=1000,
+        warmup_steps=100,
+        optimize_steps=0,
+        random_seed=0,
+        verbose=False,
+    )
+    assert len(mbar.F_mode) == 2
+
+    # results = fastmbar.calculate_free_energies_of_perturbed_states(energy_p)
+    # results['F'] = results['F'] - results['F'].mean()
+    # assert results['F'] == approx(F_ref_p, abs = 1e-1)
+
 
 # import pytest
 # from pytest import approx
