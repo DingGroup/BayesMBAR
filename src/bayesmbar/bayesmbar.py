@@ -119,7 +119,8 @@ class BayesMBAR:
 
         ## compute the mean, covariance, and precision of dF based on the samples from the likelihood
         self._dF_mean_ll = jnp.mean(self._dF_samples_ll, axis=0)
-        self._dF_cov_ll = jnp.cov(self._dF_samples_ll.T)
+        # Ensure covariance is 2D for Cholesky decomposition (handle scalar case)
+        self._dF_cov_ll = jnp.atleast_2d(jnp.cov(self._dF_samples_ll.T))
 
         L = jnp.linalg.cholesky(self._dF_cov_ll)
         L_inv = jax.scipy.linalg.solve_triangular(L, jnp.eye(L.shape[0]), lower=True)
