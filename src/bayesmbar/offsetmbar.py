@@ -2,7 +2,7 @@ import numpy as np
 
 from bayesmbar import CBayesMBAR
 from numpy import ndarray
-
+from loguru import logger
 
 class OffsetMBAR:
     def __init__(
@@ -73,6 +73,10 @@ class OffsetMBAR:
             last_state.append((index, states - 1))
             connecting_states.append([(index - 1, states - 1), (index, 0)])
             index += 1
+
+        logger.info(f"identical_states: {[first_state, last_state, *connecting_states]}")
+        for i, (energy, nums_conf) in enumerate(zip(new_energies, new_nums_conf)):
+            logger.info(f"Edge {i}: {nums_conf=} energy:({energy.shape})")
 
         self.cbmbar = CBayesMBAR(
             new_energies,
