@@ -27,5 +27,6 @@ All the methods are implemented using `JAX <https://jax.readthedocs.io/en/latest
 .. toctree::
    :hidden:
    :maxdepth: 2
-   
+
    API
+   FAQ
