@@ -9,6 +9,7 @@ from jax import hessian, jit, value_and_grad
 import jax.numpy as jnp
 from .utils import fmin_newton
 from tqdm import tqdm
+import warnings
 
 jax.config.update("jax_enable_x64", True)
 
@@ -89,24 +90,35 @@ class BayesBAR:
 
         ## compute asymptotic standard deviation
         H = hessian(_compute_logp)(self.dF_mode, self.energy, self.num_conf)
-        _dF_var_asymptotic = -1.0 / H - 1.0 / self.n_0 - 1.0 / self.n_1
-        self._dF_std_asymptotic = jnp.reshape(jnp.sqrt(_dF_var_asymptotic), ())
+        H = H.item()
 
-        ## compute posterior mean and standard deviation using numerical integration
-        self.dF_mean, self.dF_std = _compute_posterior_mean_and_std(
-            self.dF_mode, 10*self._dF_std_asymptotic, self.energy, self.num_conf
-        )
-
-        ## sampling from the posterior distribution
-        self.sample_size = sample_size
-        if self.sample_size > 0:
-            self.dF_samples = _sample_from_posterior(
-                self.dF_mode,
-                self.dF_std,
-                self.energy,
-                self.num_conf,
-                self.sample_size,
+        if -H < 1e-6:
+            warnings.warn(
+                "The asymptotic standard deviation of DeltaF is very large (on the order of 1000 kbT or larger). This indicates that the two states have insufficient overlap. The results are unreliable. The DeltaF_std will be set to None and no samples will be drawn from the posterior distribution. Consider using other methods such as thermodynamic integration or BAR with intermediate states.",
+                RuntimeWarning,
             )
+            self.dF_mean = self.dF_mode
+            self.dF_std = None
+
+        else:                
+            _dF_var_asymptotic = -1.0 / H - 1.0 / self.n_0 - 1.0 / self.n_1
+            self._dF_std_asymptotic = jnp.reshape(jnp.sqrt(_dF_var_asymptotic), ())
+
+            ## compute posterior mean and standard deviation using numerical integration
+            self.dF_mean, self.dF_std = _compute_posterior_mean_and_std(
+                self.dF_mode, 10*self._dF_std_asymptotic, self.energy, self.num_conf
+            )
+
+            ## sampling from the posterior distribution
+            self.sample_size = sample_size
+            if self.sample_size > 0:
+                self.dF_samples = _sample_from_posterior(
+                    self.dF_mode,
+                    self.dF_std,
+                    self.energy,
+                    self.num_conf,
+                    self.sample_size,
+                )
 
         ## Bennett's uncertainty
         du = (
