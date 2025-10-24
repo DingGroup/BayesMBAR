@@ -299,6 +299,7 @@ document.write(`
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">fmin_newton</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tqdm</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 
 <span class="n">jax</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="s2">&quot;jax_enable_x64&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
 
@@ -381,24 +382,35 @@ document.write(`
 
         <span class="c1">## compute asymptotic standard deviation</span>
         <span class="n">H</span> <span class="o">=</span> <span class="n">hessian</span><span class="p">(</span><span class="n">_compute_logp</span><span class="p">)(</span><span class="bp">self</span><span class="o">.</span><span class="n">dF_mode</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_conf</span><span class="p">)</span>
-        <span class="n">_dF_var_asymptotic</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span> <span class="o">/</span> <span class="n">H</span> <span class="o">-</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_0</span> <span class="o">-</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_1</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_dF_std_asymptotic</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">_dF_var_asymptotic</span><span class="p">),</span> <span class="p">())</span>
+        <span class="n">H</span> <span class="o">=</span> <span class="n">H</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
 
-        <span class="c1">## compute posterior mean and standard deviation using numerical integration</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">dF_mean</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dF_std</span> <span class="o">=</span> <span class="n">_compute_posterior_mean_and_std</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">dF_mode</span><span class="p">,</span> <span class="mi">10</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_dF_std_asymptotic</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_conf</span>
-        <span class="p">)</span>
-
-        <span class="c1">## sampling from the posterior distribution</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">sample_size</span> <span class="o">=</span> <span class="n">sample_size</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">dF_samples</span> <span class="o">=</span> <span class="n">_sample_from_posterior</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">dF_mode</span><span class="p">,</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">dF_std</span><span class="p">,</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">energy</span><span class="p">,</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">num_conf</span><span class="p">,</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">sample_size</span><span class="p">,</span>
+        <span class="k">if</span> <span class="o">-</span><span class="n">H</span> <span class="o">&lt;</span> <span class="mf">1e-6</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="s2">&quot;The asymptotic standard deviation of DeltaF is very large (on the order of 1000 kbT or larger). This indicates that the two states have insufficient overlap. The results are unreliable. The DeltaF_std will be set to None and no samples will be drawn from the posterior distribution. Consider using other methods such as thermodynamic integration or BAR with intermediate states.&quot;</span><span class="p">,</span>
+                <span class="ne">RuntimeWarning</span><span class="p">,</span>
             <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dF_mean</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dF_mode</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dF_std</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">else</span><span class="p">:</span>                
+            <span class="n">_dF_var_asymptotic</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span> <span class="o">/</span> <span class="n">H</span> <span class="o">-</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_0</span> <span class="o">-</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dF_std_asymptotic</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">_dF_var_asymptotic</span><span class="p">),</span> <span class="p">())</span>
+
+            <span class="c1">## compute posterior mean and standard deviation using numerical integration</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dF_mean</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dF_std</span> <span class="o">=</span> <span class="n">_compute_posterior_mean_and_std</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">dF_mode</span><span class="p">,</span> <span class="mi">10</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_dF_std_asymptotic</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_conf</span>
+            <span class="p">)</span>
+
+            <span class="c1">## sampling from the posterior distribution</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sample_size</span> <span class="o">=</span> <span class="n">sample_size</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">dF_samples</span> <span class="o">=</span> <span class="n">_sample_from_posterior</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">dF_mode</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">dF_std</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">energy</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">num_conf</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">sample_size</span><span class="p">,</span>
+                <span class="p">)</span>
 
         <span class="c1">## Bennett&#39;s uncertainty</span>
         <span class="n">du</span> <span class="o">=</span> <span class="p">(</span>
