@@ -99,6 +99,7 @@ class OffsetMBAR:
 
     @property
     def F_mean(self) -> list[ndarray]:
+        print(self.cbmbar.F_mean)
         F_mean_list = []
         for real_f, offset_f in zip(self.cbmbar.F_mean[::2], self.cbmbar.F_mean[1::2]):
             F_mean = np.append(real_f, real_f[-1] + offset_f[-1] - offset_f[0])
