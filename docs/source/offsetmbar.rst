@@ -250,7 +250,7 @@ For system :math:`i` and its block within :math:`\mathbf{d}`, the code enforces:
 
    .. math::
 
-      Q[\text{dF\_idx} + M - 1, -1] = 1, \quad b[\text{dF\_idx} + M - 1] = 0.
+      Q[\text{dF_idx} + M - 1, -1] = 1, \quad b[\text{dF_idx} + M - 1] = 0.
 
 All other entries of :math:`Q` and :math:`b` are zero.
 
