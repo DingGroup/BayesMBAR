@@ -102,3 +102,34 @@ def test_offset():
         assert edge[0] == pytest.approx(0, abs=0.1)
         assert edge[-1] == pytest.approx(0, abs=0.1)
         assert edge[-1] - edge[-2] == offset
+
+
+class TestOffsetMBARValidation:
+    """Tests for OffsetMBAR input validation errors."""
+
+    def test_mismatched_lambda_states(self):
+        """Energy matrix rows must match num_conf length."""
+        energies = [np.random.rand(5, 100)]  # 5 lambda states
+        nums_conf = [np.array([20, 20, 20, 20])]  # only 4 entries
+        offsets = [0.0]
+
+        with pytest.raises(AssertionError, match=r"System 0: energy has 5 lambda states, but num_conf has 4"):
+            OffsetMBAR(energies, nums_conf, offsets)
+
+    def test_mismatched_configuration_count(self):
+        """Energy matrix columns must equal sum of num_conf."""
+        energies = [np.random.rand(4, 100)]  # 100 configurations
+        nums_conf = [np.array([20, 20, 20, 20])]  # sums to 80
+        offsets = [0.0]
+
+        with pytest.raises(AssertionError, match=r"System 0: energy has 100 configurations, but num_conf sums to 80"):
+            OffsetMBAR(energies, nums_conf, offsets)
+
+    def test_mismatched_offsets_length(self):
+        """Offsets length must match energies length."""
+        energies = [np.random.rand(4, 80), np.random.rand(4, 80)]
+        nums_conf = [np.array([20, 20, 20, 20])] * 2
+        offsets = [0.0]  # only 1 offset for 2 energies
+
+        with pytest.raises(AssertionError, match=r"offsets length \(1\) != energies length \(2\)"):
+            OffsetMBAR(energies, nums_conf, offsets)

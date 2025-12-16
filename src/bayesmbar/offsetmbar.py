@@ -22,6 +22,7 @@ class OffsetMBAR:
         sample_size: int = 1000,
         warmup_steps: int = 500,
         method: str = "Newton",
+        max_iter: int = 300,
         random_seed: int = None,
         verbose: bool = True,
     ) -> None:
@@ -52,12 +53,20 @@ class OffsetMBAR:
         method : str, optional
             Optimization method to find the likelihood mode. Either "Newton" or
             "L-BFGS-B". Default: "Newton".
+        max_iter : int, optional
+            Maximum number of iterations for the Newton optimizer. Default: 300.
         random_seed : int, optional
             Random seed. If None, a seed is generated from the current time.
             Default: None.
         verbose : bool, optional
             If True, print sampling progress. Default: True.
         """
+        for i, (energy, num_conf) in enumerate(zip(energies, nums_conf, strict=True)):
+            n_lambda, n_conf = energy.shape
+            assert n_lambda == len(num_conf), f"System {i}: energy has {n_lambda} lambda states, but num_conf has {len(num_conf)}."
+            assert n_conf == sum(num_conf), f"System {i}: energy has {n_conf} configurations, but num_conf sums to {sum(num_conf)}."
+        assert len(offsets) == len(energies), f"offsets length ({len(offsets)}) != energies length ({len(energies)})."
+
         self._energies = [jnp.float64(u) for u in energies]
         self._nums_conf = [jnp.int32(n) for n in nums_conf]
         self._offsets = jnp.array(offsets)
@@ -98,9 +107,10 @@ class OffsetMBAR:
                 x,
                 args=(self._Q, self._b, self._energies, self._nums_conf),
                 verbose=self._verbose,
+                max_iter=max_iter,
             )
         elif method == "L-BFGS-B":
-            options = {"disp": verbose, "gtol": 1e-8}
+            options = {"disp": verbose, "gtol": 1e-8, "maxiter": max_iter}
             f = jit(value_and_grad(_compute_offset_loss_likelihood))
             res = optimize.minimize(
                 lambda x: [
@@ -112,6 +122,11 @@ class OffsetMBAR:
                 tol=1e-12,
                 options=options,
             )
+            if not res.success:
+                raise RuntimeError(
+                    f"L-BFGS-B did not converge after {max_iter} iterations. "
+                    f"Message: {res.message}. Consider increasing max_iter."
+                )
         else:
             raise ValueError("Invalid method")
         

@@ -167,6 +167,13 @@ def fmin_newton(f, hess, x_init, args=(), verbose=True, eps=1e-10, max_iter=300)
         else:
             print("CONVERGENCE: NUM_OF_ITERATION REACH MAX_ITERATION")
 
+    if newton_decrement_square / 2.0 > eps:
+        raise RuntimeError(
+            f"Newton's method did not converge after {max_iter} iterations. "
+            f"Final 1/2*Newton_decrement^2 = {newton_decrement_square / 2.0:.5E} > eps = {eps:.5E}. "
+            f"Consider increasing max_iter or adjusting the problem."
+        )
+
     return {
         "x": x,
         "N_iter": indx_iter + 1,
