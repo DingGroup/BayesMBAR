@@ -63,7 +63,7 @@ The standard MBAR log-likelihood (implemented via ``_compute_log_likelihood_of_d
 
 .. math::
 
-   \log \mathcal{L}_i(\mathbf{d}_i; \text{energies}_i, \text{nums\_conf}_i),
+   \log \mathcal{L}_i(\mathbf{d}_i; \text{energies}_i, \text{nums_conf}_i),
 
 and the joint log-likelihood across systems (without coupling) would be
 
@@ -208,7 +208,7 @@ For system :math:`i` and its block within :math:`\mathbf{d}`, the code enforces:
 
    .. math::
 
-      Q[\text{dF\_idx} + j, \text{x\_idx} + j] = 1,\quad b[\text{dF\_idx} + j] = 0.
+      Q[\text{dF_idx} + j, \text{x_idx} + j] = 1,\quad b[\text{dF_idx} + j] = 0.
 
 2. **Last MBAR difference** :math:`\Delta F_{i,M-2}` **satisfies the constraint**:
 
@@ -229,8 +229,8 @@ For system :math:`i` and its block within :math:`\mathbf{d}`, the code enforces:
 
    .. math::
 
-      Q[\text{dF\_idx} + M - 2, -1] = 1, \quad
-      b[\text{dF\_idx} + M - 2] = -\mathrm{offset}_i.
+      Q[\text{dF_idx} + M - 2, -1] = 1, \quad
+      b[\text{dF_idx} + M - 2] = -\mathrm{offset}_i.
 
 3. **Offset state has free energy** :math:`c`:
 
@@ -388,7 +388,7 @@ Let :math:`\mathbf{x}^*` denote the optimizer found by either method. Then:
 
   .. math::
 
-     \{\mathbf{F}_i^*\} = \text{\_dF\_to\_state\_F\_with\_offset}(\mathbf{d}^*, \text{nums\_state}).
+     \{\mathbf{F}_i^*\} = \text{_dF_to_state_F_with_offset}(\mathbf{d}^*, \text{nums_state}).
 
 These are stored as:
 
@@ -417,7 +417,7 @@ If ``sample_size > 0``, the implementation samples from the **posterior (or like
    .. math::
 
       \log p(\mathbf{x}) := \log \mathcal{L}(\mathbf{x}) 
-      = \text{\_compute\_offset\_log\_likelihood}(\mathbf{x}, Q, b, \text{energies}, \text{nums\_conf}).
+      = \text{_compute_offset_log_likelihood}(\mathbf{x}, Q, b, \text{energies}, \text{nums_conf}).
 
    (Strictly speaking, this is the log-likelihood; one can interpret it as log-posterior if combined with a flat prior.)
 
