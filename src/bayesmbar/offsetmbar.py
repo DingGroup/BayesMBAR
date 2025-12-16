@@ -1,16 +1,14 @@
 import time
-from functools import partial
 from typing import List
 import numpy as np
 from numpy import ndarray
 import jax
 import jax.numpy as jnp
 from jax import random, hessian, jit, value_and_grad, vmap
-from jax.scipy.special import logsumexp
 from scipy import optimize
 
 from .bayesmbar import _sample_from_logdensity
-from .utils import fmin_newton
+from .utils import fmin_newton, _compute_log_likelihood_of_dF
 
 jax.config.update("jax_enable_x64", True)
 
@@ -83,12 +81,6 @@ class OffsetMBAR:
         
         # Number of states in each MBAR system
         self._nums_state = [len(n) for n in self._nums_conf]
-        self._num_systems = len(self._nums_state)
-        self._M = self._nums_state[0]  # All systems have same number of states
-        
-        # Pre-compute padded arrays for vectorized computation
-        self._energies_padded, self._nums_conf_padded, self._conf_masks = \
-            _prepare_padded_arrays(self._energies, self._nums_conf)
         
         # Build the constraint matrix and offset vector
         # For each system, we have:
@@ -106,31 +98,24 @@ class OffsetMBAR:
         if self._verbose:
             print("Solve for the mode of the likelihood")
         
-        # Create JIT-compiled functions with static arguments baked in
-        @partial(jit)
-        def loss_fn(x):
-            return _compute_offset_loss_likelihood_vectorized(
-                x, self._Q, self._b, 
-                self._energies_padded, self._nums_conf_padded, self._conf_masks,
-                self._M, self._num_systems
-            )
-        
-        f = jit(value_and_grad(loss_fn))
-        hess_fn = jit(hessian(loss_fn))
-        
         if method == "Newton":
+            f = jit(value_and_grad(_compute_offset_loss_likelihood))
+            hess = jit(hessian(_compute_offset_loss_likelihood))
             res = fmin_newton(
-                lambda x, *_: f(x),  # Wrapper to match expected signature
-                lambda x, *_: hess_fn(x),
+                f,
+                hess,
                 x,
-                args=(),
+                args=(self._Q, self._b, self._energies, self._nums_conf),
                 verbose=self._verbose,
                 max_iter=max_iter,
             )
         elif method == "L-BFGS-B":
             options = {"disp": verbose, "gtol": 1e-8, "maxiter": max_iter}
+            f = jit(value_and_grad(_compute_offset_loss_likelihood))
             res = optimize.minimize(
-                lambda x: [np.array(r) for r in f(x)],
+                lambda x: [
+                    np.array(r) for r in f(x, self._Q, self._b, self._energies, self._nums_conf)
+                ],
                 x,
                 jac=True,
                 method="L-BFGS-B",
@@ -158,13 +143,9 @@ class OffsetMBAR:
             
             self._rng_key, subkey = random.split(self._rng_key)
             
-            # Use vectorized log density for sampling
-            @jit
             def logdensity(x):
-                return _compute_offset_log_likelihood_vectorized(
-                    x, self._Q, self._b,
-                    self._energies_padded, self._nums_conf_padded, self._conf_masks,
-                    self._M, self._num_systems
+                return _compute_offset_log_likelihood(
+                    x, self._Q, self._b, self._energies, self._nums_conf
                 )
             
             self._x_samples_ll = _sample_from_logdensity(
@@ -277,53 +258,6 @@ def _dF_to_state_F_with_offset(
     return state_F
 
 
-def _compute_log_likelihood_of_dF_single(dF, energy, num_conf):
-    """Compute log likelihood for a single MBAR system (inlined for performance)."""
-    F = jnp.concatenate([jnp.zeros((1,)), dF])
-    logn = jnp.log(num_conf)
-    u = energy.T - F - logn
-    return jnp.sum(num_conf * F) - logsumexp(-u, axis=1).sum()
-
-
-@partial(jit, static_argnames=['M', 'num_systems'])
-def _compute_offset_log_likelihood_vectorized(
-    x: jnp.ndarray,
-    Q: jnp.ndarray,
-    b: jnp.ndarray,
-    energies_padded: jnp.ndarray,
-    nums_conf_padded: jnp.ndarray,
-    conf_masks: jnp.ndarray,
-    M: int,
-    num_systems: int,
-):
-    """Vectorized log likelihood computation for offset-constrained MBAR.
-    
-    This version pads all systems to the same shape and uses vmap for parallelization.
-    """
-    dF_full = jnp.dot(Q, x) + b
-    
-    # Reshape to (num_systems, M) and extract MBAR dFs (first M-1 columns)
-    dF_reshaped = dF_full.reshape(num_systems, M)
-    mbar_dFs = dF_reshaped[:, :M-1]  # Shape: (num_systems, M-1)
-    
-    # Build F matrices: prepend zeros -> (num_systems, M)
-    F_matrices = jnp.concatenate([jnp.zeros((num_systems, 1)), mbar_dFs], axis=1)
-    
-    # Compute log likelihoods in parallel using vmap
-    def single_system_ll(F, energy, num_conf, mask):
-        logn = jnp.log(jnp.where(num_conf > 0, num_conf, 1.0))  # Avoid log(0)
-        u = energy.T - F - logn  # (n_conf, M)
-        # Mask out padded configurations
-        log_sum_exp = logsumexp(-u, axis=1)  # (n_conf,)
-        masked_lse = jnp.where(mask, log_sum_exp, 0.0)
-        return jnp.sum(num_conf * F) - jnp.sum(masked_lse)
-    
-    log_likelihoods = vmap(single_system_ll)(
-        F_matrices, energies_padded, nums_conf_padded, conf_masks
-    )
-    return jnp.sum(log_likelihoods)
-
-
 def _compute_offset_log_likelihood(
     x: jnp.ndarray,
     Q: jnp.ndarray,
@@ -331,24 +265,21 @@ def _compute_offset_log_likelihood(
     energies: List[jnp.ndarray],
     nums_conf: List[jnp.ndarray],
 ):
-    """Compute the log likelihood for the offset-constrained MBAR.
-    
-    Falls back to loop-based computation for variable-sized systems.
-    """
+    """Compute the log likelihood for the offset-constrained MBAR."""
     dF_full = jnp.dot(Q, x) + b
     nums_state = [len(s) for s in nums_conf]
     
-    # Use lax.fori_loop for better JIT performance
-    M = nums_state[0]
-    num_systems = len(nums_state)
+    log_likelihood = 0
+    idx = 0
+    for i, n in enumerate(nums_state):
+        # Extract the MBAR free energy differences (excluding the offset state)
+        mbar_dF = dF_full[idx : idx + n - 1]
+        
+        # Compute log likelihood for this MBAR system
+        log_likelihood += _compute_log_likelihood_of_dF(mbar_dF, energies[i], nums_conf[i])
+        
+        idx += n  # Move to next system
     
-    def body_fn(i, acc):
-        idx = i * M
-        mbar_dF = jax.lax.dynamic_slice(dF_full, (idx,), (M - 1,))
-        ll = _compute_log_likelihood_of_dF_single(mbar_dF, energies[i], nums_conf[i])
-        return acc + ll
-    
-    log_likelihood = jax.lax.fori_loop(0, num_systems, body_fn, 0.0)
     return log_likelihood
 
 
@@ -363,53 +294,6 @@ def _compute_offset_loss_likelihood(
     log_likelihood = _compute_offset_log_likelihood(x, Q, b, energies, nums_conf)
     N = jnp.sum(jnp.array([jnp.sum(n) for n in nums_conf]))
     return -log_likelihood / N
-
-
-def _compute_offset_loss_likelihood_vectorized(
-    x: jnp.ndarray,
-    Q: jnp.ndarray,
-    b: jnp.ndarray,
-    energies_padded: jnp.ndarray,
-    nums_conf_padded: jnp.ndarray,
-    conf_masks: jnp.ndarray,
-    M: int,
-    num_systems: int,
-):
-    """Compute the loss (negative normalized log likelihood) using vectorized computation."""
-    log_likelihood = _compute_offset_log_likelihood_vectorized(
-        x, Q, b, energies_padded, nums_conf_padded, conf_masks, M, num_systems
-    )
-    N = jnp.sum(nums_conf_padded)
-    return -log_likelihood / N
-
-
-def _prepare_padded_arrays(
-    energies: List[jnp.ndarray],
-    nums_conf: List[jnp.ndarray],
-):
-    """Prepare padded arrays for vectorized computation.
-    
-    Pads all energy matrices to the same shape so they can be stacked.
-    Returns padded energies, padded num_conf, and configuration masks.
-    """
-    num_systems = len(energies)
-    M = energies[0].shape[0]  # Number of states (same for all systems)
-    
-    # Find max number of configurations across all systems
-    max_n_conf = max(e.shape[1] for e in energies)
-    
-    # Pad energies to (num_systems, M, max_n_conf)
-    energies_padded = jnp.zeros((num_systems, M, max_n_conf))
-    nums_conf_padded = jnp.zeros((num_systems, M), dtype=jnp.int32)
-    conf_masks = jnp.zeros((num_systems, max_n_conf), dtype=bool)
-    
-    for i, (energy, num_conf) in enumerate(zip(energies, nums_conf)):
-        n_conf = energy.shape[1]
-        energies_padded = energies_padded.at[i, :, :n_conf].set(energy)
-        nums_conf_padded = nums_conf_padded.at[i].set(num_conf)
-        conf_masks = conf_masks.at[i, :n_conf].set(True)
-    
-    return energies_padded, nums_conf_padded, conf_masks
 
 
 def _compute_offset_projection(nums_state: List[int], offsets: jnp.ndarray):
