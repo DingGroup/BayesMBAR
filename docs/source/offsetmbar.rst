@@ -8,14 +8,31 @@ We present **OffsetMBAR**, a coupled Bayesian MBAR (Multistate Bennett Acceptanc
 
 ----
 
+Schematic (constraint and implementation)
+-----------------------------------------
+
+.. figure:: _static/offsetmbar_constraint.png
+   :width: 95%
+   :align: center
+   :alt: OffsetMBAR schematic showing the offset constraint and the linear projection dF = Q x + b.
+
+   **OffsetMBAR overview.** (a) The constraint enforces :math:`F_{i,M-1} + \mathrm{offset}_i = c` across coupled MBAR systems. (b) The implementation enforces this by optimizing in a reduced parameter space :math:`\mathbf{x}` and mapping to constrained free-energy differences via :math:`\mathbf{dF} = Q\mathbf{x} + \mathbf{b}`.
+
+Vector version for manuscripts: ``docs/source/_static/offsetmbar_constraint.pdf`` (and ``.svg``).
+
 1. Problem Setting
 ------------------
 
-Consider :math:`S` MBAR systems, indexed by :math:`i = 0, \dots, S-1`. Each system has
+Consider :math:`S` MBAR systems, indexed by :math:`i = 1, \dots, S`. Each system has
 :math:`M` thermodynamic states (assumed identical across systems):
 
 - **Energies**: For system :math:`i`, we have reduced potentials :math:`u_{i,k}(\mathbf{x})` for states :math:`k = 0, \dots, M-1`, evaluated on a set of configurations (trajectories) with associated **counts**.
 - **Counts**: Let :math:`N_{i,k}` be the number of configurations sampled from state :math:`k` in system :math:`i`. The code represents these as arrays ``energies[i]`` and ``nums_conf[i]``.
+
+**Indexing note:** throughout this document we use **1-indexed** coupled-system labels
+(:math:`i=1,\dots,S`) to match the figure and typical manuscript conventions. The Python
+implementation uses standard **0-indexed** lists/arrays, so you will see system indices
+``0..S-1`` in code.
 
 We denote by
 
@@ -30,13 +47,15 @@ the dimensionless free energy (in units of :math:`kT`) of state :math:`k` in sys
 2. Classical MBAR Parameterization
 ----------------------------------
 
-For each system :math:`i`, we define free energy differences relative to state 0:
+For each system :math:`i`, we define free energy differences relative to state 0 using the
+common convention:
 
 .. math::
 
-   \Delta F_{i,k} \equiv F_{i,k+1} - F_{i,0}, \quad k = 0,\dots,M-2.
+   \Delta F_{i,k} \equiv F_{i,k} - F_{i,0}, \quad k = 0,\dots,M-1.
 
-Thus each system has :math:`M-1` independent parameters :math:`\Delta F_{i,0}, \dots, \Delta F_{i,M-2}`.
+Note that :math:`\Delta F_{i,0}=0` by definition, so each system has :math:`M-1` nontrivial
+free-energy differences :math:`\Delta F_{i,1}, \dots, \Delta F_{i,M-1}`.
 
 In vector form, for system :math:`i` we define
 
@@ -44,10 +63,11 @@ In vector form, for system :math:`i` we define
 
    \mathbf{d}_i = 
    \begin{bmatrix}
-   \Delta F_{i,0} \\
-   \Delta F_{i,1} \\
    \vdots \\
-   \Delta F_{i,M-2}
+   \Delta F_{i,1} \\
+   \Delta F_{i,2} \\
+   \vdots \\
+   \Delta F_{i,M-1}
    \end{bmatrix}
    \in \mathbb{R}^{M-1}.
 
@@ -55,7 +75,7 @@ The associated **state free energies** can be reconstructed as
 
 .. math::
 
-   F_{i,0} = 0, \quad F_{i,k} = \Delta F_{i,k-1} \;\; \text{for } k=1,\dots, M-1.
+   F_{i,0} = 0, \quad F_{i,k} = \Delta F_{i,k} \;\; \text{for } k=1,\dots, M-1.
 
 i.e., the reference state 0 is fixed to zero, and all others are expressed as differences.
 
@@ -69,7 +89,7 @@ and the joint log-likelihood across systems (without coupling) would be
 
 .. math::
 
-   \log \mathcal{L}(\{\mathbf{d}_i\}) = \sum_{i=0}^{S-1} \log \mathcal{L}_i(\mathbf{d}_i).
+   \log \mathcal{L}(\{\mathbf{d}_i\}) = \sum_{i=1}^{S} \log \mathcal{L}_i(\mathbf{d}_i).
 
 ----
 
@@ -92,11 +112,12 @@ The constraint imposed in the code (see ``_compute_offset_projection``) is:
 
 where :math:`c` is a shared constant (a new global parameter).
 
-Since :math:`F_{i,M-1} = \Delta F_{i,M-2}` (because it is the last MBAR state above the reference 0), the constraint can be written equivalently as
+Since :math:`F_{i,M-1} = \Delta F_{i,M-1}` under this convention (with :math:`F_{i,0}=0`), the
+constraint can be written equivalently as
 
 .. math::
 
-   \Delta F_{i,M-2} + \mathrm{offset}_i = c \quad \text{for all } i.
+   \Delta F_{i,M-1} + \mathrm{offset}_i = c \quad \text{for all } i.
 
 This defines a set of linear constraints tying together the last free-energy differences of each system.
 
@@ -124,8 +145,13 @@ The constraint then becomes:
 
 This structure is reflected in ``_dF_to_state_F_with_offset``, where for each system segment:
 
-- ``mbar_dF = dF[..., idx : idx + n - 1]`` holds the :math:`M-1` MBAR free energy differences :math:`\Delta F_{i,0}, \dots, \Delta F_{i,M-2}`,
+- ``mbar_dF = dF[..., idx : idx + n - 1]`` holds the :math:`M-1` nontrivial MBAR differences
+  :math:`\Delta F_{i,1}, \dots, \Delta F_{i,M-1}`,
 - ``offset_value = dF[..., idx + n - 1]`` holds the extra offset state free energy, conceptually equal to :math:`c`.
+
+**Implementation note (indexing):** for convenience, the code stores the nontrivial differences
+in a length-:math:`M-1` vector indexed from 0, i.e. the stored element ``mbar_dF[k]`` corresponds
+to :math:`\Delta F_{i,k+1}` in the common convention.
 
 The function reconstructs the full vector of free energies for system :math:`i` as
 
@@ -177,11 +203,12 @@ where:
 5.1. Independent Parameters :math:`\mathbf{x}`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For each system :math:`i`, we treat the **first** :math:`M-2` **MBAR differences** as unconstrained:
+For each system :math:`i`, we treat the :math:`M-2` nontrivial differences
+:math:`\Delta F_{i,1},\dots,\Delta F_{i,M-2}` as unconstrained:
 
 .. math::
 
-   x_{(i,j)} = \Delta F_{i,j}, \quad j = 0, \dots, M-3.
+   x_{(i,j)} = \Delta F_{i,j+1}, \quad j = 0, \dots, M-3.
 
 This contributes :math:`S (M-2)` free parameters. In addition, we introduce a global scalar:
 
@@ -198,11 +225,11 @@ Collecting all of these, we obtain :math:`\mathbf{x} \in \mathbb{R}^{S(M-2)+1}`.
 
 For system :math:`i` and its block within :math:`\mathbf{d}`, the code enforces:
 
-1. **First** :math:`M-2` **MBAR differences are identity**:
+1. **Unconstrained differences are identity**:
 
    .. math::
 
-      \Delta F_{i,j} = x_{(i,j)}, \quad j=0,\dots,M-3.
+      \Delta F_{i,j+1} = x_{(i,j)}, \quad j=0,\dots,M-3.
 
    In matrix form, this means that for corresponding indices,
 
@@ -210,20 +237,20 @@ For system :math:`i` and its block within :math:`\mathbf{d}`, the code enforces:
 
       Q[\text{dF_idx} + j, \text{x_idx} + j] = 1,\quad b[\text{dF_idx} + j] = 0.
 
-2. **Last MBAR difference** :math:`\Delta F_{i,M-2}` **satisfies the constraint**:
+2. **Constrained last difference** :math:`\Delta F_{i,M-1}` **satisfies the constraint**:
 
    We know
 
    .. math::
 
-      \Delta F_{i,M-2} + \mathrm{offset}_i = c \Rightarrow
-      \Delta F_{i,M-2} = c - \mathrm{offset}_i.
+      \Delta F_{i,M-1} + \mathrm{offset}_i = c \Rightarrow
+      \Delta F_{i,M-1} = c - \mathrm{offset}_i.
 
    Hence this component is *not* free; it is given by
 
    .. math::
 
-      \Delta F_{i,M-2} = x_c - \mathrm{offset}_i.
+      \Delta F_{i,M-1} = x_c - \mathrm{offset}_i.
 
    In matrix/vector terms:
 
@@ -292,7 +319,7 @@ Then the **last MBAR state** free energy is
 
 .. math::
 
-   F_{i,M-1} = \Delta F_{i,M-2} = x_c - \mathrm{offset}_i.
+   F_{i,M-1} = \Delta F_{i,M-1} = x_c - \mathrm{offset}_i.
 
 Therefore,
 
@@ -356,7 +383,7 @@ where
 
 .. math::
 
-   N_{\text{tot}} = \sum_{i=0}^{S-1} \sum_{k=0}^{M-1} N_{i,k}
+   N_{\text{tot}} = \sum_{i=1}^{S} \sum_{k=0}^{M-1} N_{i,k}
 
 is the total number of samples across all systems. This normalization does not change the optimizer's argmin, only the scale of the objective.
 
