@@ -18,14 +18,15 @@ def test_BayesMBAR(setup_mbar_data, method):
 
 
 def test_two_states():
+    rng = np.random.default_rng(42)  # Set seed for reproducibility
     M = 2  ## number of states
     mu = np.linspace(0, 1, M)  ## equilibrium positions
-    k = np.random.uniform(10, 30, M)  ## force constants
+    k = rng.uniform(10, 30, M)  ## force constants
     sigma = np.sqrt(1.0 / k)
     F_reference = -np.log(sigma)
     F_reference -= F_reference[0]
     n = 100
-    x = [np.random.normal(mu[i], sigma[i], (n,)) for i in range(M)]
+    x = [rng.normal(mu[i], sigma[i], (n,)) for i in range(M)]
     x = np.concatenate(x)
     u = 0.5 * k.reshape((-1, 1)) * (x - mu.reshape((-1, 1))) ** 2
     num_conf = np.array([n for i in range(M)])
@@ -45,8 +46,8 @@ def test_two_states():
     F_reference = F_reference[-1] - F_reference[0]
     F_mean = mbar.F_mean
     F_mode = mbar.F_mode
-    assert (F_mean[-1] - F_mean[0]) == approx(F_reference, abs=1)
-    assert (F_mode[-1] - F_mode[0]) == approx(F_reference, abs=1)
+    assert (F_mean[-1] - F_mean[0]) == approx(F_reference, abs=0.2)
+    assert (F_mode[-1] - F_mode[0]) == approx(F_reference, abs=0.2)
 
     # results = fastmbar.calculate_free_energies_of_perturbed_states(energy_p)
     # results['F'] = results['F'] - results['F'].mean()
