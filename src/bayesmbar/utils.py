@@ -47,6 +47,27 @@ def _compute_log_likelihood_of_F(F, energy, num_conf):
     return L
 
 
+def _compute_log_likelihood_of_F_fast(F, energy, num_conf, log_num_conf):
+    """
+    Compute the log likelihood of F with pre-computed log(num_conf).
+
+    This is an optimized version that avoids recomputing log(num_conf) on each call.
+
+    Arguments:
+        F (jnp.ndarray): Free energies of the states
+        energy (jnp.ndarray): Energy matrix
+        num_conf (jnp.ndarray): Number of configurations in each state
+        log_num_conf (jnp.ndarray): Pre-computed log(num_conf)
+
+    Returns:
+        jnp.ndarray: Log likelihood of F
+
+    """
+    u = energy.T - F - log_num_conf
+    L = jnp.sum(num_conf * F) - logsumexp(-u, axis=1).sum()
+    return L
+
+
 def _compute_log_likelihood_of_dF(dF, energy, num_conf):
     """
     Compute the log likelihood of dF.

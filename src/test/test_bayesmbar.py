@@ -1,4 +1,5 @@
 import pytest
+import numpy as np
 from pytest import approx
 from bayesmbar import BayesMBAR
 
@@ -13,6 +14,75 @@ def test_BayesMBAR(setup_mbar_data, method):
     )
     assert mbar.F_mode == approx(F_ref, abs = 1e-1)
     assert mbar.F_mean == approx(F_ref, abs = 1e-1)
+
+
+def test_BayesMBAR_uniform_prior_accuracy(setup_mbar_data):
+    """Fast test: verify uniform prior gives correct results.
+    
+    This is a quick sanity check that runs in <5s.
+    """
+    energy, num_conf, F_ref, energy_p, F_ref_p = setup_mbar_data
+    
+    mbar = BayesMBAR(
+        energy, num_conf,
+        prior='uniform',
+        sample_size=20, warmup_steps=10,
+        random_seed=42,
+        verbose=False,
+    )
+    
+    # Should recover reference free energies
+    assert mbar.F_mode == approx(F_ref, abs=0.2)
+
+
+def test_auto_elbo_samples_scaling():
+    """Test that auto elbo_samples scales appropriately with problem size."""
+    from bayesmbar.bayesmbar import _compute_optimal_elbo_samples
+    
+    # Small problem: should use ~4*dim samples
+    samples_small = _compute_optimal_elbo_samples(m=5, n=500, verbose=False)
+    assert 16 <= samples_small <= 64  # 4*4=16 for dim=4
+    
+    # Medium problem
+    samples_medium = _compute_optimal_elbo_samples(m=20, n=10000, verbose=False)
+    assert 50 <= samples_medium <= 150
+    
+    # Large problem with many configs: should reduce samples
+    samples_large = _compute_optimal_elbo_samples(m=50, n=200000, verbose=False)
+    assert 32 <= samples_large <= 100  # Reduced due to large n
+    
+    # Verify bounds are respected
+    samples_min = _compute_optimal_elbo_samples(m=3, n=100, verbose=False)
+    assert samples_min >= 32  # Minimum bound
+    
+    samples_max = _compute_optimal_elbo_samples(m=200, n=1000, verbose=False)
+    assert samples_max <= 256  # Maximum bound
+
+
+def test_elbo_samples_validation(setup_mbar_data):
+    """Test that invalid elbo_samples values raise clear errors."""
+    energy, num_conf, F_ref, energy_p, F_ref_p = setup_mbar_data
+    
+    # Valid values should work
+    mbar = BayesMBAR(energy, num_conf, elbo_samples="auto", verbose=False)
+    assert mbar._elbo_samples > 0
+    
+    mbar = BayesMBAR(energy, num_conf, elbo_samples=64, verbose=False)
+    assert mbar._elbo_samples == 64
+    
+    # Invalid values should raise ValueError
+    with pytest.raises(ValueError, match="must be 'auto' or a positive integer"):
+        BayesMBAR(energy, num_conf, elbo_samples=0, verbose=False)
+    
+    with pytest.raises(ValueError, match="must be 'auto' or a positive integer"):
+        BayesMBAR(energy, num_conf, elbo_samples=-10, verbose=False)
+    
+    with pytest.raises(ValueError, match="must be 'auto' or a positive integer"):
+        BayesMBAR(energy, num_conf, elbo_samples=3.14, verbose=False)
+    
+    with pytest.raises(ValueError, match="must be 'auto' or a positive integer"):
+        BayesMBAR(energy, num_conf, elbo_samples="invalid", verbose=False)
+
 
     #results = fastmbar.calculate_free_energies_of_perturbed_states(energy_p)
     #results['F'] = results['F'] - results['F'].mean()
