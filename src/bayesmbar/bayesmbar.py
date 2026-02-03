@@ -33,9 +33,11 @@ class BayesMBAR:
         mean: Literal["constant", "linear", "quadratic"] = "constant",
         kernel: Literal["SE", "Matern52", "Matern32", "RQ"] = "SE",
         state_cv: np.ndarray = None,
-        sample_size: int = 1000,
-        warmup_steps: int = 500,
-        optimize_steps: int = 10000,
+        sample_size: int = None,
+        warmup_steps: int = None,
+        max_optimize_steps: int = 10000,
+        optimize_patience: int = 500,
+        optimize_min_delta: float = 1e-4,
         verbose: bool = True,
         random_seed: int = 0,
         method: Literal["Newton", "L-BFGS-B"] = "Newton",
@@ -48,9 +50,11 @@ class BayesMBAR:
             mean (str, optional): Mean function of the prior. It can be either "constant", "linear", or "quadratic". Defaults to "constant".
             kernel (str, optional): Kernel function of the prior. It can be either "SE", "Matern52", "Matern32", or "RQ". Defaults to "SE".
             state_cv (np.ndarray, optional): State collective variables. It is a 2D array of shape (m, d), where m is the number of states and d is the dimension of the collective variables. Defaults to None.
-            sample_size (int, optional): Number of samples drawn from the posterior distribution. Defaults to 1000.
-            warmup_steps (int, optional): Number of warmup steps used to find the step size and mass matrix of the NUTS sampler. Defaults to 500.
-            optimize_steps (int, optional): Number of optimization steps used to learn the hyperparameters when normal priors are used. Defaults to 10000.
+            sample_size (int, optional): Number of samples drawn from the posterior distribution. If None, defaults to max(1000, 100 * (m - 1)) where m is the number of states.
+            warmup_steps (int, optional): Number of warmup steps used to find the step size and mass matrix of the NUTS sampler. If None, defaults to max(500, sample_size // 2).
+            max_optimize_steps (int, optional): Maximum number of optimization steps used to learn the hyperparameters when normal priors are used. Defaults to 10000.
+            optimize_patience (int, optional): Number of steps without improvement before early stopping. Defaults to 500.
+            optimize_min_delta (float, optional): Minimum change in loss to qualify as an improvement. Defaults to 1e-4.
             verbose (bool, optional): Whether to print the progress bar for the optimization and sampling. Defaults to True.
             random_seed (int, optional): Random seed. Defaults to 0.
 
@@ -66,16 +70,28 @@ class BayesMBAR:
         if state_cv is not None:
             self._state_cv = state_cv[1:]
 
-        self._sample_size = sample_size
-        self._warmup_steps = warmup_steps
-        self._optimize_steps = optimize_steps
+        self._m = self._energy.shape[0]
+        self._n = self._energy.shape[1]
+
+        # Adaptive sample_size: scale with dimension (m-1)
+        if sample_size is None:
+            self._sample_size = max(1000, 100 * (self._m - 1))
+        else:
+            self._sample_size = sample_size
+
+        # Adaptive warmup_steps: scale with sample_size
+        if warmup_steps is None:
+            self._warmup_steps = max(500, self._sample_size // 2)
+        else:
+            self._warmup_steps = warmup_steps
+
+        self._max_optimize_steps = max_optimize_steps
+        self._optimize_patience = optimize_patience
+        self._optimize_min_delta = optimize_min_delta
 
         self._verbose = verbose
         self._method = method
         self._rng_key = jax.random.PRNGKey(random_seed)
-
-        self._m = self._energy.shape[0]
-        self._n = self._energy.shape[1]
 
         # We first compute the mode estimate based on the likelihood
         # because it is used in both the uniform and normal priors.
@@ -174,7 +190,7 @@ class BayesMBAR:
             )
             raw_params = _params_to_raw(params)
 
-            ## optimize the hyperparameters
+            ## optimize the hyperparameters with early stopping
             self._rng_key, subkey = random.split(self._rng_key)
             optimizer = sgd(learning_rate=1e-3, momentum=0.9, nesterov=True)
             opt_state = optimizer.init(raw_params)
@@ -186,14 +202,42 @@ class BayesMBAR:
                 raw_params = optax.apply_updates(raw_params, update)
                 return loss, raw_params, opt_state
 
-            for i in range(optimize_steps):
+            # Early stopping state
+            best_loss = float("inf")
+            best_raw_params = raw_params
+            steps_without_improvement = 0
+
+            for i in range(self._max_optimize_steps):
                 loss, raw_params, opt_state = step(
                     subkey, raw_params, opt_state, self.mean, self.kernel, _data
                 )
                 self._rng_key, subkey = random.split(self._rng_key)
-                if i % 100 == 0:
+
+                # Check for improvement
+                loss_val = float(loss)
+                if loss_val < best_loss - self._optimize_min_delta:
+                    best_loss = loss_val
+                    best_raw_params = raw_params
+                    steps_without_improvement = 0
+                else:
+                    steps_without_improvement += 1
+
+                if self._verbose and i % 100 == 0:
                     params = _params_from_raw(raw_params)
                     print(f"step: {i:>10d}, loss: {loss:10.4f}", _print_params(params))
+
+                # Early stopping check
+                if steps_without_improvement >= self._optimize_patience:
+                    if self._verbose:
+                        print(
+                            f"Early stopping at step {i}: no improvement for {self._optimize_patience} steps"
+                        )
+                    break
+
+            # Use best parameters found
+            raw_params = best_raw_params
+            if self._verbose:
+                print(f"Optimization finished. Best loss: {best_loss:.4f}")
 
             self._params = _params_from_raw(raw_params)
             self._dF_mean_prior = self.mean(self._params["mean"], self._state_cv)
