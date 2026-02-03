@@ -65,6 +65,8 @@ class BayesMBAR:
 
         if state_cv is not None:
             self._state_cv = state_cv[1:]
+        else:
+            self._state_cv = None
 
         self._sample_size = sample_size
         self._warmup_steps = warmup_steps
@@ -77,31 +79,39 @@ class BayesMBAR:
         self._m = self._energy.shape[0]
         self._n = self._energy.shape[1]
 
-        # We first compute the mode estimate based on the likelihood
-        # because it is used in both the uniform and normal priors.
-        # The mode estimate based on the likelihood is the solution to the MBAR equation.
+        # Flags to track which computations have been performed (lazy evaluation)
+        self._mode_ll_computed = False
+        self._samples_ll_computed = False
+        self._posterior_mode_computed = False
+        self._posterior_samples_computed = False
 
-        print("Solve for the mode of the likelihood")
+    def _ensure_mode_ll_computed(self):
+        """Compute the mode of the likelihood (solution to MBAR equation)."""
+        if self._mode_ll_computed:
+            return
+
+        if self._verbose:
+            print("Solve for the mode of the likelihood")
         dF_init = jnp.zeros((self._m - 1,))
         dF = _solve_mbar(
             dF_init, self._energy, self._num_conf, self._method, self._verbose
         )
 
-        # f = jit(value_and_grad(_compute_loss_likelihood_of_dF))
-        # hess = jit(hessian(_compute_loss_likelihood_of_dF))
-        # res = fmin_newton(f, hess, dF_init, args=(self._energy, self._num_conf))
-        # dF = res["x"]
-
         self._dF_mode_ll = dF
+        self._F_mode_ll = _dF_to_F(self._dF_mode_ll, self._num_conf)
+        self._mode_ll_computed = True
 
-        # sample dF based on the likelihood.
-        # When the uniform prior is used, the posterior distribution of dF is
-        # the same as the likelihood function.
-        # Thefore so these samples are also samples from the posterior
-        # distribution of dF when the uniform prior is used.
+    def _ensure_samples_ll_computed(self):
+        """Compute samples from the likelihood using MCMC."""
+        if self._samples_ll_computed:
+            return
 
-        print("=====================================================")
-        print("Sample from the likelihood")
+        # Mode is needed as initialization for MCMC
+        self._ensure_mode_ll_computed()
+
+        if self._verbose:
+            print("=====================================================")
+            print("Sample from the likelihood")
 
         self._rng_key, subkey = random.split(self._rng_key)
 
@@ -117,154 +127,179 @@ class BayesMBAR:
             self._verbose,
         )
 
-        ## compute the mean, covariance, and precision of dF based on the samples from the likelihood
+        # Compute mean, covariance, and precision from samples
         self._dF_mean_ll = jnp.mean(self._dF_samples_ll, axis=0)
-        self._dF_cov_ll = jnp.cov(self._dF_samples_ll.T)
+        self._dF_cov_ll = jnp.atleast_2d(jnp.cov(self._dF_samples_ll.T))
 
         L = jnp.linalg.cholesky(self._dF_cov_ll)
         L_inv = jax.scipy.linalg.solve_triangular(L, jnp.eye(L.shape[0]), lower=True)
         self._dF_prec_ll = L_inv.T.dot(L_inv)
-        # self._dF_prec_ll = jnp.linalg.inv(self._dF_cov_ll)
 
-        self._F_mode_ll = _dF_to_F(self._dF_mode_ll, self._num_conf)
         self._F_samples_ll = _dF_to_F(self._dF_samples_ll, self._num_conf)
         self._F_mean_ll = jnp.mean(self._F_samples_ll, axis=0)
-        self._F_cov_ll = jnp.cov(self._F_samples_ll.T)
+        self._F_cov_ll = jnp.atleast_2d(jnp.cov(self._F_samples_ll.T))
 
-        ## we are done here if the prior is uniform.
-        ## When normal prior is used, we need to learn the hyperparameters of the prior and then sample dF from the posterior distribution of dF.
+        self._samples_ll_computed = True
 
-        if self._prior == "normal":
-            _data = {
-                "energy": self._energy,
-                "num_conf": self._num_conf,
-                "dF_mean_ll": self._dF_mean_ll,
-                "dF_prec_ll": self._dF_prec_ll,
-                "state_cv": self._state_cv,
-            }
+    def _ensure_posterior_mode_computed(self):
+        """Compute the posterior mode (normal prior only)."""
+        if self._posterior_mode_computed:
+            return
 
-            ## mean function of the prior
-            if self._mean_name == "constant":
-                self.mean_order = 0
-                self.mean = partial(_mean, order=self.mean_order)
-            elif self._mean_name == "linear":
-                self.mean_order = 1
-                self.mean = partial(_mean, order=self.mean_order)
-            elif self._mean_name == "quadratic":
-                self.mean_order = 2
-                self.mean = partial(_mean, order=self.mean_order)
+        if self._prior != "normal":
+            return
 
-            ## learn the hyperparameters of the prior
-            if self._kernel_name == "SE":
-                self.kernel = _kernel_SE
-            elif self._kernel_name == "Matern52":
-                self.kernel = _kernel_Matern52
-            elif self._kernel_name == "Matern32":
-                self.kernel = _kernel_Matern32
-            elif self._kernel_name == "RQ":
-                self.kernel = _kernel_RQ
+        # Need samples from likelihood for hyperparameter optimization
+        self._ensure_samples_ll_computed()
 
-            ## initialize the hyperparameters based on the mode of the likelihood
-            params = _init_params(
-                self.mean_order,
-                self._kernel_name,
-                self._dF_mode_ll,
-                self._state_cv,
+        _data = {
+            "energy": self._energy,
+            "num_conf": self._num_conf,
+            "dF_mean_ll": self._dF_mean_ll,
+            "dF_prec_ll": self._dF_prec_ll,
+            "state_cv": self._state_cv,
+        }
+
+        # Mean function of the prior
+        if self._mean_name == "constant":
+            self.mean_order = 0
+            self.mean = partial(_mean, order=self.mean_order)
+        elif self._mean_name == "linear":
+            self.mean_order = 1
+            self.mean = partial(_mean, order=self.mean_order)
+        elif self._mean_name == "quadratic":
+            self.mean_order = 2
+            self.mean = partial(_mean, order=self.mean_order)
+
+        # Kernel function of the prior
+        if self._kernel_name == "SE":
+            self.kernel = _kernel_SE
+        elif self._kernel_name == "Matern52":
+            self.kernel = _kernel_Matern52
+        elif self._kernel_name == "Matern32":
+            self.kernel = _kernel_Matern32
+        elif self._kernel_name == "RQ":
+            self.kernel = _kernel_RQ
+
+        # Initialize hyperparameters based on the mode of the likelihood
+        params = _init_params(
+            self.mean_order,
+            self._kernel_name,
+            self._dF_mode_ll,
+            self._state_cv,
+            self._num_conf,
+        )
+        raw_params = _params_to_raw(params)
+
+        # Optimize the hyperparameters
+        self._rng_key, subkey = random.split(self._rng_key)
+        optimizer = sgd(learning_rate=1e-3, momentum=0.9, nesterov=True)
+        opt_state = optimizer.init(raw_params)
+
+        @partial(jit, static_argnames=["mean", "kernel"])
+        def step(key, raw_params, opt_state, mean, kernel, data):
+            loss, grads = _compute_elbo_loss(key, raw_params, mean, kernel, data)
+            update, opt_state = optimizer.update(grads, opt_state)
+            raw_params = optax.apply_updates(raw_params, update)
+            return loss, raw_params, opt_state
+
+        for i in range(self._optimize_steps):
+            loss, raw_params, opt_state = step(
+                subkey, raw_params, opt_state, self.mean, self.kernel, _data
+            )
+            self._rng_key, subkey = random.split(self._rng_key)
+            if self._verbose and i % 100 == 0:
+                params = _params_from_raw(raw_params)
+                print(f"step: {i:>10d}, loss: {loss:10.4f}", _print_params(params))
+
+        self._params = _params_from_raw(raw_params)
+        self._dF_mean_prior = self.mean(self._params["mean"], self._state_cv)
+        self._dF_cov_prior = self.kernel(
+            self._params["kernel"],
+            self._state_cv,
+        )
+        self._dF_prec_prior = jnp.linalg.inv(self._dF_cov_prior)
+
+        # Solve for the mode of the posterior
+        f = jit(value_and_grad(_compute_loss_joint_likelihood_of_dF))
+        hess = jit(hessian(_compute_loss_joint_likelihood_of_dF))
+        res = fmin_newton(
+            f,
+            hess,
+            self._dF_mode_ll,
+            args=(
+                self._energy,
                 self._num_conf,
+                self._dF_mean_prior,
+                self._dF_prec_prior,
+            ),
+        )
+        self._dF_mode_posterior = res["x"]
+        self._F_mode_posterior = _dF_to_F(self._dF_mode_posterior, self._num_conf)
+
+        self._posterior_mode_computed = True
+
+    def _ensure_posterior_samples_computed(self):
+        """Compute samples from the posterior (normal prior only)."""
+        if self._posterior_samples_computed:
+            return
+
+        if self._prior != "normal":
+            return
+
+        # Need posterior mode first
+        self._ensure_posterior_mode_computed()
+
+        # Sample dF from the posterior
+        def logdensity(dF):
+            return _compute_log_joint_likelihood_of_dF(
+                dF,
+                self._energy,
+                self._num_conf,
+                self._dF_mean_prior,
+                self._dF_prec_prior,
             )
-            raw_params = _params_to_raw(params)
 
-            ## optimize the hyperparameters
-            self._rng_key, subkey = random.split(self._rng_key)
-            optimizer = sgd(learning_rate=1e-3, momentum=0.9, nesterov=True)
-            opt_state = optimizer.init(raw_params)
+        self._rng_key, subkey = random.split(self._rng_key)
+        self._dF_samples_posterior = _sample_from_logdensity(
+            subkey,
+            self._dF_mode_posterior,
+            logdensity,
+            self._warmup_steps,
+            self._sample_size,
+            self._verbose,
+        )
+        self._dF_mean_posterior = jnp.mean(self._dF_samples_posterior, axis=0)
+        self._dF_cov_posterior = jnp.atleast_2d(jnp.cov(self._dF_samples_posterior.T))
+        self._dF_prec_posterior = jnp.linalg.inv(self._dF_cov_posterior)
 
-            @partial(jit, static_argnames=["mean", "kernel"])
-            def step(key, raw_params, opt_state, mean, kernel, data):
-                loss, grads = _compute_elbo_loss(key, raw_params, mean, kernel, data)
-                update, opt_state = optimizer.update(grads, opt_state)
-                raw_params = optax.apply_updates(raw_params, update)
-                return loss, raw_params, opt_state
+        self._F_samples_posterior = _dF_to_F(
+            self._dF_samples_posterior, self._num_conf
+        )
+        self._F_mean_posterior = jnp.mean(self._F_samples_posterior, axis=0)
+        self._F_cov_posterior = jnp.atleast_2d(jnp.cov(self._F_samples_posterior.T))
 
-            for i in range(optimize_steps):
-                loss, raw_params, opt_state = step(
-                    subkey, raw_params, opt_state, self.mean, self.kernel, _data
-                )
-                self._rng_key, subkey = random.split(self._rng_key)
-                if i % 100 == 0:
-                    params = _params_from_raw(raw_params)
-                    print(f"step: {i:>10d}, loss: {loss:10.4f}", _print_params(params))
-
-            self._params = _params_from_raw(raw_params)
-            self._dF_mean_prior = self.mean(self._params["mean"], self._state_cv)
-            self._dF_cov_prior = self.kernel(
-                self._params["kernel"],
-                self._state_cv,
-            )
-            self._dF_prec_prior = jnp.linalg.inv(self._dF_cov_prior)
-
-            ## solve for the mode of the posterior
-            f = jit(value_and_grad(_compute_loss_joint_likelihood_of_dF))
-            hess = jit(hessian(_compute_loss_joint_likelihood_of_dF))
-            res = fmin_newton(
-                f,
-                hess,
-                self._dF_mode_ll,
-                args=(
-                    self._energy,
-                    self._num_conf,
-                    self._dF_mean_prior,
-                    self._dF_prec_prior,
-                ),
-            )
-            self._dF_mode_posterior = res["x"]
-
-            ## sample dF from the posterior
-            def logdensity(dF):
-                return _compute_log_joint_likelihood_of_dF(
-                    dF,
-                    self._energy,
-                    self._num_conf,
-                    self._dF_mean_prior,
-                    self._dF_prec_prior,
-                )
-
-            self._rng_key, subkey = random.split(self._rng_key)
-            self._dF_samples_posterior = _sample_from_logdensity(
-                subkey,
-                self._dF_mode_posterior,
-                logdensity,
-                self._warmup_steps,
-                self._sample_size,
-                self._verbose,
-            )
-            self._dF_mean_posterior = jnp.mean(self._dF_samples_posterior, axis=0)
-            self._dF_cov_posterior = jnp.cov(self._dF_samples_posterior.T)
-            self._dF_prec_posterior = jnp.linalg.inv(self._dF_cov_posterior)
-
-            self._F_mode_posterior = _dF_to_F(self._dF_mode_posterior, self._num_conf)
-            self._F_samples_posterior = _dF_to_F(
-                self._dF_samples_posterior, self._num_conf
-            )
-            self._F_mean_posterior = jnp.mean(self._F_samples_posterior, axis=0)
-            self._F_cov_posterior = jnp.cov(self._F_samples_posterior.T)
+        self._posterior_samples_computed = True
 
     @property
     def F_mode(self) -> NDArray:
         r"""The posterior mode estimate of the free energies of the states under the constraints that :math:`\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively."""
         if self._prior == "uniform":
+            self._ensure_mode_ll_computed()
             F_mode = self._F_mode_ll
         elif self._prior == "normal":
+            self._ensure_posterior_mode_computed()
             F_mode = self._F_mode_posterior
         return np.array(jax.device_put(F_mode, jax.devices("cpu")[0]))
 
     @property
     def F_mean(self) -> NDArray:
         r"""The posterior mean of the free energies of the states under the constraints that :math:`\\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively."""
-
         if self._prior == "uniform":
+            self._ensure_samples_ll_computed()
             F_mean = self._F_mean_ll
         elif self._prior == "normal":
+            self._ensure_posterior_samples_computed()
             F_mean = self._F_mean_posterior
         return np.array(jax.device_put(F_mean, jax.devices("cpu")[0]))
 
@@ -272,8 +307,10 @@ class BayesMBAR:
     def F_cov(self) -> NDArray:
         r"""The posterior covariance matrix of the free energies of the states under the constraints that :math:`\\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively."""
         if self._prior == "uniform":
+            self._ensure_samples_ll_computed()
             F_cov = self._F_cov_ll
         elif self._prior == "normal":
+            self._ensure_posterior_samples_computed()
             F_cov = self._F_cov_posterior
         F_cov = F_cov - jnp.diag(1.0 / self._num_conf) + 1.0 / self._num_conf.sum()
 
@@ -291,8 +328,10 @@ class BayesMBAR:
     def F_samples(self) -> NDArray:
         """The samples of the free energies of the states from the posterior distribution under the constraints that :math:`\\sum_{k=1}^{M} N_k * F_k = 0`, where :math:`N_k` and :math:`F_k` are the number of conformations and the free energy of the k-th state, respectively."""
         if self._prior == "uniform":
+            self._ensure_samples_ll_computed()
             F_samples = self._F_samples_ll
         elif self._prior == "normal":
+            self._ensure_posterior_samples_computed()
             F_samples = self._F_samples_posterior
         return np.array(jax.device_put(F_samples, jax.devices("cpu")[0]))
 
