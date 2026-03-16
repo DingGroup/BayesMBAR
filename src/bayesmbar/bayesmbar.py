@@ -81,7 +81,10 @@ class BayesMBAR:
         # because it is used in both the uniform and normal priors.
         # The mode estimate based on the likelihood is the solution to the MBAR equation.
 
-        print("Solve for the mode of the likelihood")
+        if self._verbose:
+            print("=====================================================")                        
+            print("Solve for the mode of the likelihood")
+
         dF_init = jnp.zeros((self._m - 1,))
         dF = _solve_mbar(
             dF_init, self._energy, self._num_conf, self._method, self._verbose
@@ -100,37 +103,44 @@ class BayesMBAR:
         # Thefore so these samples are also samples from the posterior
         # distribution of dF when the uniform prior is used.
 
-        print("=====================================================")
-        print("Sample from the likelihood")
+        if self._verbose:
+            print("=====================================================")
+            print("Sample from the likelihood")
 
         self._rng_key, subkey = random.split(self._rng_key)
 
         def logdensity(dF):
             return _compute_log_likelihood_of_dF(dF, self._energy, self._num_conf)
 
-        self._dF_samples_ll = _sample_from_logdensity(
-            subkey,
-            self._dF_mode_ll,
-            logdensity,
-            self._warmup_steps,
-            self._sample_size,
-            self._verbose,
-        )
 
-        ## compute the mean, covariance, and precision of dF based on the samples from the likelihood
-        self._dF_mean_ll = jnp.mean(self._dF_samples_ll, axis=0)
-        self._dF_cov_ll = jnp.cov(self._dF_samples_ll.T)
+        if self._sample_size > 0:
+            self._dF_samples_ll = _sample_from_logdensity(
+                subkey,
+                self._dF_mode_ll,
+                logdensity,
+                self._warmup_steps,
+                self._sample_size,
+                self._verbose,
+            )
 
-        L = jnp.linalg.cholesky(self._dF_cov_ll)
-        L_inv = jax.scipy.linalg.solve_triangular(L, jnp.eye(L.shape[0]), lower=True)
-        self._dF_prec_ll = L_inv.T.dot(L_inv)
-        # self._dF_prec_ll = jnp.linalg.inv(self._dF_cov_ll)
+            ## compute the mean, covariance, and precision of dF based on the samples from the likelihood
+            self._dF_mean_ll = jnp.mean(self._dF_samples_ll, axis=0)
+            self._dF_cov_ll = jnp.cov(self._dF_samples_ll.T)
 
+            if self._dF_cov_ll.ndim == 0:
+                self._dF_cov_ll = self._dF_cov_ll.reshape((1, 1))
+
+            L = jnp.linalg.cholesky(self._dF_cov_ll)
+            L_inv = jax.scipy.linalg.solve_triangular(L, jnp.eye(L.shape[0]), lower=True)
+            self._dF_prec_ll = L_inv.T.dot(L_inv)
+            # self._dF_prec_ll = jnp.linalg.inv(self._dF_cov_ll)
+
+        
+            self._F_samples_ll = _dF_to_F(self._dF_samples_ll, self._num_conf)
+            self._F_mean_ll = jnp.mean(self._F_samples_ll, axis=0)
+            self._F_cov_ll = jnp.cov(self._F_samples_ll.T)
+            
         self._F_mode_ll = _dF_to_F(self._dF_mode_ll, self._num_conf)
-        self._F_samples_ll = _dF_to_F(self._dF_samples_ll, self._num_conf)
-        self._F_mean_ll = jnp.mean(self._F_samples_ll, axis=0)
-        self._F_cov_ll = jnp.cov(self._F_samples_ll.T)
-
         ## we are done here if the prior is uniform.
         ## When normal prior is used, we need to learn the hyperparameters of the prior and then sample dF from the posterior distribution of dF.
 
@@ -578,7 +588,8 @@ def _sample_from_logdensity(
     rng_key, subkey = random.split(rng_key)
     (state, parameters), _ = warmup.run(subkey, init_dF, num_steps=warmup_steps)
 
-    print("Sample using the NUTS sampler")
+    if verbose:
+        print("Sample using the NUTS sampler")
 
     ## sample using nuts
 

@@ -5,11 +5,12 @@ from jax import hessian
 from scipy import optimize
 from jax.scipy.special import logsumexp
 
-def _solve_mbar(dF_init, energy, num_conf, method, verbose=False):
+
+def _solve_mbar(dF_init, energy, num_conf, method, verbose):
     if method == "Newton":
         f = jit(value_and_grad(_compute_loss_likelihood_of_dF))
         hess = jit(hessian(_compute_loss_likelihood_of_dF))
-        res = fmin_newton(f, hess, dF_init, args=(energy, num_conf))
+        res = fmin_newton(f, hess, dF_init, args=(energy, num_conf), verbose=verbose)
         dF = res["x"]
     elif method == "L-BFGS-B":
         options = {"disp": verbose, "gtol": 1e-8}
@@ -24,6 +25,7 @@ def _solve_mbar(dF_init, energy, num_conf, method, verbose=False):
         )
         dF = results["x"]
     return dF
+
 
 def _compute_log_likelihood_of_F(F, energy, num_conf):
     """
@@ -122,13 +124,13 @@ def fmin_newton(f, hess, x_init, args=(), verbose=True, eps=1e-10, max_iter=300)
         H = hess(x, *args)
         H = H + jnp.eye(H.shape[0]) * 1e-16
 
-        newton_direction = np.linalg.solve(H, -grad)
-        newton_decrement_square = np.sum(-grad * newton_direction)
+        newton_direction = jnp.linalg.solve(H, -grad)
+        newton_decrement_square = jnp.sum(-grad * newton_direction)
 
         if verbose:
             print(
                 f"At iterate {indx_iter:4d}; f= {loss.item():.5E};",
-                f"|1/2*Newton_decrement^2|: {newton_decrement_square.item()/2:.5E}\n",
+                f"|1/2*Newton_decrement^2|: {newton_decrement_square.item() / 2:.5E}\n",
             )
 
         if newton_decrement_square / 2.0 <= eps:
@@ -159,7 +161,7 @@ def fmin_newton(f, hess, x_init, args=(), verbose=True, eps=1e-10, max_iter=300)
         print("F        = final function value \n")
         print("             * * *     \n")
         print("N_iter    N_func        F")
-        print(f"{indx_iter+1:6d}    {N_func:6d}    {loss.item():.6E}")
+        print(f"{indx_iter + 1:6d}    {N_func:6d}    {loss.item():.6E}")
         print(f"  F = {loss.item():.12f} \n")
 
         if newton_decrement_square / 2.0 <= eps and indx_iter < max_iter:

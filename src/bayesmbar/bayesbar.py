@@ -42,17 +42,17 @@ class BayesBAR:
             Whether to print running information. Defaults to False.
         """
 
-        assert (
-            energy.shape[0] == 2
-        ), f"The energy matrix has {energy.shape[0]} rows. It has to have 2 rows."
+        assert energy.shape[0] == 2, (
+            f"The energy matrix has {energy.shape[0]} rows. It has to have 2 rows."
+        )
 
-        assert (
-            len(num_conf) == 2
-        ), f"The size of num_conf is {len(num_conf)}. It has to be 2."
+        assert len(num_conf) == 2, (
+            f"The size of num_conf is {len(num_conf)}. It has to be 2."
+        )
 
-        assert (
-            energy.shape[1] == num_conf[0] + num_conf[1]
-        ), f"The energy matrix has {energy.shape[1]} columns, but the sum of num_conf is {num_conf[0] + num_conf[1]}. The number of columns in the energy matrix must equal the sum of num_conf."
+        assert energy.shape[1] == num_conf[0] + num_conf[1], (
+            f"The energy matrix has {energy.shape[1]} columns, but the sum of num_conf is {num_conf[0] + num_conf[1]}. The number of columns in the energy matrix must equal the sum of num_conf."
+        )
 
         self.energy = jnp.float64(energy)
         self.num_conf = jnp.int32(num_conf)
@@ -61,8 +61,20 @@ class BayesBAR:
         self.n = jnp.sum(self.num_conf)
 
         ## find the posterior mode which corresponds to the BAR solution
-        dF_init = jnp.zeros(1, dtype=jnp.float64)
-        dF_init = jnp.mean(self.energy[1] - self.energy[0]).reshape((-1,))
+
+        ## initial guess for the mode.
+        du = self.energy[1] - self.energy[0]
+        if jnp.any(du == jnp.inf) and jnp.any(du == -jnp.inf):
+            dF_init = jnp.zeros(1, dtype=jnp.float64)
+        elif jnp.any(du == jnp.inf) and not jnp.any(du == -jnp.inf):
+            dF_init = -(jnp.logsumexp(-du) - jnp.log(len(du)))
+        elif not jnp.any(du == jnp.inf) and jnp.any(du == -jnp.inf):
+            dF_init = jnp.logsumexp(du) - jnp.log(len(du))
+        else:
+            dF_init = 0.5 * (
+                -(jnp.logsumexp(-du) - jnp.log(len(du)))
+                + (jnp.logsumexp(du) - jnp.log(len(du)))
+            )
 
         if method == "Newton":
             f = jit(value_and_grad(_compute_loss))
@@ -100,13 +112,13 @@ class BayesBAR:
             self.dF_mean = self.dF_mode
             self.dF_std = None
 
-        else:                
+        else:
             _dF_var_asymptotic = -1.0 / H - 1.0 / self.n_0 - 1.0 / self.n_1
             self._dF_std_asymptotic = jnp.reshape(jnp.sqrt(_dF_var_asymptotic), ())
 
             ## compute posterior mean and standard deviation using numerical integration
             self.dF_mean, self.dF_std = _compute_posterior_mean_and_std(
-                self.dF_mode, 10*self._dF_std_asymptotic, self.energy, self.num_conf
+                self.dF_mode, 10 * self._dF_std_asymptotic, self.energy, self.num_conf
             )
 
             ## sampling from the posterior distribution
@@ -217,7 +229,6 @@ def _compute_posterior_mean_and_std(dF_mode, width, energy, num_conf):
         epsabs=1e-6,
         epsrel=1e-6,
     )
-
 
     dF3, dF3_err = integrate.quad(jit(f), dF_mode.item() + width, np.inf)
     dF = dF1 + dF2 + dF3

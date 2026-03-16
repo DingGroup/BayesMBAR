@@ -37,6 +37,7 @@ class FastMBAR:
         bootstrap_num_rep: int = 100,
         verbose: bool = False,
         method: str = "Newton",
+        F_init: npt.NDArray[np.float64] = None,
     ) -> None:
         """Initializer for the class FastMBAR
 
@@ -69,6 +70,8 @@ class FastMBAR:
             is printed.
         method: str, optional (default="Newton")
             the method used to solve the MBAR equation. The default is Newton's method.
+        F_init: 1D ndarray, optional (default=None)
+            The initial guess for the relative free energies. If None, the initial guess is set to zero.
         """
 
         #### check the parameters: energy and num_conf
@@ -76,7 +79,7 @@ class FastMBAR:
         ## if cuda is True or False.
 
         ## check energy
-        if isinstance(energy, np.ndarray):
+        if isinstance(energy, (np.ndarray, jnp.ndarray)):
             if energy.ndim != 2:
                 raise ValueError("energy has to be two dimensional")
             self.energy = energy.astype(np.float64)
@@ -84,7 +87,7 @@ class FastMBAR:
             raise TypeError("energy has to be a 2-D ndarray")
 
         ## check num_conf
-        if isinstance(num_conf, np.ndarray):
+        if isinstance(num_conf, (np.ndarray, jnp.ndarray)):
             if num_conf.ndim != 1:
                 raise ValueError("num_conf has to be one dimensional")
             self.num_conf = num_conf.astype(np.float64)
@@ -145,8 +148,10 @@ class FastMBAR:
         self.method = method
 
         # ## solve the MBAR equation
-        if self.bootstrap is False:
+        if self.bootstrap is False:            
             dF_init = jnp.zeros(self.M - 1)
+            if F_init is not None:
+                dF_init = F_init[1:] - F_init[0]
             dF = _solve_mbar(
                 dF_init,
                 self.energy,
@@ -216,6 +221,8 @@ class FastMBAR:
             dFs = []
             log_prob_mix = []
             dF_init = jnp.zeros(self.M - 1)
+            if F_init is not None:
+                dF_init = F_init[1:] - F_init[0]
             self._conf_idx = []
             for _ in range(self.bootstrap_num_rep):
                 conf_idx = _bootstrap_conf_idx(num_conf, self.bootstrap_block_size)
