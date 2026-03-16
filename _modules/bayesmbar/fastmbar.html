@@ -329,6 +329,7 @@ document.write(`
         <span class="n">bootstrap_num_rep</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Newton&quot;</span><span class="p">,</span>
+        <span class="n">F_init</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializer for the class FastMBAR</span>
 
@@ -361,6 +362,8 @@ document.write(`
 <span class="sd">            is printed.</span>
 <span class="sd">        method: str, optional (default=&quot;Newton&quot;)</span>
 <span class="sd">            the method used to solve the MBAR equation. The default is Newton&#39;s method.</span>
+<span class="sd">        F_init: 1D ndarray, optional (default=None)</span>
+<span class="sd">            The initial guess for the relative free energies. If None, the initial guess is set to zero.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1">#### check the parameters: energy and num_conf</span>
@@ -368,7 +371,7 @@ document.write(`
         <span class="c1">## if cuda is True or False.</span>
 
         <span class="c1">## check energy</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">energy</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">energy</span><span class="p">,</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
             <span class="k">if</span> <span class="n">energy</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;energy has to be two dimensional&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">energy</span> <span class="o">=</span> <span class="n">energy</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
@@ -376,7 +379,7 @@ document.write(`
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;energy has to be a 2-D ndarray&quot;</span><span class="p">)</span>
 
         <span class="c1">## check num_conf</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">num_conf</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">num_conf</span><span class="p">,</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
             <span class="k">if</span> <span class="n">num_conf</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;num_conf has to be one dimensional&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">num_conf</span> <span class="o">=</span> <span class="n">num_conf</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
@@ -437,8 +440,10 @@ document.write(`
         <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="n">method</span>
 
         <span class="c1"># ## solve the MBAR equation</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bootstrap</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bootstrap</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>            
             <span class="n">dF_init</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">F_init</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">dF_init</span> <span class="o">=</span> <span class="n">F_init</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="n">F_init</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
             <span class="n">dF</span> <span class="o">=</span> <span class="n">_solve_mbar</span><span class="p">(</span>
                 <span class="n">dF_init</span><span class="p">,</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">energy</span><span class="p">,</span>
@@ -508,6 +513,8 @@ document.write(`
             <span class="n">dFs</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="n">log_prob_mix</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="n">dF_init</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">F_init</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">dF_init</span> <span class="o">=</span> <span class="n">F_init</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="n">F_init</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_conf_idx</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bootstrap_num_rep</span><span class="p">):</span>
                 <span class="n">conf_idx</span> <span class="o">=</span> <span class="n">_bootstrap_conf_idx</span><span class="p">(</span><span class="n">num_conf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bootstrap_block_size</span><span class="p">)</span>

@@ -373,7 +373,10 @@ document.write(`
         <span class="c1"># because it is used in both the uniform and normal priors.</span>
         <span class="c1"># The mode estimate based on the likelihood is the solution to the MBAR equation.</span>
 
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Solve for the mode of the likelihood&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=====================================================&quot;</span><span class="p">)</span>                        
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Solve for the mode of the likelihood&quot;</span><span class="p">)</span>
+
         <span class="n">dF_init</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">_m</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,))</span>
         <span class="n">dF</span> <span class="o">=</span> <span class="n">_solve_mbar</span><span class="p">(</span>
             <span class="n">dF_init</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_energy</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_conf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_method</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_verbose</span>
@@ -392,37 +395,44 @@ document.write(`
         <span class="c1"># Thefore so these samples are also samples from the posterior</span>
         <span class="c1"># distribution of dF when the uniform prior is used.</span>
 
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=====================================================&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Sample from the likelihood&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=====================================================&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Sample from the likelihood&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_rng_key</span><span class="p">,</span> <span class="n">subkey</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rng_key</span><span class="p">)</span>
 
         <span class="k">def</span><span class="w"> </span><span class="nf">logdensity</span><span class="p">(</span><span class="n">dF</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">_compute_log_likelihood_of_dF</span><span class="p">(</span><span class="n">dF</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_energy</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_conf</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_dF_samples_ll</span> <span class="o">=</span> <span class="n">_sample_from_logdensity</span><span class="p">(</span>
-            <span class="n">subkey</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_dF_mode_ll</span><span class="p">,</span>
-            <span class="n">logdensity</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_warmup_steps</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_sample_size</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_verbose</span><span class="p">,</span>
-        <span class="p">)</span>
 
-        <span class="c1">## compute the mean, covariance, and precision of dF based on the samples from the likelihood</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_dF_mean_ll</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dF_samples_ll</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_dF_cov_ll</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">cov</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dF_samples_ll</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sample_size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dF_samples_ll</span> <span class="o">=</span> <span class="n">_sample_from_logdensity</span><span class="p">(</span>
+                <span class="n">subkey</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_dF_mode_ll</span><span class="p">,</span>
+                <span class="n">logdensity</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_warmup_steps</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_sample_size</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_verbose</span><span class="p">,</span>
+            <span class="p">)</span>
 
-        <span class="n">L</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">cholesky</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dF_cov_ll</span><span class="p">)</span>
-        <span class="n">L_inv</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">scipy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve_triangular</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">L</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">lower</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_dF_prec_ll</span> <span class="o">=</span> <span class="n">L_inv</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">L_inv</span><span class="p">)</span>
-        <span class="c1"># self._dF_prec_ll = jnp.linalg.inv(self._dF_cov_ll)</span>
+            <span class="c1">## compute the mean, covariance, and precision of dF based on the samples from the likelihood</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dF_mean_ll</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dF_samples_ll</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dF_cov_ll</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">cov</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dF_samples_ll</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
 
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dF_cov_ll</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_dF_cov_ll</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dF_cov_ll</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+            <span class="n">L</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">cholesky</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dF_cov_ll</span><span class="p">)</span>
+            <span class="n">L_inv</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">scipy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve_triangular</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">L</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">lower</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dF_prec_ll</span> <span class="o">=</span> <span class="n">L_inv</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">L_inv</span><span class="p">)</span>
+            <span class="c1"># self._dF_prec_ll = jnp.linalg.inv(self._dF_cov_ll)</span>
+
+        
+            <span class="bp">self</span><span class="o">.</span><span class="n">_F_samples_ll</span> <span class="o">=</span> <span class="n">_dF_to_F</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dF_samples_ll</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_conf</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_F_mean_ll</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_F_samples_ll</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_F_cov_ll</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">cov</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_F_samples_ll</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+            
         <span class="bp">self</span><span class="o">.</span><span class="n">_F_mode_ll</span> <span class="o">=</span> <span class="n">_dF_to_F</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dF_mode_ll</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_conf</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_F_samples_ll</span> <span class="o">=</span> <span class="n">_dF_to_F</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dF_samples_ll</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_conf</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_F_mean_ll</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_F_samples_ll</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_F_cov_ll</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">cov</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_F_samples_ll</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
-
         <span class="c1">## we are done here if the prior is uniform.</span>
         <span class="c1">## When normal prior is used, we need to learn the hyperparameters of the prior and then sample dF from the posterior distribution of dF.</span>
 
@@ -871,7 +881,8 @@ document.write(`
     <span class="n">rng_key</span><span class="p">,</span> <span class="n">subkey</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">rng_key</span><span class="p">)</span>
     <span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">parameters</span><span class="p">),</span> <span class="n">_</span> <span class="o">=</span> <span class="n">warmup</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">subkey</span><span class="p">,</span> <span class="n">init_dF</span><span class="p">,</span> <span class="n">num_steps</span><span class="o">=</span><span class="n">warmup_steps</span><span class="p">)</span>
 
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Sample using the NUTS sampler&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Sample using the NUTS sampler&quot;</span><span class="p">)</span>
 
     <span class="c1">## sample using nuts</span>
 
