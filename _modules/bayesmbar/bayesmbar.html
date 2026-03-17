@@ -330,7 +330,7 @@ document.write(`
         <span class="n">optimize_steps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">,</span>
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">random_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-        <span class="n">method</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;Newton&quot;</span><span class="p">,</span> <span class="s2">&quot;L-BFGS-B&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Newton&quot;</span><span class="p">,</span>
+        <span class="n">method</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;Newton&quot;</span><span class="p">,</span> <span class="s2">&quot;L-BFGS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Newton&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Args:</span>
@@ -345,7 +345,7 @@ document.write(`
 <span class="sd">            optimize_steps (int, optional): Number of optimization steps used to learn the hyperparameters when normal priors are used. Defaults to 10000.</span>
 <span class="sd">            verbose (bool, optional): Whether to print the progress bar for the optimization and sampling. Defaults to True.</span>
 <span class="sd">            random_seed (int, optional): Random seed. Defaults to 0.</span>
-
+<span class="sd">            method (str, optional): Optimization method used to compute the mode of the likelihood and the posterior distribution. It can be either &quot;Newton&quot; or &quot;L-BFGS&quot;. Defaults to &quot;Newton&quot;.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_energy</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float64</span><span class="p">(</span><span class="n">energy</span><span class="p">)</span>

@@ -435,8 +435,8 @@ document.write(`
         <span class="c1">## method used to solve the MBAR equation</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;method has to be a string.&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">method</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;Newton&quot;</span><span class="p">,</span> <span class="s2">&quot;L-BFGS-B&quot;</span><span class="p">]:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;method has to be Newton or L-BFGS-B.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;Newton&quot;</span><span class="p">,</span> <span class="s2">&quot;L-BFGS&quot;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;method has to be Newton or L-BFGS.&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="n">method</span>
 
         <span class="c1"># ## solve the MBAR equation</span>
