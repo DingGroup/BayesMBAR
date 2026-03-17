@@ -10,7 +10,7 @@ from jax import random
 from jax import hessian, jit, value_and_grad, vmap
 from scipy import optimize
 from .bayesmbar import _sample_from_logdensity
-from .utils import fmin_newton, _compute_log_likelihood_of_dF
+from .utils import fmin_newton, _compute_log_likelihood_of_dF, fmin_lbfgs
 
 jax.config.update("jax_enable_x64", True)
 
@@ -51,7 +51,7 @@ class CBayesMBAR:
         warmup_steps : int, optional
             The number of warmup steps for the HMC sampler. The default is 500.
         method : str, optional
-            The optimization method for finding the mode of the likelihood. Options are "Newton" or "L-BFGS-B". The default is "Newton".
+            The optimization method for finding the mode of the likelihood. Options are "Newton" or "L-BFGS". The default is "Newton".
         random_seed : int, optional
             The random seed. The default is None, which means the random seed is generated from the current time.
         verbose : bool, optional
@@ -85,19 +85,25 @@ class CBayesMBAR:
                 x,
                 args=(self._Q, self._energies, self._nums_conf),
             )
-        elif method == "L-BFGS-B":
-            options = {"disp": verbose, "gtol": 1e-8}
-            f = jit(value_and_grad(_compute_cmbar_loss_likelihood))
-            res = optimize.minimize(
-                lambda x: [
-                    np.array(r) for r in f(x, self._Q, self._energies, self._nums_conf)
-                ],
+        elif method == "L-BFGS":
+            res = fmin_lbfgs(
+                _compute_cmbar_loss_likelihood,
                 x,
-                jac=True,
-                method="L-BFGS-B",
-                tol=1e-12,
-                options=options,
+                args=(self._Q, self._energies, self._nums_conf),
             )
+
+            # options = {"disp": verbose, "gtol": 1e-8}
+            # f = jit(value_and_grad(_compute_cmbar_loss_likelihood))
+            # res = optimize.minimize(
+            #     lambda x: [
+            #         np.array(r) for r in f(x, self._Q, self._energies, self._nums_conf)
+            #     ],
+            #     x,
+            #     jac=True,
+            #     method="L-BFGS-B",
+            #     tol=1e-12,
+            #     options=options,
+            # )
         else:
             raise ValueError("Invalid method")
 
@@ -135,7 +141,7 @@ class CBayesMBAR:
 
     @property
     def F_mode(self) -> List[ndarray]:
-        """ The mode of free energies of all states in all MBAR systems. The free energy of 
+        """The mode of free energies of all states in all MBAR systems. The free energy of
         state 0 in each system is set to 0.
         """
         return [
@@ -145,7 +151,7 @@ class CBayesMBAR:
 
     @property
     def F_samples(self) -> List[ndarray]:
-        """ The samples of free energies of all states in all MBAR systems. The free energy of
+        """The samples of free energies of all states in all MBAR systems. The free energy of
         state 0 in each system is set to 0.
         """
         return [
@@ -155,7 +161,7 @@ class CBayesMBAR:
 
     @property
     def F_mean(self) -> List[ndarray]:
-        """ The mean of free energies of all states in all MBAR systems. The free energy of
+        """The mean of free energies of all states in all MBAR systems. The free energy of
         state 0 in each system is set to 0.
         """
         return [
@@ -165,20 +171,17 @@ class CBayesMBAR:
 
     @property
     def DeltaF_mode(self) -> List[ndarray]:
-        """ The mode of free energy differences between all pairs of states in every MBAR system.
-        """
+        """The mode of free energy differences between all pairs of states in every MBAR system."""
         return [F[None, :] - F[:, None] for F in self.F_mode]
 
     @property
     def DeltaF_mean(self) -> List[ndarray]:
-        """ The mean of free energy differences between all pairs of states in every MBAR system.
-        """
+        """The mean of free energy differences between all pairs of states in every MBAR system."""
         return [F[None, :] - F[:, None] for F in self.F_mean]
 
     @property
     def DeltaF_std(self) -> List[ndarray]:
-        """ The standard deviation of free energy differences between all pairs of states in every MBAR system.
-        """
+        """The standard deviation of free energy differences between all pairs of states in every MBAR system."""
         return [np.std(F[:, None, :] - F[:, :, None], 0) for F in self.F_samples]
 
 

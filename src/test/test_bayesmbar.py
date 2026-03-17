@@ -2,7 +2,7 @@ import pytest
 from pytest import approx
 from bayesmbar import BayesMBAR
 
-@pytest.mark.parametrize("method", ["Newton", "L-BFGS-B"])
+@pytest.mark.parametrize("method", ["Newton", "L-BFGS"])
 def test_BayesMBAR(setup_mbar_data, method):
     energy, num_conf, F_ref, energy_p, F_ref_p = setup_mbar_data
     mbar = BayesMBAR(

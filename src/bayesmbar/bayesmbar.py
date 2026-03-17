@@ -38,7 +38,7 @@ class BayesMBAR:
         optimize_steps: int = 10000,
         verbose: bool = True,
         random_seed: int = 0,
-        method: Literal["Newton", "L-BFGS-B"] = "Newton",
+        method: Literal["Newton", "L-BFGS"] = "Newton",
     ) -> None:
         """
         Args:
@@ -53,7 +53,7 @@ class BayesMBAR:
             optimize_steps (int, optional): Number of optimization steps used to learn the hyperparameters when normal priors are used. Defaults to 10000.
             verbose (bool, optional): Whether to print the progress bar for the optimization and sampling. Defaults to True.
             random_seed (int, optional): Random seed. Defaults to 0.
-
+            method (str, optional): Optimization method used to compute the mode of the likelihood and the posterior distribution. It can be either "Newton" or "L-BFGS". Defaults to "Newton".
         """
 
         self._energy = jnp.float64(energy)

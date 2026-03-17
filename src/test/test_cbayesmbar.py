@@ -70,7 +70,7 @@ def setup_data_cbmbar():
     return u_list, num_conf_list, identical_states, pairs, deltaF_ref
 
 
-@pytest.mark.parametrize("method", ["Newton", "L-BFGS-B"])
+@pytest.mark.parametrize("method", ["Newton", "L-BFGS"])
 def test_CBayesMBAR(setup_data_cbmbar, method):
     u_list, num_conf_list, identical_states, pairs, deltaF_ref = setup_data_cbmbar
     cbmbar = CBayesMBAR(

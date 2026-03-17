@@ -143,8 +143,8 @@ class FastMBAR:
         ## method used to solve the MBAR equation
         if not isinstance(method, str):
             raise TypeError("method has to be a string.")
-        if method not in ["Newton", "L-BFGS-B"]:
-            raise ValueError("method has to be Newton or L-BFGS-B.")
+        if method not in ["Newton", "L-BFGS"]:
+            raise ValueError("method has to be Newton or L-BFGS.")
         self.method = method
 
         # ## solve the MBAR equation

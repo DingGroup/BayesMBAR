@@ -15,18 +15,26 @@ def _solve_mbar(dF_init, energy, num_conf, method, verbose):
         hess = jit(hessian(_compute_loss_likelihood_of_dF))
         res = fmin_newton(f, hess, dF_init, args=(energy, num_conf), verbose=verbose)
         dF = res["x"]
-    elif method == "L-BFGS-B":
-        options = {"disp": verbose, "gtol": 1e-8}
-        f = jit(value_and_grad(_compute_loss_likelihood_of_dF))
-        results = optimize.minimize(
-            lambda x: [np.array(r) for r in f(x, energy, num_conf)],
+    elif method == "L-BFGS":
+        res = fmin_lbfgs(
+            _compute_loss_likelihood_of_dF,
             dF_init,
-            jac=True,
-            method="L-BFGS-B",
-            tol=1e-12,
-            options=options,
+            args=(energy, num_conf),
+            verbose=verbose,
         )
-        dF = results["x"]
+        dF = res["x"]
+
+        # options = {"disp": verbose, "gtol": 1e-8}
+        # f = jit(value_and_grad(_compute_loss_likelihood_of_dF))
+        # results = optimize.minimize(
+        #     lambda x: [np.array(r) for r in f(x, energy, num_conf)],
+        #     dF_init,
+        #     jac=True,
+        #     method="L-BFGS-B",
+        #     tol=1e-12,
+        #     options=options,
+        # )
+        # dF = results["x"]
     return dF
 
 

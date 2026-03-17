@@ -38,7 +38,7 @@ class BayesBAR:
         sample_size : int, optional
             The number of samples from the posterior distribution. Defaults to 1000.
         method : str, optional
-            Optimization method for finding the mode. Options are "Newton" or "L-BFGS-B". Defaults to "Newton".
+            Optimization method for finding the mode. Options are "Newton" or "L-BFGS". Defaults to "Newton".
         verbose : bool, optional
             Whether to print running information. Defaults to False.
         """
@@ -83,20 +83,9 @@ class BayesBAR:
                 args=(self.energy, self.num_conf),
                 verbose=verbose,
             )
-        elif method == "L-BFGS-B":
-            options = {"disp": verbose, "gtol": 1e-8}
-            f = jit(value_and_grad(_compute_loss))
-            res = optimize.minimize(
-                lambda x: [np.array(r) for r in f(x, self.energy, self.num_conf)],
-                self.dF_init,
-                jac=True,
-                method="L-BFGS-B",
-                tol=1e-12,
-                options=options,
-            )
         else:
             raise ValueError(
-                f"Method {method} is not supported. It must be 'Newton' or 'L-BFGS-B'."
+                f"Method {method} is not supported. It must be 'Newton' or 'L-BFGS'."
             )
 
         self.dF_mode = res["x"]

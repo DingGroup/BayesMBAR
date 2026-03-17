@@ -1,16 +1,15 @@
 [project]
 name = "bayesmbar"
-version = "0.1.1"
+version = "0.1.2"
 description = "Bayesian Multistate Bennett Acceptance Ratio (BayesMBAR) methods for free energy calculations."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "jax>=0.6.0",
+    "jax[cuda12]>=0.6.0",
     "jaxlib>=0.6.0",
     "blackjax>=1.2.3",
     "networkx>=3.3",
     "tqdm>=4.66.5",
-    "scipy==1.16.0",
     "pytest>=8.3.5",
     "optax>=0.2.4",
 ]
