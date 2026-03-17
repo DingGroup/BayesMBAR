@@ -11,6 +11,8 @@ dependencies = [
     "networkx>=3.3",
     "tqdm>=4.66.5",
     "scipy==1.16.0",
+    "pytest>=8.3.5",
+    "optax>=0.2.4",
 ]
 
 [dependency-groups]

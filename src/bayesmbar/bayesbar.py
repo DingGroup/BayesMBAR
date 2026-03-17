@@ -7,7 +7,7 @@ import scipy.integrate as integrate
 import jax
 from jax import hessian, jit, value_and_grad
 import jax.numpy as jnp
-from .utils import fmin_newton
+from .utils import fmin_newton, fmin_lbfgs
 from tqdm import tqdm
 import warnings
 
@@ -24,6 +24,7 @@ class BayesBAR:
         sample_size: int = 1000,
         method: str = "Newton",
         verbose=False,
+        dF_init=jnp.zeros(1, dtype=jnp.float64),
     ):
         """
         Initialize the BayesBAR class.
@@ -59,35 +60,35 @@ class BayesBAR:
 
         self.n_0, self.n_1 = self.num_conf
         self.n = jnp.sum(self.num_conf)
+        self.dF_init = dF_init
+
+        if self.dF_init is None:
+            self.dF_init = jnp.zeros(1, dtype=jnp.float64)
 
         ## find the posterior mode which corresponds to the BAR solution
-
-        ## initial guess for the mode.
-        du = self.energy[1] - self.energy[0]
-        if jnp.any(du == jnp.inf) and jnp.any(du == -jnp.inf):
-            dF_init = jnp.zeros(1, dtype=jnp.float64)
-        elif jnp.any(du == jnp.inf) and not jnp.any(du == -jnp.inf):
-            dF_init = -(jnp.logsumexp(-du) - jnp.log(len(du)))
-        elif not jnp.any(du == jnp.inf) and jnp.any(du == -jnp.inf):
-            dF_init = jnp.logsumexp(du) - jnp.log(len(du))
-        else:
-            dF_init = 0.5 * (
-                -(jnp.logsumexp(-du) - jnp.log(len(du)))
-                + (jnp.logsumexp(du) - jnp.log(len(du)))
-            )
-
         if method == "Newton":
             f = jit(value_and_grad(_compute_loss))
             hess = jit(hessian(_compute_loss))
             res = fmin_newton(
-                f, hess, dF_init, args=(self.energy, self.num_conf), verbose=verbose
+                f,
+                hess,
+                self.dF_init,
+                args=(self.energy, self.num_conf),
+                verbose=verbose,
+            )
+        elif method == "L-BFGS":
+            res = fmin_lbfgs(
+                _compute_loss,
+                self.dF_init,
+                args=(self.energy, self.num_conf),
+                verbose=verbose,
             )
         elif method == "L-BFGS-B":
             options = {"disp": verbose, "gtol": 1e-8}
             f = jit(value_and_grad(_compute_loss))
             res = optimize.minimize(
                 lambda x: [np.array(r) for r in f(x, self.energy, self.num_conf)],
-                dF_init,
+                self.dF_init,
                 jac=True,
                 method="L-BFGS-B",
                 tol=1e-12,

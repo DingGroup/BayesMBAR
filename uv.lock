@@ -82,6 +82,8 @@ dependencies = [
     { name = "jax" },
     { name = "jaxlib" },
     { name = "networkx" },
+    { name = "optax" },
+    { name = "pytest" },
     { name = "scipy" },
     { name = "tqdm" },
 ]
@@ -108,6 +110,8 @@ requires-dist = [
     { name = "jax", specifier = ">=0.6.0" },
     { name = "jaxlib", specifier = ">=0.6.0" },
     { name = "networkx", specifier = ">=3.3" },
+    { name = "optax", specifier = ">=0.2.4" },
+    { name = "pytest", specifier = ">=8.3.5" },
     { name = "pytest", marker = "extra == 'testing'", specifier = ">=8.3.2" },
     { name = "scipy", specifier = "==1.16.0" },
     { name = "tqdm", specifier = ">=4.66.5" },

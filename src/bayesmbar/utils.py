@@ -1,9 +1,12 @@
 import numpy as np
+import jax
 import jax.numpy as jnp
 from jax import jit, value_and_grad
 from jax import hessian
 from scipy import optimize
 from jax.scipy.special import logsumexp
+import optax
+from typing import NamedTuple
 
 
 def _solve_mbar(dF_init, energy, num_conf, method, verbose):
@@ -81,7 +84,7 @@ def _compute_loss_likelihood_of_dF(dF, energy, num_conf):
     return -_compute_log_likelihood_of_dF(dF, energy, num_conf) / num_conf.sum()
 
 
-def fmin_newton(f, hess, x_init, args=(), verbose=True, eps=1e-10, max_iter=300):
+def fmin_newton(f, hess, x_init, args=(), verbose=True, eps=1e-10, max_iter=500):
     """Minimize a function with the Newton's method.
 
     For details of the Newton's method, see Chapter 9.5 of Prof. Boyd's book
@@ -175,4 +178,91 @@ def fmin_newton(f, hess, x_init, args=(), verbose=True, eps=1e-10, max_iter=300)
         "N_func": N_func,
         "F": loss.item(),
         "half_newton_decrement_square": newton_decrement_square / 2.0,
+    }
+
+######################################
+#### L-BFGS optimizer using optax ####
+def _run_opt(init_params, fun, opt, max_iter, tol):
+    value_and_grad_fun = optax.value_and_grad_from_state(fun)
+
+    def step(carry):
+        params, state = carry
+        value, grad = value_and_grad_fun(params, state=state)
+        updates, state = opt.update(
+            grad, state, params, value=value, grad=grad, value_fn=fun
+        )
+        params = optax.apply_updates(params, updates)
+        return params, state
+
+    def continuing_criterion(carry):
+        _, state = carry
+        iter_num = optax.tree_utils.tree_get(state, "count")
+        grad = optax.tree_utils.tree_get(state, "grad")
+        err = optax.tree_utils.tree_l2_norm(grad)
+        return (iter_num == 0) | ((iter_num < max_iter) & (err >= tol))
+
+    init_carry = (init_params, opt.init(init_params))
+    final_params, final_state = jax.lax.while_loop(
+        continuing_criterion, step, init_carry
+    )
+    return final_params, final_state
+
+class _InfoState(NamedTuple):
+    iter_num: jax.typing.ArrayLike
+
+def _print_info():
+    def init_fn(params):
+        del params
+        return _InfoState(iter_num=0)
+
+    def update_fn(updates, state, params, *, value, grad, **extra_args):
+        del params, extra_args
+
+        jax.debug.print(
+            "At iterate {i:4d}; f = {v:.3E}; grad norm: {e:.3E}\n",
+            i=state.iter_num,
+            v=value,
+            e=optax.tree_utils.tree_l2_norm(grad),
+        )
+        return updates, _InfoState(iter_num=state.iter_num + 1)
+
+    return optax.GradientTransformationExtraArgs(init_fn, update_fn)
+
+def fmin_lbfgs(f, x_init, args=(), verbose=True, tol=1e-8, max_iter=500):
+    opt = optax.chain(_print_info(), optax.lbfgs())
+
+    def fun(x):
+        return f(x, *args)
+
+    if verbose:
+        print("==================================================================")
+
+        print("                RUNNING THE L-BFGS METHOD                     \n")
+        print("                           * * *                              \n")
+        print(f"                    Tolerance = {tol:.3E}                    \n")
+
+    x_final, state_final = _run_opt(x_init, fun, opt, max_iter=max_iter, tol=tol)
+
+    iter_num = optax.tree_utils.tree_get(state_final, "count")
+    grad = optax.tree_utils.tree_get(state_final, "grad")
+    grad_norm = optax.tree_utils.tree_l2_norm(grad)
+
+    if verbose:
+        print(
+            f"At iterate {iter_num:4d}, f = {fun(x_final).item():.3E};",
+            f"grad norm: {grad_norm.item():.3E}\n",
+        )
+
+        if grad_norm < tol and iter_num < max_iter:
+            print("CONVERGENCE: GRADIENT NORM < TOL")
+        else:
+            print("CONVERGENCE: NUM_OF_ITERATION REACH MAX_ITERATION")
+        
+        print("==================================================================")
+
+    return {
+        "x": x_final,
+        "N_iter": iter_num,
+        "F": fun(x_final).item(),
+        "grad_norm": grad_norm,
     }
