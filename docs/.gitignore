@@ -1,1 +1,5 @@
-./build/*
+# Zensical build output
+site/
+
+# Zensical cache
+.cache/

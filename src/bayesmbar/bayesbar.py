@@ -29,18 +29,12 @@ class BayesBAR:
         """
         Initialize the BayesBAR class.
 
-        Parameters
-        ----------
-        energy : ndarray
-            An energy matrix in reduced units. Its size should be 2xN, where N is the total number of samples from the two states.
-        num_conf : ndarray
-            Number of configurations in each state. Its size should be (2,).
-        sample_size : int, optional
-            The number of samples from the posterior distribution. Defaults to 1000.
-        method : str, optional
-            Optimization method for finding the mode. Options are "Newton" or "L-BFGS". Defaults to "Newton".
-        verbose : bool, optional
-            Whether to print running information. Defaults to False.
+        Args:
+            energy (ndarray): An energy matrix in reduced units. Its size should be 2xN, where N is the total number of samples from the two states.
+            num_conf (ndarray): Number of configurations in each state. Its size should be (2,).
+            sample_size (int, optional): The number of samples from the posterior distribution. Defaults to 1000.
+            method (str, optional): Optimization method for finding the mode. Options are "Newton" or "L-BFGS". Defaults to "Newton".
+            verbose (bool, optional): Whether to print running information. Defaults to False.
         """
 
         assert energy.shape[0] == 2, (

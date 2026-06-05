@@ -32,30 +32,21 @@ class CBayesMBAR:
         verbose: bool = True,
     ):
         """
-        Parameters
-        ----------
-        energies : List[ndarray]
-            A list of energies for all coupled MBAR systems. The energies should be in the unit of kT.
-        nums_conf : List[ndarray]
-            A list of the number of configurations for all coupled MBAR systems.
-        identical_states : List[List[(int, int)]]
-            A list of identical states. Each element in the outer list is a list of tuples and
-            represents a group of states that are identical to each other. States are represented
-            by a tuple where the first element is the index of a MBAR system and the second element
-            is the index of the state in that MBAR system. For example,
-            identical_states = [[(0, 3), (1, 0)], [(1, 3), (2, 0), (3, 0)]] means that state 3 in
-            system 0 is identical to state 0 in system 1, and state 3 in system 1 is identical to
-            state 0 in system 2, and state 0 in system 3.
-        sample_size : int, optional
-            The number of samples to draw from the likelihood. The default is 1000.
-        warmup_steps : int, optional
-            The number of warmup steps for the HMC sampler. The default is 500.
-        method : str, optional
-            The optimization method for finding the mode of the likelihood. Options are "Newton" or "L-BFGS". The default is "Newton".
-        random_seed : int, optional
-            The random seed. The default is None, which means the random seed is generated from the current time.
-        verbose : bool, optional
-            Whether to print out the progress of the sampling. The default is True.
+        Args:
+            energies (List[ndarray]): A list of energies for all coupled MBAR systems. The energies should be in the unit of kT.
+            nums_conf (List[ndarray]): A list of the number of configurations for all coupled MBAR systems.
+            identical_states (List[List[(int, int)]]): A list of identical states. Each element in the outer list is a list of tuples and
+                represents a group of states that are identical to each other. States are represented
+                by a tuple where the first element is the index of a MBAR system and the second element
+                is the index of the state in that MBAR system. For example,
+                identical_states = [[(0, 3), (1, 0)], [(1, 3), (2, 0), (3, 0)]] means that state 3 in
+                system 0 is identical to state 0 in system 1, and state 3 in system 1 is identical to
+                state 0 in system 2, and state 0 in system 3.
+            sample_size (int, optional): The number of samples to draw from the likelihood. Defaults to 1000.
+            warmup_steps (int, optional): The number of warmup steps for the HMC sampler. Defaults to 500.
+            method (str, optional): The optimization method for finding the mode of the likelihood. Options are "Newton" or "L-BFGS". Defaults to "Newton".
+            random_seed (int, optional): The random seed. Defaults to None, which means the random seed is generated from the current time.
+            verbose (bool, optional): Whether to print out the progress of the sampling. Defaults to True.
         """
         self._energies = [jnp.float64(u) for u in energies]
         self._nums_conf = [jnp.int32(n) for n in nums_conf]
@@ -247,12 +238,9 @@ def _generate_dF_graph(
     We add edges between all pairs of identical states because we will use them to constraint
     the free energy difference of these edges to be zero.
 
-    Parameters
-    ----------
-    nums_state : Sequence[int]
-        A list of the number of states in each MBAR system.
-    identical_states : Sequence[Sequence[(int, int)]]
-        Same as the identical_states parameter in the CBayesMBAR class.
+    Args:
+        nums_state (Sequence[int]): A list of the number of states in each MBAR system.
+        identical_states (Sequence[Sequence[(int, int)]]): Same as the identical_states parameter in the CBayesMBAR class.
     """
     G = nx.Graph()
     for i in range(len(nums_state)):

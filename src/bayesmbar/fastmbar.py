@@ -41,37 +41,28 @@ class FastMBAR:
     ) -> None:
         """Initializer for the class FastMBAR
 
-        Parameters
-        ----------
-        energy : 2D ndarray
-            It has a size of (M x N), where M is the number of states
-            and N is the total number of conformations. The entry energy[i,j]
-            is the reduced (unitless) energy of conformation j in state i.
-            If bootstrapping is used to calculate the uncertainty, the order
-            of conformations matters. Conformations sampled from one state
-            need to occpy a continuous chunk of collumns. Conformations sampled
-            from state k need to occupy collumns to the left of conformations
-            sampled from state l if k < l. If bootstrapping is not used, then
-            the order of conformation does not matter.
-        num_conf: 1D int ndarray
-            It should have a size of M, where num_conf[i] is the num of
-            conformations sampled from state i. Therefore, np.sum(num_conf)
-            has to be equal to N. All entries in num_conf have to be strictly
-            greater than 0.
-        bootstrap: bool, optional (default=False)
-            If bootstrap is True, the uncertainty of the calculated free energies
-            will be estimate using block bootstraping.
-        bootstrap_block_size: int, optional (default=3)
-            block size used in block bootstrapping
-        bootstrap_num_rep: int, optional (default=100)
-            number of repreats in block bootstrapping
-        verbose: bool, optional (default=False)
-            if verbose is true, the detailed information of solving MBAR equations
-            is printed.
-        method: str, optional (default="Newton")
-            the method used to solve the MBAR equation. The default is Newton's method.
-        F_init: 1D ndarray, optional (default=None)
-            The initial guess for the relative free energies. If None, the initial guess is set to zero.
+        Args:
+            energy (2D ndarray): It has a size of (M x N), where M is the number of states
+                and N is the total number of conformations. The entry energy[i,j]
+                is the reduced (unitless) energy of conformation j in state i.
+                If bootstrapping is used to calculate the uncertainty, the order
+                of conformations matters. Conformations sampled from one state
+                need to occpy a continuous chunk of collumns. Conformations sampled
+                from state k need to occupy collumns to the left of conformations
+                sampled from state l if k < l. If bootstrapping is not used, then
+                the order of conformation does not matter.
+            num_conf (1D int ndarray): It should have a size of M, where num_conf[i] is the num of
+                conformations sampled from state i. Therefore, np.sum(num_conf)
+                has to be equal to N. All entries in num_conf have to be strictly
+                greater than 0.
+            bootstrap (bool, optional): If bootstrap is True, the uncertainty of the calculated free energies
+                will be estimate using block bootstraping. Defaults to False.
+            bootstrap_block_size (int, optional): block size used in block bootstrapping. Defaults to 3.
+            bootstrap_num_rep (int, optional): number of repreats in block bootstrapping. Defaults to 100.
+            verbose (bool, optional): if verbose is true, the detailed information of solving MBAR equations
+                is printed. Defaults to False.
+            method (str, optional): the method used to solve the MBAR equation. Defaults to "Newton".
+            F_init (1D ndarray, optional): The initial guess for the relative free energies. If None, the initial guess is set to zero. Defaults to None.
         """
 
         #### check the parameters: energy and num_conf
@@ -312,28 +303,20 @@ class FastMBAR:
     ) -> dict:
         r"""calculate free energies for perturbed states.
 
-        Parameters
-        -----------
-        energy_perturbed: 2-D float ndarray with size of (L,N)
-            each row of the energy_perturbed matrix represents a state and
-            the value energy_perturbed[l,n] represents the reduced energy
-            of the n'th conformation in the l'th perturbed state.
+        Args:
+            energy_perturbed (2-D float ndarray): A matrix with size of (L, N). Each row of the
+                energy_perturbed matrix represents a state and the value energy_perturbed[l,n]
+                represents the reduced energy of the n'th conformation in the l'th perturbed state.
 
-        Returns
-        -------
-        results: dict
-            a dictionary containing the following keys:
+        Returns:
+            dict: a dictionary containing the following keys:
 
-            **F** - the free energy of the perturbed states.
-
-            **F_std** - the standard deviation of the free energy of the perturbed states.
-
-            **F_cov** - the covariance between the free energies of the perturbed states.
-
-            **DeltaF** - :math:`\mathrm{DeltaF}[k,l]` is the free energy difference between state
-            :math:`k` and state :math:`l`, i.e., :math:`\mathrm{DeltaF}[k,l] = F[l] - F[k]` .
-
-            **DeltaF_std** - the standard deviation of the free energy difference.
+                - **F** - the free energy of the perturbed states.
+                - **F_std** - the standard deviation of the free energy of the perturbed states.
+                - **F_cov** - the covariance between the free energies of the perturbed states.
+                - **DeltaF** - $\mathrm{DeltaF}[k,l]$ is the free energy difference between state
+                  $k$ and state $l$, i.e., $\mathrm{DeltaF}[k,l] = F[l] - F[k]$.
+                - **DeltaF_std** - the standard deviation of the free energy difference.
         """
 
         if isinstance(energy_perturbed, np.ndarray):
