@@ -2,7 +2,6 @@ import math
 import random
 import numpy as np
 from numpy import ndarray
-import scipy.optimize as optimize
 import scipy.integrate as integrate
 import jax
 from jax import hessian, jit, value_and_grad

@@ -55,12 +55,14 @@ nav = [
   { "Installation" = "installation.md" },
   { "Usage" = "usage.md" },
   { "Examples" = [
+    { "BayesBAR for two harmonic oscillators" = "examples/bayesbar_for_two_harmonic_oscillators.md" },
     { "BayesMBAR for harmonic oscillators" = "examples/bayesmbar_for_harmonic_oscillators.md" },
     { "CBayesMBAR for harmonic oscillators" = "examples/cbayesmbar_for_harmonic_oscillators.md" },
     { "CBayesMBAR for protein-ligand binding" = "examples/cbayesmbar_for_protein_ligand.md" },
   ] },
   { "API reference" = "api.md" },
   { "FAQ" = "faq.md" },
+  { "Citation & References" = "references.md" },
 ]
 
 # With the "extra_css" option you can add your own CSS styling to customize
