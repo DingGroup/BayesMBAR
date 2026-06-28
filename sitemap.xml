@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+      <url>
+        <loc>https://xdinglab.com/BayesMBAR/</loc>
+      </url>
+      <url>
+        <loc>https://xdinglab.com/BayesMBAR/installation/</loc>
+      </url>
+      <url>
+        <loc>https://xdinglab.com/BayesMBAR/usage/</loc>
+      </url>
+      <url>
+        <loc>https://xdinglab.com/BayesMBAR/examples/bayesmbar_for_harmonic_oscillators/</loc>
+      </url>
+      <url>
+        <loc>https://xdinglab.com/BayesMBAR/examples/cbayesmbar_for_harmonic_oscillators/</loc>
+      </url>
+      <url>
+        <loc>https://xdinglab.com/BayesMBAR/examples/cbayesmbar_for_protein_ligand/</loc>
+      </url>
+      <url>
+        <loc>https://xdinglab.com/BayesMBAR/api/</loc>
+      </url>
+      <url>
+        <loc>https://xdinglab.com/BayesMBAR/faq/</loc>
+      </url>
+</urlset>
