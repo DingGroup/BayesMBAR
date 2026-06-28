@@ -52,8 +52,8 @@ Copyright &copy; 2024 Xinqiang Ding
 # Read more: https://zensical.org/docs/setup/navigation/
 nav = [
   { "Home" = "index.md" },
-  { "Overview" = "overview.md" },
   { "Installation" = "installation.md" },
+  { "Usage" = "usage.md" },
   { "Examples" = [
     { "BayesMBAR for harmonic oscillators" = "examples/bayesmbar_for_harmonic_oscillators.md" },
     { "CBayesMBAR for harmonic oscillators" = "examples/cbayesmbar_for_harmonic_oscillators.md" },
