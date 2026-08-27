@@ -1,14 +1,16 @@
 import math
 import random
-import numpy as np
-from numpy import ndarray
-import scipy.integrate as integrate
-import jax
-from jax import hessian, jit, value_and_grad
-import jax.numpy as jnp
-from .utils import fmin_newton, fmin_lbfgs
-from tqdm import tqdm
 import warnings
+
+import jax
+import jax.numpy as jnp
+import numpy as np
+from jax import hessian, jit, value_and_grad
+from numpy import ndarray
+from scipy import integrate
+from tqdm import tqdm
+
+from .utils import fmin_lbfgs, fmin_newton
 
 jax.config.update("jax_enable_x64", True)
 
@@ -255,7 +257,7 @@ def _sample_from_posterior(dF_mode, dF_std, energy, num_conf, size):
     x0 = dF_mode
     samples = [x0]
 
-    for _ in tqdm(range(size - 1)):
+    for _ in tqdm(range(size - 1), desc = "Slice sampling"):
         ## sample the auxiliarxy random variable
         logp = _compute_logp(x0, energy, num_conf)
         z = logp - random.expovariate(1.0)

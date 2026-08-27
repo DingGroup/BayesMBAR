@@ -1,16 +1,15 @@
-from collections.abc import Sequence
-from typing import List, Tuple
 import time
-import numpy as np
-from numpy import ndarray
-import networkx as nx
+from collections.abc import Sequence
+
 import jax
 import jax.numpy as jnp
-from jax import random
-from jax import hessian, jit, value_and_grad, vmap
-from scipy import optimize
+import networkx as nx
+import numpy as np
+from jax import hessian, jit, random, value_and_grad, vmap
+from numpy import ndarray
+
 from .bayesmbar import _sample_from_logdensity
-from .utils import fmin_newton, _compute_log_likelihood_of_dF, fmin_lbfgs
+from .utils import _compute_log_likelihood_of_dF, fmin_lbfgs, fmin_newton
 
 jax.config.update("jax_enable_x64", True)
 
@@ -22,9 +21,9 @@ class CBayesMBAR:
 
     def __init__(
         self,
-        energies: List[ndarray],
-        nums_conf: List[ndarray],
-        identical_states: List[List[Tuple[int, int]]],
+        energies: list[ndarray],
+        nums_conf: list[ndarray],
+        identical_states: list[list[tuple[int, int]]],
         sample_size: int = 1000,
         warmup_steps: int = 500,
         method: str = "Newton",
@@ -131,7 +130,7 @@ class CBayesMBAR:
             ]
 
     @property
-    def F_mode(self) -> List[ndarray]:
+    def F_mode(self) -> list[ndarray]:
         """The mode of free energies of all states in all MBAR systems. The free energy of
         state 0 in each system is set to 0.
         """
@@ -141,7 +140,7 @@ class CBayesMBAR:
         ]
 
     @property
-    def F_samples(self) -> List[ndarray]:
+    def F_samples(self) -> list[ndarray]:
         """The samples of free energies of all states in all MBAR systems. The free energy of
         state 0 in each system is set to 0.
         """
@@ -151,7 +150,7 @@ class CBayesMBAR:
         ]
 
     @property
-    def F_mean(self) -> List[ndarray]:
+    def F_mean(self) -> list[ndarray]:
         """The mean of free energies of all states in all MBAR systems. The free energy of
         state 0 in each system is set to 0.
         """
@@ -161,22 +160,22 @@ class CBayesMBAR:
         ]
 
     @property
-    def DeltaF_mode(self) -> List[ndarray]:
+    def DeltaF_mode(self) -> list[ndarray]:
         """The mode of free energy differences between all pairs of states in every MBAR system."""
         return [F[None, :] - F[:, None] for F in self.F_mode]
 
     @property
-    def DeltaF_mean(self) -> List[ndarray]:
+    def DeltaF_mean(self) -> list[ndarray]:
         """The mean of free energy differences between all pairs of states in every MBAR system."""
         return [F[None, :] - F[:, None] for F in self.F_mean]
 
     @property
-    def DeltaF_std(self) -> List[ndarray]:
+    def DeltaF_std(self) -> list[ndarray]:
         """The standard deviation of free energy differences between all pairs of states in every MBAR system."""
         return [np.std(F[:, None, :] - F[:, :, None], 0) for F in self.F_samples]
 
 
-def _dF_to_state_F(dF: jnp.ndarray, nums_state: List[int]) -> List[jnp.ndarray]:
+def _dF_to_state_F(dF: jnp.ndarray, nums_state: list[int]) -> list[jnp.ndarray]:
     state_dF = []
     idx = 0
     for n in nums_state:
@@ -229,7 +228,7 @@ def _compute_cmbar_loss_likelihood(
 
 
 def _generate_dF_graph(
-    nums_state: List[int], identical_states: List[List[Tuple[int, int]]]
+    nums_state: list[int], identical_states: list[list[tuple[int, int]]]
 ) -> nx.Graph:
     """
     Generate a graph where each node represents a state and each edge represents a perturbation
@@ -256,7 +255,7 @@ def _generate_dF_graph(
 
 
 def _compute_projection(
-    nums_state: List[int], identical_states: List[List[Tuple[int, int]]]
+    nums_state: list[int], identical_states: list[list[tuple[int, int]]]
 ) -> ndarray:
     """Compute the projection matrix Q
 

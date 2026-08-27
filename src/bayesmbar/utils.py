@@ -1,12 +1,10 @@
-import numpy as np
+from typing import NamedTuple
+
 import jax
 import jax.numpy as jnp
-from jax import jit, value_and_grad
-from jax import hessian
-from scipy import optimize
-from jax.scipy.special import logsumexp
 import optax
-from typing import NamedTuple
+from jax import hessian, jit, value_and_grad
+from jax.scipy.special import logsumexp
 
 
 def _solve_mbar(dF_init, energy, num_conf, method, verbose):

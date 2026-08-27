@@ -1,11 +1,13 @@
 from copy import deepcopy
 from time import time
-import numpy as np
+
 import jax
 import jax.numpy as jnp
 import jax.random as jr
-from jax.scipy.special import logsumexp
+import numpy as np
 import numpy.typing as npt
+from jax.scipy.special import logsumexp
+
 from .utils import _solve_mbar
 
 jax.config.update("jax_enable_x64", True)

@@ -1,22 +1,20 @@
 from functools import partial
 from typing import Literal
 
-import numpy as np
-from numpy.typing import NDArray
-import jax
-
-import jax.numpy as jnp
-from jax import hessian, jit, value_and_grad
-from jax import random
 import blackjax
-from optax import sgd
+import jax
+import jax.numpy as jnp
+import numpy as np
 import optax
+from jax import hessian, jit, random, value_and_grad
+from numpy.typing import NDArray
+from optax import sgd
+
 from .utils import (
-    _solve_mbar,
-    fmin_newton,
     _compute_log_likelihood_of_dF,
     _compute_log_likelihood_of_F,
-    _compute_loss_likelihood_of_dF,
+    _solve_mbar,
+    fmin_newton,
 )
 
 jax.config.update("jax_enable_x64", True)
@@ -82,7 +80,7 @@ class BayesMBAR:
         # The mode estimate based on the likelihood is the solution to the MBAR equation.
 
         if self._verbose:
-            print("=====================================================")                        
+            print("=====================================================")
             print("Solve for the mode of the likelihood")
 
         dF_init = jnp.zeros((self._m - 1,))
@@ -112,7 +110,6 @@ class BayesMBAR:
         def logdensity(dF):
             return _compute_log_likelihood_of_dF(dF, self._energy, self._num_conf)
 
-
         if self._sample_size > 0:
             self._dF_samples_ll = _sample_from_logdensity(
                 subkey,
@@ -131,15 +128,16 @@ class BayesMBAR:
                 self._dF_cov_ll = self._dF_cov_ll.reshape((1, 1))
 
             L = jnp.linalg.cholesky(self._dF_cov_ll)
-            L_inv = jax.scipy.linalg.solve_triangular(L, jnp.eye(L.shape[0]), lower=True)
+            L_inv = jax.scipy.linalg.solve_triangular(
+                L, jnp.eye(L.shape[0]), lower=True
+            )
             self._dF_prec_ll = L_inv.T.dot(L_inv)
             # self._dF_prec_ll = jnp.linalg.inv(self._dF_cov_ll)
 
-        
             self._F_samples_ll = _dF_to_F(self._dF_samples_ll, self._num_conf)
             self._F_mean_ll = jnp.mean(self._F_samples_ll, axis=0)
             self._F_cov_ll = jnp.cov(self._F_samples_ll.T)
-            
+
         self._F_mode_ll = _dF_to_F(self._dF_mode_ll, self._num_conf)
         ## we are done here if the prior is uniform.
         ## When normal prior is used, we need to learn the hyperparameters of the prior and then sample dF from the posterior distribution of dF.
@@ -434,20 +432,20 @@ def _compute_proposal_dist(mean_prior, cov_prior, dF_mean_ll, dF_prec_ll):
 def _print_params(params):
     res = "beta: "
     for i in range(params["mean"]["beta"].shape[0]):
-        res += f'{params["mean"]["beta"][i].item():.4f}, '
+        res += f"{params['mean']['beta'][i].item():.4f}, "
 
-    res += f'scale: {params["kernel"]["scale"].item():.4f}, '
+    res += f"scale: {params['kernel']['scale'].item():.4f}, "
 
     res += "l_scale: "
     for i in range(params["kernel"]["length_scale"].shape[0]):
-        res += f'{params["kernel"]["length_scale"][i].item():.4f}, '
+        res += f"{params['kernel']['length_scale'][i].item():.4f}, "
 
     if "alpha" in params["kernel"].keys():
-        res += f'alpha: {params["kernel"]["alpha"].item():.4f}, '
+        res += f"alpha: {params['kernel']['alpha'].item():.4f}, "
 
     res += "dscale: "
     for i in range(params["kernel"]["dscale"].shape[0]):
-        res += f'{params["kernel"]["dscale"][i].item():.4f}, '
+        res += f"{params['kernel']['dscale'][i].item():.4f}, "
     return res
 
 
@@ -583,13 +581,11 @@ def _sample_from_logdensity(
         blackjax.nuts,
         logdensity,
         is_mass_matrix_diagonal=False,
-        progress_bar=verbose,
+        #progress_bar=verbose,
     )
     rng_key, subkey = random.split(rng_key)
-    (state, parameters), _ = warmup.run(subkey, init_dF, num_steps=warmup_steps)
-
-    if verbose:
-        print("Sample using the NUTS sampler")
+    with blackjax.progress_bar(label="NUTS warmup"):
+        (state, parameters), _ = warmup.run(subkey, init_dF, num_steps=warmup_steps)
 
     ## sample using nuts
 
@@ -603,7 +599,8 @@ def _sample_from_logdensity(
     ## sample using nuts
     rng_key, subkey = random.split(rng_key)
     kernel = blackjax.nuts(logdensity, **parameters).step
-    states = _sample_loop(subkey, kernel, state, num_samples)
+    with blackjax.progress_bar(label="NUTS sampling"):
+        states = _sample_loop(subkey, kernel, state, num_samples)
 
     return states.position
 

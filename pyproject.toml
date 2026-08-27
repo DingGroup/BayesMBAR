@@ -8,26 +8,29 @@ dependencies = [
     "jax[cuda12]==0.10.1; sys_platform == 'linux'",
     "jax==0.10.1; sys_platform == 'darwin'",
     "jaxlib==0.10.1",
-    "blackjax>=1.2.3",
-    "networkx>=3.3",
-    "tqdm>=4.66.5",
-    "pytest>=8.3.5",
-    "optax>=0.2.4",
-    "zensical>=0.0.46",
+    "blackjax[progress]==1.6.2",
+    "networkx==3.3",
+    "tqdm==4.66.5",
+    "pytest==8.3.5",
+    "optax==0.2.4",
+    "zensical==0.0.57",
 ]
 
 [dependency-groups]
 dev = [
-    "ipython>=8.29.0",
-    "matplotlib>=3.10.3",
-    "mkdocstrings-python>=2.0.4",
+    "ipython==8.29.0",
+    "matplotlib==3.10.3",
+    "mkdocstrings-python==2.0.4",
 ]
 
 [project.optional-dependencies]
 testing = [
-    "pytest>=8.3.2"
+    "pytest==8.3.5"
 ]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.ruff.lint]
+extend-select = ["I"]
