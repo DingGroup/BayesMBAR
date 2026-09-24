@@ -25,7 +25,7 @@ class BayesBAR:
         sample_size: int = 1000,
         method: str = "Newton",
         verbose=False,
-        dF_init=jnp.zeros(1, dtype=jnp.float64),
+        dF_init: ndarray | None = None,
     ):
         """
         Initialize the BayesBAR class.
@@ -257,7 +257,7 @@ def _sample_from_posterior(dF_mode, dF_std, energy, num_conf, size):
     x0 = dF_mode
     samples = [x0]
 
-    for _ in tqdm(range(size - 1), desc = "Slice sampling"):
+    for _ in tqdm(range(size - 1), desc="Slice sampling"):
         ## sample the auxiliarxy random variable
         logp = _compute_logp(x0, energy, num_conf)
         z = logp - random.expovariate(1.0)

@@ -87,19 +87,11 @@ class BayesMBAR:
         dF = _solve_mbar(
             dF_init, self._energy, self._num_conf, self._method, self._verbose
         )
-
-        # f = jit(value_and_grad(_compute_loss_likelihood_of_dF))
-        # hess = jit(hessian(_compute_loss_likelihood_of_dF))
-        # res = fmin_newton(f, hess, dF_init, args=(self._energy, self._num_conf))
-        # dF = res["x"]
-
         self._dF_mode_ll = dF
 
         # sample dF based on the likelihood.
         # When the uniform prior is used, the posterior distribution of dF is
         # the same as the likelihood function.
-        # Thefore so these samples are also samples from the posterior
-        # distribution of dF when the uniform prior is used.
 
         if self._verbose:
             print("=====================================================")
@@ -139,6 +131,9 @@ class BayesMBAR:
             self._F_cov_ll = jnp.cov(self._F_samples_ll.T)
 
         self._F_mode_ll = _dF_to_F(self._dF_mode_ll, self._num_conf)
+
+        
+
         ## we are done here if the prior is uniform.
         ## When normal prior is used, we need to learn the hyperparameters of the prior and then sample dF from the posterior distribution of dF.
 
@@ -581,7 +576,7 @@ def _sample_from_logdensity(
         blackjax.nuts,
         logdensity,
         is_mass_matrix_diagonal=False,
-        #progress_bar=verbose,
+        # progress_bar=verbose,
     )
     rng_key, subkey = random.split(rng_key)
     with blackjax.progress_bar(label="NUTS warmup"):
