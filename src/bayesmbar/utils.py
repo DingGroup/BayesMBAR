@@ -1,4 +1,4 @@
-from functools import partial
+from functools import lru_cache, partial
 from typing import NamedTuple
 
 import jax
@@ -8,11 +8,29 @@ from jax import hessian, jit, value_and_grad
 from jax.scipy.special import logsumexp
 
 
-def _solve_mbar(dF_init, energy, num_conf, method, verbose):
+def _solve_mbar(dF_init, energy, num_conf, method, verbose, batch_size=None):
+    """Solve the MBAR equations for dF.
+
+    If batch_size is None, the loss, gradient and Hessian are computed over the whole
+    energy matrix at once. Otherwise they are accumulated over batches of
+    batch_size configurations, so that the temporary memory scales with batch_size
+    instead of with the number of configurations.
+    """
+    if batch_size is None:
+        loss = _compute_loss_likelihood_of_dF
+        value_and_grad_fn = _value_and_grad_loss_likelihood_of_dF
+        hessian_fn = _hessian_loss_likelihood_of_dF
+    else:
+        ## put the energy matrix on the device once instead of in every call;
+        ## jax.device_put avoids the transient second copy made by jnp.asarray
+        energy = jax.device_put(energy)
+        num_conf = jnp.asarray(num_conf, dtype=energy.dtype)
+        loss, value_and_grad_fn, hessian_fn = _batched_loss_functions(batch_size)
+
     if method == "Newton":
         res = fmin_newton(
-            _value_and_grad_loss_likelihood_of_dF,
-            _hessian_loss_likelihood_of_dF,
+            value_and_grad_fn,
+            hessian_fn,
             dF_init,
             args=(energy, num_conf),
             verbose=verbose,
@@ -20,7 +38,7 @@ def _solve_mbar(dF_init, energy, num_conf, method, verbose):
         dF = res["x"]
     elif method == "L-BFGS":
         res = fmin_lbfgs(
-            _compute_loss_likelihood_of_dF,
+            loss,
             dF_init,
             args=(energy, num_conf),
             verbose=verbose,
@@ -101,6 +119,114 @@ _value_and_grad_loss_likelihood_of_dF = jit(
     value_and_grad(_compute_loss_likelihood_of_dF)
 )
 _hessian_loss_likelihood_of_dF = jit(hessian(_compute_loss_likelihood_of_dF))
+
+
+def _accumulate_in_batches(stats, energy, batch_size, init):
+    """Sum stats(energy[:, batch]) over batches of batch_size columns of energy.
+
+    stats maps an (M, B) block of the energy matrix to a pytree with the same
+    structure as init. Full batches are processed in a fori_loop so that only one
+    batch of intermediates is alive at a time; the remaining N % batch_size columns
+    are processed once at the end.
+    """
+    N = energy.shape[1]
+    ## the loop body is traced even when it runs zero times, so the slice in it
+    ## must fit in the energy matrix
+    batch_size = min(batch_size, N)
+    num_full_batches = N // batch_size
+
+    def body(i, acc):
+        u = jax.lax.dynamic_slice_in_dim(energy, i * batch_size, batch_size, axis=1)
+        return jax.tree.map(jnp.add, acc, stats(u))
+
+    acc = jax.lax.fori_loop(0, num_full_batches, body, init)
+    if N % batch_size:
+        acc = jax.tree.map(
+            jnp.add, acc, stats(energy[:, num_full_batches * batch_size :])
+        )
+    return acc
+
+
+def _loss_grad_hess_in_batches(dF, energy, num_conf, batch_size, with_hessian):
+    """Loss, gradient and (optionally) Hessian of _compute_loss_likelihood_of_dF,
+    accumulated over batches of configurations.
+
+    With p[n, k] = softmax_k(F_k + log N_k - u_k(x_n)), the negative log-likelihood
+    and its derivatives with respect to F are sums over configurations:
+
+        -L       = sum_n logsumexp_k(F_k + log N_k - u_k(x_n)) - sum_k N_k F_k
+        d(-L)/dF = sum_n p[n] - N_k
+        H(-L)    = diag(sum_n p[n]) - sum_n p[n]^T p[n]
+
+    Derivatives with respect to dF drop the first state because F_0 = 0. Everything
+    is divided by the total number of configurations as in
+    _compute_loss_likelihood_of_dF.
+    """
+    F = jnp.concatenate([jnp.zeros((1,), dtype=dF.dtype), dF])
+    logn = jnp.log(num_conf)
+    M = energy.shape[0]
+
+    def stats(u):
+        logits = F + logn - u.T
+        lse = logsumexp(logits, axis=1)
+        p = jnp.exp(logits - lse[:, None])
+        s = (lse.sum(), p.sum(axis=0))
+        if with_hessian:
+            s = s + (p.T @ p,)
+        return s
+
+    init = (jnp.zeros((), energy.dtype), jnp.zeros((M,), energy.dtype))
+    if with_hessian:
+        init = init + (jnp.zeros((M, M), energy.dtype),)
+    sums = _accumulate_in_batches(stats, energy, batch_size, init)
+
+    N = num_conf.sum()
+    loss = (sums[0] - jnp.sum(num_conf * F)) / N
+    grad = (sums[1] - num_conf)[1:] / N
+    if not with_hessian:
+        return loss, grad
+    hess = (jnp.diag(sums[1]) - sums[2])[1:, 1:] / N
+    return loss, grad, hess
+
+
+@lru_cache(maxsize=None)
+def _batched_loss_functions(batch_size):
+    """Batched counterparts of _compute_loss_likelihood_of_dF,
+    _value_and_grad_loss_likelihood_of_dF and _hessian_loss_likelihood_of_dF.
+
+    They are cached per batch_size so that repeated solves reuse the same function
+    objects and hence the same compiled code.
+
+    The loss has a custom VJP that returns the gradient from the same batched pass.
+    Differentiating through the batch loop with autodiff would keep the
+    intermediates of every batch for the backward pass, which defeats batching.
+    """
+
+    @jax.custom_vjp
+    def loss(dF, energy, num_conf):
+        return _loss_grad_hess_in_batches(dF, energy, num_conf, batch_size, False)[0]
+
+    def loss_fwd(dF, energy, num_conf):
+        value, grad = _loss_grad_hess_in_batches(
+            dF, energy, num_conf, batch_size, False
+        )
+        return value, grad
+
+    def loss_bwd(grad, g):
+        ## only dF is differentiated; None means a zero cotangent for the data
+        return (g * grad, None, None)
+
+    loss.defvjp(loss_fwd, loss_bwd)
+
+    @jit
+    def value_and_grad_fn(dF, energy, num_conf):
+        return _loss_grad_hess_in_batches(dF, energy, num_conf, batch_size, False)
+
+    @jit
+    def hessian_fn(dF, energy, num_conf):
+        return _loss_grad_hess_in_batches(dF, energy, num_conf, batch_size, True)[2]
+
+    return loss, value_and_grad_fn, hessian_fn
 
 
 def fmin_newton(f, hess, x_init, args=(), verbose=True, eps=1e-10, max_iter=500):
