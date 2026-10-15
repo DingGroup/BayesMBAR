@@ -72,3 +72,38 @@ def test_FastMBAR_perturbed_states_equal_to_sampled_states(setup_mbar_data, boot
     )
     results = fastmbar.calculate_free_energies_of_perturbed_states(energy)
     assert results["F"] == approx(fastmbar.F, abs=1e-4)
+
+
+@pytest.mark.parametrize("batch_size", [7, 50, 100_000])
+def test_FastMBAR_streamed_matches_unbatched(setup_mbar_data, batch_size):
+    energy, num_conf, F_ref, energy_p, F_ref_p = setup_mbar_data
+    ref = FastMBAR(energy, num_conf, verbose=False)
+    fastmbar = FastMBAR(
+        energy, num_conf, verbose=False, batch_size=batch_size, energy_on_device=False
+    )
+    assert fastmbar.energy_on_device is False
+    assert fastmbar.F == approx(ref.F, abs=1e-10)
+    assert fastmbar.F_cov == approx(ref.F_cov, abs=1e-10)
+    assert fastmbar.log_prob_mix == approx(ref.log_prob_mix, abs=1e-10)
+
+
+@pytest.mark.parametrize(
+    "kwargs, error",
+    [
+        (dict(energy_on_device=False), ValueError),
+        (dict(batch_size=50, energy_on_device="no"), TypeError),
+        (dict(batch_size=50, energy_on_device=False, method="L-BFGS"), NotImplementedError),
+        (dict(batch_size=50, energy_on_device=False, bootstrap=True), NotImplementedError),
+    ],
+)
+def test_FastMBAR_energy_on_device_errors(setup_mbar_data, kwargs, error):
+    energy, num_conf, F_ref, energy_p, F_ref_p = setup_mbar_data
+    with pytest.raises(error):
+        FastMBAR(energy, num_conf, **kwargs)
+
+
+def test_FastMBAR_streamed_perturbed_states_not_supported(setup_mbar_data):
+    energy, num_conf, F_ref, energy_p, F_ref_p = setup_mbar_data
+    fastmbar = FastMBAR(energy, num_conf, batch_size=50, energy_on_device=False)
+    with pytest.raises(NotImplementedError):
+        fastmbar.calculate_free_energies_of_perturbed_states(energy_p)

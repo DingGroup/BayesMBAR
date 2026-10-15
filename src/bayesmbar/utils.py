@@ -187,13 +187,7 @@ def _loss_grad_hess_in_batches(
 
     def body(start, size, acc):
         u = _energy_columns(energy, conf_idx, start, size)
-        logits = F + logn - u.T
-        lse = logsumexp(logits, axis=1)
-        p = jnp.exp(logits - lse[:, None])
-        s = (lse.sum(), p.sum(axis=0))
-        if with_hessian:
-            s = s + (p.T @ p,)
-        return jax.tree.map(jnp.add, acc, s)
+        return _add_mbar_sums(acc, F, logn, u.T, with_hessian)
 
     init = (jnp.zeros((), energy.dtype), jnp.zeros((M,), energy.dtype))
     if with_hessian:
@@ -201,14 +195,94 @@ def _loss_grad_hess_in_batches(
     sums = _loop_over_batches(
         body, _num_columns(energy, conf_idx), batch_size, init
     )
+    return _loss_grad_hess_from_sums(sums, F, num_conf)
 
+
+def _mbar_weights(F, logn, u_T):
+    """For a batch of configurations with energies u_T of shape (B, M), return
+    lse[n] = logsumexp_k(F_k + log N_k - u_k(x_n)) and the MBAR weights
+    p[n, k] = exp(F_k + log N_k - u_k(x_n) - lse[n])."""
+    logits = F + logn - u_T
+    lse = logsumexp(logits, axis=1)
+    return lse, jnp.exp(logits - lse[:, None])
+
+
+def _add_mbar_sums(sums, F, logn, u_T, with_hessian=True):
+    """Add one batch's contribution to (sum_n lse[n], sum_n p[n], sum_n p[n]^T p[n]);
+    the last term only if with_hessian."""
+    lse, p = _mbar_weights(F, logn, u_T)
+    s = (lse.sum(), p.sum(axis=0))
+    if with_hessian:
+        s = s + (p.T @ p,)
+    return jax.tree.map(jnp.add, sums, s)
+
+
+def _loss_grad_hess_from_sums(sums, F, num_conf):
+    """Loss, gradient and, if sums has the p^T p term, Hessian with respect to dF;
+    see _loss_grad_hess_in_batches for the formulas."""
     N = num_conf.sum()
     loss = (sums[0] - jnp.sum(num_conf * F)) / N
     grad = (sums[1] - num_conf)[1:] / N
-    if not with_hessian:
+    if len(sums) == 2:
         return loss, grad
     hess = (jnp.diag(sums[1]) - sums[2])[1:, 1:] / N
     return loss, grad, hess
+
+
+#### Streaming from host memory ####
+## When the energy matrix does not fit on the device, it stays in host memory as a
+## contiguous (N, M) array and every pass over the configurations copies one batch
+## of rows at a time to the device.
+
+
+def _host_batches(energy_T, batch_size):
+    """Yield consecutive row batches of the host (N, M) array energy_T on the device.
+
+    The copy of the next batch is issued (jax.device_put is asynchronous) before the
+    current batch is yielded, so it overlaps with the computation on the current
+    batch. Consumers should block on their result for each batch; otherwise the
+    Python loop runs ahead and queues copies of many batches on the device at once.
+    """
+    N = energy_T.shape[0]
+    next_batch = jax.device_put(energy_T[:batch_size])
+    for start in range(0, N, batch_size):
+        batch = next_batch
+        if start + batch_size < N:
+            next_batch = jax.device_put(
+                energy_T[start + batch_size : start + 2 * batch_size]
+            )
+        yield batch
+
+
+_add_mbar_sums_jit = jit(_add_mbar_sums, static_argnames=["with_hessian"])
+
+
+def _loss_grad_hess_streamed(dF, energy_T, num_conf, batch_size):
+    """Loss, gradient and Hessian of _compute_loss_likelihood_of_dF in one pass over
+    the host (N, M) array energy_T, i.e. the transposed energy matrix."""
+    F = jnp.concatenate([jnp.zeros((1,), dtype=dF.dtype), dF])
+    logn = jnp.log(num_conf)
+    M = energy_T.shape[1]
+    sums = (jnp.zeros(()), jnp.zeros((M,)), jnp.zeros((M, M)))
+    for u_T in _host_batches(energy_T, batch_size):
+        ## block so that at most the current and the prefetched batch are on the
+        ## device; see _host_batches
+        sums = jax.block_until_ready(_add_mbar_sums_jit(sums, F, logn, u_T))
+    return _loss_grad_hess_from_sums(sums, F, num_conf)
+
+
+def _solve_mbar_streamed(dF_init, energy_T, num_conf, verbose, batch_size):
+    """Solve the MBAR equations with Newton's method, streaming the transposed energy
+    matrix energy_T (a host (N, M) array) to the device in batches. Each Newton
+    step usually costs one pass over the data (see fmin_newton_fused)."""
+    num_conf = jnp.asarray(num_conf)
+    res = fmin_newton_fused(
+        _loss_grad_hess_streamed,
+        dF_init,
+        args=(energy_T, num_conf, batch_size),
+        verbose=verbose,
+    )
+    return res["x"]
 
 
 @lru_cache(maxsize=None)
@@ -352,6 +426,93 @@ def fmin_newton(f, hess, x_init, args=(), verbose=True, eps=1e-10, max_iter=500)
         "F": loss.item(),
         "half_newton_decrement_square": newton_decrement_square / 2.0,
     }
+
+def fmin_newton_fused(fgh, x_init, args=(), verbose=True, eps=1e-10, max_iter=500):
+    """Newton's method with the same iterates as fmin_newton, but with a single
+    function fgh(x, *args) -> (value, grad, hess) evaluated once per trial point.
+
+    fmin_newton evaluates the value and gradient, the Hessian, and the value again
+    in the line search, i.e. about three evaluations per iteration. Here the trial
+    point of the line search is evaluated with fgh, and once it is accepted its
+    gradient and Hessian are reused for the next iteration, so an iteration whose
+    full step is accepted costs one evaluation. This matters when every evaluation
+    is a pass over data streamed from the host.
+    """
+
+    ## constants used in backtracking line search; same as in fmin_newton
+    alpha, beta = 0.01, 0.2
+    max_ls_iter = 100
+
+    if verbose:
+        print("==================================================================")
+        print("            RUNNING THE NEWTON'S METHOD (FUSED)                 \n")
+        print("                           * * *                                \n")
+        print(f"                    Tolerance EPS = {eps:.5E}                  \n")
+
+    x = x_init
+    loss, grad, H = fgh(x, *args)
+    N_func = 1
+    indx_iter = 0
+
+    while indx_iter < max_iter:
+        H = H + jnp.eye(H.shape[0]) * 1e-16
+        newton_direction = jnp.linalg.solve(H, -grad)
+        newton_decrement_square = jnp.sum(-grad * newton_direction)
+
+        if verbose:
+            print(
+                f"At iterate {indx_iter:4d}; f= {loss.item():.5E};",
+                f"|1/2*Newton_decrement^2|: {newton_decrement_square.item() / 2:.5E}\n",
+            )
+
+        if newton_decrement_square / 2.0 <= eps:
+            break
+
+        ## backtracking line search; each trial point is evaluated with fgh so
+        ## that an accepted point already has its gradient and Hessian
+        step_size = 1.0
+        accepted = False
+        for _ in range(max_ls_iter):
+            trial = fgh(x + step_size * newton_direction, *args)
+            N_func += 1
+            approximate_loss = loss + step_size * alpha * (-newton_decrement_square)
+            if trial[0] < approximate_loss:
+                accepted = True
+                break
+            step_size = step_size * beta
+
+        x = x + step_size * newton_direction
+        if accepted:
+            loss, grad, H = trial
+        else:
+            ## as in fmin_newton, take the (tiny) step anyway; it was not
+            ## evaluated, so evaluate it now
+            loss, grad, H = fgh(x, *args)
+            N_func += 1
+        indx_iter += 1
+
+    if verbose:
+        print("N_iter   = total number of iterations")
+        print("N_func   = total number of function evaluations (passes over data)")
+        print("F        = final function value \n")
+        print("             * * *     \n")
+        print("N_iter    N_func        F")
+        print(f"{indx_iter + 1:6d}    {N_func:6d}    {loss.item():.6E}")
+        print(f"  F = {loss.item():.12f} \n")
+
+        if newton_decrement_square / 2.0 <= eps and indx_iter < max_iter:
+            print("CONVERGENCE: 1/2*Newton_decrement^2 < EPS")
+        else:
+            print("CONVERGENCE: NUM_OF_ITERATION REACH MAX_ITERATION")
+
+    return {
+        "x": x,
+        "N_iter": indx_iter + 1,
+        "N_func": N_func,
+        "F": loss.item(),
+        "half_newton_decrement_square": newton_decrement_square / 2.0,
+    }
+
 
 ######################################
 #### L-BFGS optimizer using optax ####
