@@ -244,3 +244,15 @@ def test_FastMBAR_accepts_jax_arrays(setup_mbar_data):
     results = fastmbar.calculate_free_energies_of_perturbed_states(jnp.asarray(energy_p))
     results_ref = ref.calculate_free_energies_of_perturbed_states(energy_p)
     assert results["F"] == approx(results_ref["F"], abs=1e-10)
+
+
+@pytest.mark.parametrize("batch_size", [None, 50])
+def test_FastMBAR_float64_energy_is_not_copied(setup_mbar_data, batch_size):
+    energy, num_conf, F_ref, energy_p, F_ref_p = setup_mbar_data
+    energy = np.asarray(energy, dtype=np.float64)
+    fastmbar = FastMBAR(energy, num_conf, batch_size=batch_size, energy_on_device=True)
+    assert np.shares_memory(fastmbar.energy, energy)
+
+    ## other dtypes are still converted
+    fastmbar32 = FastMBAR(energy.astype(np.float32), num_conf)
+    assert fastmbar32.energy.dtype == np.float64

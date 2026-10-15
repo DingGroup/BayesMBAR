@@ -171,7 +171,8 @@ class FastMBAR:
         self.energy_on_device = energy_on_device
 
         if self.energy_on_device:
-            self.energy = energy.astype(np.float64)
+            ## no copy if energy is already float64
+            self.energy = energy.astype(np.float64, copy=False)
         else:
             ## Keep only a contiguous (N, M) copy so that each batch of
             ## conformations is a contiguous block of rows; self.energy is a view
