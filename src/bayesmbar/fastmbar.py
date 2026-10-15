@@ -40,7 +40,8 @@ __EPS__ = 1e-16
 ##   R: number of bootstrap replicates
 ## The public entry points accept NumPy or JAX arrays and are type-checked at
 ## runtime (jaxtyping with beartype); the private helpers are annotated only.
-HostOrDeviceArray = np.ndarray | Array
+## The array types are written out as np.ndarray | jax.Array rather than through
+## an alias, because the API docs show annotations as written in the source.
 
 
 class FastMBAR:
@@ -56,14 +57,14 @@ class FastMBAR:
     @jaxtyped(typechecker=beartype)
     def __init__(
         self,
-        energy: Real[HostOrDeviceArray, "M N"],
-        num_conf: Real[HostOrDeviceArray, " M"],
+        energy: Real[np.ndarray | jax.Array, "M N"],
+        num_conf: Real[np.ndarray | jax.Array, " M"],
         bootstrap: bool = False,
         bootstrap_block_size: int = 3,
         bootstrap_num_rep: int = 100,
         verbose: bool = False,
         method: Literal["Newton", "L-BFGS"] = "Newton",
-        F_init: Real[HostOrDeviceArray, " M"] | None = None,
+        F_init: Real[np.ndarray | jax.Array, " M"] | None = None,
         batch_size: int | None = None,
         energy_on_device: bool | None = None,
     ) -> None:
@@ -492,7 +493,7 @@ class FastMBAR:
 
     @jaxtyped(typechecker=beartype)
     def calculate_free_energies_of_perturbed_states(
-        self, energy_perturbed: Real[HostOrDeviceArray, "L N"]
+        self, energy_perturbed: Real[np.ndarray | jax.Array, "L N"]
     ) -> dict[str, Float[np.ndarray, "..."]]:
         r"""calculate free energies for perturbed states.
 
@@ -881,7 +882,7 @@ def _covariance_from_gram(
 
 def _bootstrap_conf_idx(
     key: PRNGKeyArray,
-    num_conf: Real[HostOrDeviceArray, " M"],
+    num_conf: Real[np.ndarray | jax.Array, " M"],
     bootstrap_block_size: int,
 ) -> Int[Array, " N"]:
     """Indices of a circular block-bootstrap resample of the conformations, drawn
