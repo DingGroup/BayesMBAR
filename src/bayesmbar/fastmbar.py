@@ -91,8 +91,10 @@ class FastMBAR:
                 energy matrix is copied to the device once. If False, it stays in host
                 memory and each pass over the conformations streams it to the device in
                 batches, so device memory no longer limits the size of the energy
-                matrix; this costs one host-to-device copy of the matrix per pass and
-                is currently supported only for the Newton method. In this mode the
+                matrix; this costs one host-to-device copy of the matrix per pass.
+                Newton usually needs the fewest passes; L-BFGS needs more passes but
+                each skips the M x M Hessian, which can pay off when the number of
+                states M is large. In this mode the
                 energy matrix is stored transposed, as a contiguous (N, M) array; pass
                 a float64 Fortran-ordered energy (e.g. energy_T.T for a C-ordered
                 (N, M) array energy_T, or a np.memmap opened with order="F") to avoid
@@ -190,13 +192,6 @@ class FastMBAR:
             energy_on_device = True
         elif energy_on_device is None:
             energy_on_device = _fits_on_device(self.M * self.N * 8)
-        if not energy_on_device and self.method != "Newton":
-            raise NotImplementedError(
-                "Streaming the energy matrix from host memory "
-                "(energy_on_device=False, or chosen automatically because it "
-                f'does not fit in device memory) is not yet supported with method="{self.method}". '
-                'Use method="Newton" or energy_on_device=True.'
-            )
         self.energy_on_device = energy_on_device
 
         if self.energy_on_device:
@@ -219,7 +214,12 @@ class FastMBAR:
             if F_init is not None:
                 dF_init = F_init[1:] - F_init[0]
             dF = _solve_mbar_streamed(
-                dF_init, energy_T, num_conf, self.verbose, self.batch_size
+                dF_init,
+                energy_T,
+                num_conf,
+                self.verbose,
+                self.batch_size,
+                method=self.method,
             )
 
             ## shift self._F such that \sum_i F[i]*num_conf[i] = 0
@@ -407,6 +407,7 @@ class FastMBAR:
                         self.verbose,
                         self.batch_size,
                         conf_idx,
+                        method=self.method,
                     )
                 dF_init = dF
                 dFs.append(deepcopy(dF))

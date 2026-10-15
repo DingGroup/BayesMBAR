@@ -3,9 +3,11 @@ from typing import NamedTuple
 
 import jax
 import jax.numpy as jnp
+import numpy as np
 import optax
 from jax import hessian, jit, value_and_grad
 from jax.scipy.special import logsumexp
+from scipy import optimize
 
 
 def _solve_mbar(
@@ -264,36 +266,102 @@ def _rows(array, conf_idx=None):
 _add_mbar_sums_jit = jit(_add_mbar_sums, static_argnames=["with_hessian"])
 
 
-def _loss_grad_hess_streamed(dF, energy_T, num_conf, batch_size, conf_idx=None):
-    """Loss, gradient and Hessian of _compute_loss_likelihood_of_dF in one pass over
-    the host (N, M) array energy_T, i.e. the transposed energy matrix, or over its
-    rows conf_idx if given."""
+def _loss_grad_hess_streamed(
+    dF, energy_T, num_conf, batch_size, conf_idx=None, with_hessian=True
+):
+    """Loss, gradient and (if with_hessian) Hessian of _compute_loss_likelihood_of_dF
+    in one pass over the host (N, M) array energy_T, i.e. the transposed energy
+    matrix, or over its rows conf_idx if given."""
     F = jnp.concatenate([jnp.zeros((1,), dtype=dF.dtype), dF])
     logn = jnp.log(num_conf)
     N, M = energy_T.shape
-    sums = (jnp.zeros(()), jnp.zeros((M,)), jnp.zeros((M, M)))
+    sums = (jnp.zeros(()), jnp.zeros((M,)))
+    if with_hessian:
+        sums = sums + (jnp.zeros((M, M)),)
     for u_T in _host_batches(_rows(energy_T, conf_idx), N, batch_size):
         ## block so that at most the current and the prefetched batch are on the
         ## device; see _host_batches
-        sums = jax.block_until_ready(_add_mbar_sums_jit(sums, F, logn, u_T))
+        sums = jax.block_until_ready(
+            _add_mbar_sums_jit(sums, F, logn, u_T, with_hessian)
+        )
     return _loss_grad_hess_from_sums(sums, F, num_conf)
 
 
-def _solve_mbar_streamed(
-    dF_init, energy_T, num_conf, verbose, batch_size, conf_idx=None
-):
-    """Solve the MBAR equations with Newton's method, streaming the transposed energy
-    matrix energy_T (a host (N, M) array), or its rows conf_idx (a host array of
-    indices), to the device in batches. Each Newton step usually costs one pass
-    over the data (see fmin_newton_fused)."""
-    num_conf = jnp.asarray(num_conf)
-    res = fmin_newton_fused(
-        _loss_grad_hess_streamed,
-        dF_init,
-        args=(energy_T, num_conf, batch_size, conf_idx),
-        verbose=verbose,
+def _loss_grad_streamed(dF, energy_T, num_conf, batch_size, conf_idx=None):
+    """Loss and gradient only; skips the O(M^2) per-conformation Hessian term."""
+    return _loss_grad_hess_streamed(
+        dF, energy_T, num_conf, batch_size, conf_idx, with_hessian=False
     )
+
+
+def _solve_mbar_streamed(
+    dF_init, energy_T, num_conf, verbose, batch_size, conf_idx=None, method="Newton"
+):
+    """Solve the MBAR equations, streaming the transposed energy matrix energy_T (a
+    host (N, M) array), or its rows conf_idx (a host array of indices), to the
+    device in batches.
+
+    With method="Newton", each step usually costs one pass over the data that also
+    accumulates the Hessian (see fmin_newton_fused). With method="L-BFGS", each
+    function evaluation is a cheaper pass without the Hessian, but more passes are
+    needed (see fmin_lbfgs_scipy).
+    """
+    num_conf = jnp.asarray(num_conf)
+    args = (energy_T, num_conf, batch_size, conf_idx)
+    if method == "Newton":
+        res = fmin_newton_fused(
+            _loss_grad_hess_streamed, dF_init, args=args, verbose=verbose
+        )
+    elif method == "L-BFGS":
+        res = fmin_lbfgs_scipy(_loss_grad_streamed, dF_init, args=args, verbose=verbose)
+    else:
+        raise ValueError(f"Unknown method {method}.")
     return res["x"]
+
+
+def fmin_lbfgs_scipy(fg, x_init, args=(), verbose=True, tol=1e-8, max_iter=500):
+    """Minimize with SciPy's L-BFGS-B, where fg(x, *args) -> (value, grad).
+
+    Unlike fmin_lbfgs, whose optax loop is compiled and runs entirely on the
+    device, the loop here runs in Python, so fg can be a pass over data streamed
+    from the host. tol is applied to the largest absolute component of the
+    gradient (SciPy's gtol); ftol is set to 0 so that SciPy does not stop early on
+    a small relative decrease of the loss before the gradient is small.
+    """
+    def fun(x):
+        value, grad = fg(jnp.asarray(x), *args)
+        return float(value), np.asarray(grad, dtype=np.float64)
+
+    if verbose:
+        print("==================================================================")
+        print("                RUNNING THE L-BFGS-B METHOD (SCIPY)           \n")
+        print("                           * * *                              \n")
+        print(f"                    Tolerance = {tol:.3E}                    \n")
+
+    res = optimize.minimize(
+        fun,
+        np.asarray(x_init, dtype=np.float64),
+        jac=True,
+        method="L-BFGS-B",
+        options={"gtol": tol, "ftol": 0.0, "maxiter": max_iter},
+    )
+
+    if verbose:
+        print(
+            f"N_iter = {res.nit}, N_func = {res.nfev}, F = {res.fun:.12f}, "
+            f"max |grad| = {np.max(np.abs(res.jac)):.3E}"
+        )
+        print(f"CONVERGENCE: {res.message}")
+        print("==================================================================")
+
+    return {
+        "x": jnp.asarray(res.x),
+        "N_iter": res.nit,
+        "N_func": res.nfev,
+        "F": res.fun,
+        "success": res.success,
+        "message": res.message,
+    }
 
 
 @lru_cache(maxsize=None)

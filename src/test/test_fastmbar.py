@@ -75,17 +75,31 @@ def test_FastMBAR_perturbed_states_equal_to_sampled_states(setup_mbar_data, boot
     assert results["F"] == approx(fastmbar.F, abs=1e-4)
 
 
+## Streamed Newton takes the same iterates as the unbatched Newton solver, so its
+## results agree to rounding. Streamed L-BFGS uses SciPy's L-BFGS-B, which reaches
+## the same optimum along a different path, so it agrees to the convergence
+## tolerance.
+STREAMED_TOL = {"Newton": 1e-10, "L-BFGS": 1e-5}
+
+
+@pytest.mark.parametrize("method", ["Newton", "L-BFGS"])
 @pytest.mark.parametrize("batch_size", [7, 50, 100_000])
-def test_FastMBAR_streamed_matches_unbatched(setup_mbar_data, batch_size):
+def test_FastMBAR_streamed_matches_unbatched(setup_mbar_data, method, batch_size):
     energy, num_conf, F_ref, energy_p, F_ref_p = setup_mbar_data
+    tol = STREAMED_TOL[method]
     ref = FastMBAR(energy, num_conf, verbose=False)
     fastmbar = FastMBAR(
-        energy, num_conf, verbose=False, batch_size=batch_size, energy_on_device=False
+        energy,
+        num_conf,
+        verbose=False,
+        method=method,
+        batch_size=batch_size,
+        energy_on_device=False,
     )
     assert fastmbar.energy_on_device is False
-    assert fastmbar.F == approx(ref.F, abs=1e-10)
-    assert fastmbar.F_cov == approx(ref.F_cov, abs=1e-10)
-    assert fastmbar.log_prob_mix == approx(ref.log_prob_mix, abs=1e-10)
+    assert fastmbar.F == approx(ref.F, abs=tol)
+    assert fastmbar.F_cov == approx(ref.F_cov, abs=tol)
+    assert fastmbar.log_prob_mix == approx(ref.log_prob_mix, abs=tol)
 
 
 @pytest.mark.parametrize(
@@ -93,7 +107,6 @@ def test_FastMBAR_streamed_matches_unbatched(setup_mbar_data, batch_size):
     [
         (dict(energy_on_device=False), ValueError),
         (dict(batch_size=50, energy_on_device="no"), TypeError),
-        (dict(batch_size=50, energy_on_device=False, method="L-BFGS"), NotImplementedError),
     ],
 )
 def test_FastMBAR_energy_on_device_errors(setup_mbar_data, kwargs, error):
@@ -102,12 +115,14 @@ def test_FastMBAR_energy_on_device_errors(setup_mbar_data, kwargs, error):
         FastMBAR(energy, num_conf, **kwargs)
 
 
+@pytest.mark.parametrize("method", ["Newton", "L-BFGS"])
 @pytest.mark.parametrize("bootstrap", [False, True])
 @pytest.mark.parametrize("batch_size", [7, 100_000])
 def test_FastMBAR_streamed_perturbed_and_bootstrap_match_unbatched(
-    setup_mbar_data, monkeypatch, bootstrap, batch_size
+    setup_mbar_data, monkeypatch, method, bootstrap, batch_size
 ):
     energy, num_conf, F_ref, energy_p, F_ref_p = setup_mbar_data
+    tol = STREAMED_TOL[method]
     ## the bootstrap is seeded from the clock; pin it so that both runs draw the
     ## same resamples
     monkeypatch.setattr("bayesmbar.fastmbar.time", lambda: 1234.5)
@@ -115,16 +130,21 @@ def test_FastMBAR_streamed_perturbed_and_bootstrap_match_unbatched(
     kwargs = dict(bootstrap=bootstrap, bootstrap_num_rep=5, verbose=False)
     ref = FastMBAR(energy, num_conf, **kwargs)
     fastmbar = FastMBAR(
-        energy, num_conf, batch_size=batch_size, energy_on_device=False, **kwargs
+        energy,
+        num_conf,
+        method=method,
+        batch_size=batch_size,
+        energy_on_device=False,
+        **kwargs,
     )
-    assert fastmbar.F == approx(ref.F, abs=1e-10)
-    assert fastmbar.F_std == approx(ref.F_std, abs=1e-10)
-    assert fastmbar.log_prob_mix == approx(ref.log_prob_mix, abs=1e-10)
+    assert fastmbar.F == approx(ref.F, abs=tol)
+    assert fastmbar.F_std == approx(ref.F_std, abs=tol)
+    assert fastmbar.log_prob_mix == approx(ref.log_prob_mix, abs=tol)
 
     results = fastmbar.calculate_free_energies_of_perturbed_states(energy_p)
     results_ref = ref.calculate_free_energies_of_perturbed_states(energy_p)
-    assert results["F"] == approx(results_ref["F"], abs=1e-10)
-    assert results["F_std"] == approx(results_ref["F_std"], abs=1e-10)
+    assert results["F"] == approx(results_ref["F"], abs=tol)
+    assert results["F_std"] == approx(results_ref["F_std"], abs=tol)
 
 
 def test_FastMBAR_streamed_fortran_order_energy_is_not_copied(setup_mbar_data):
