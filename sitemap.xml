@@ -4,10 +4,7 @@
         <loc>https://xdinglab.com/BayesMBAR/</loc>
       </url>
       <url>
-        <loc>https://xdinglab.com/BayesMBAR/installation/</loc>
-      </url>
-      <url>
-        <loc>https://xdinglab.com/BayesMBAR/usage/</loc>
+        <loc>https://xdinglab.com/BayesMBAR/api/</loc>
       </url>
       <url>
         <loc>https://xdinglab.com/BayesMBAR/examples/bayesbar_for_two_harmonic_oscillators/</loc>
@@ -22,12 +19,18 @@
         <loc>https://xdinglab.com/BayesMBAR/examples/cbayesmbar_for_protein_ligand/</loc>
       </url>
       <url>
-        <loc>https://xdinglab.com/BayesMBAR/api/</loc>
-      </url>
-      <url>
         <loc>https://xdinglab.com/BayesMBAR/faq/</loc>
       </url>
       <url>
+        <loc>https://xdinglab.com/BayesMBAR/installation/</loc>
+      </url>
+      <url>
+        <loc>https://xdinglab.com/BayesMBAR/overview/</loc>
+      </url>
+      <url>
         <loc>https://xdinglab.com/BayesMBAR/references/</loc>
+      </url>
+      <url>
+        <loc>https://xdinglab.com/BayesMBAR/usage/</loc>
       </url>
 </urlset>
