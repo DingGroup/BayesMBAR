@@ -312,7 +312,10 @@ class FastMBAR:
                 pi = self.num_conf / self.N
                 F = F - jnp.sum(pi * F)
 
-                b = -F - jnp.log(self.num_conf / self.N)
+                ## same definition as in the non-bootstrap branch; using
+                ## log(num_conf / N) here shifted the free energies of perturbed
+                ## states by -log(N)
+                b = -F - jnp.log(self.num_conf)
                 log_prob_mix.append(
                     logsumexp(-(self.energy[:, conf_idx] + b[:, None]), axis=0)
                 )

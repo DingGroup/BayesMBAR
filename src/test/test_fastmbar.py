@@ -43,3 +43,15 @@ def test_FastMBAR_batch_size_with_bootstrap_raises(setup_mbar_data):
     energy, num_conf, F_ref, energy_p, F_ref_p = setup_mbar_data
     with pytest.raises(ValueError):
         FastMBAR(energy, num_conf, bootstrap=True, batch_size=10)
+
+
+@pytest.mark.parametrize("bootstrap", [False, True])
+def test_FastMBAR_perturbed_states_equal_to_sampled_states(setup_mbar_data, bootstrap):
+    ## perturbed states identical to the sampled states must reproduce their
+    ## free energies, including the additive constant
+    energy, num_conf, F_ref, energy_p, F_ref_p = setup_mbar_data
+    fastmbar = FastMBAR(
+        energy, num_conf, bootstrap=bootstrap, bootstrap_num_rep=10, verbose=False
+    )
+    results = fastmbar.calculate_free_energies_of_perturbed_states(energy)
+    assert results["F"] == approx(fastmbar.F, abs=1e-4)
