@@ -78,6 +78,13 @@ Reading down a column gives the \(M\) reduced energies of one conformation;
 reading across a row gives the energies of all \(N\) conformations evaluated in a
 single state.
 
+!!! tip "Energies stored as \(N \times M\)"
+
+    If your energies are stored the other way around, with one row per
+    conformation (an \(N \times M\) array `u`), pass its transpose `u.T` as \(A\).
+    For a `float64` array, `u.T` is a view of the same memory, and `FastMBAR`
+    uses it without making a copy.
+
 Both \(A\) and \(v\) must be
 [NumPy arrays](https://numpy.org/devdocs/user/quickstart.html): \(A\) is
 two-dimensional and \(v\) is one-dimensional. Given them, you create a `FastMBAR`

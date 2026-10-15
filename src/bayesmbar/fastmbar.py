@@ -79,7 +79,9 @@ class FastMBAR:
                 need to occpy a continuous chunk of collumns. Conformations sampled
                 from state k need to occupy collumns to the left of conformations
                 sampled from state l if k < l. If bootstrapping is not used, then
-                the order of conformation does not matter.
+                the order of conformation does not matter. If your energies are
+                stored as an (N x M) array u, pass its transpose u.T; for a float64
+                array this is a view and is not copied.
             num_conf (1D int ndarray): It should have a size of M, where num_conf[i] is the num of
                 conformations sampled from state i. Therefore, np.sum(num_conf)
                 has to be equal to N. All entries in num_conf have to be strictly
