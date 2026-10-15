@@ -33,8 +33,10 @@ __version__ = "1.4.5"
 __EPS__ = 1e-16
 
 ## Shapes in the jaxtyping annotations below:
-##   M: number of states            N: number of conformations
-##   L: number of perturbed states  B: number of conformations in a batch
+##   M: number of states            
+##   N: number of conformations
+##   L: number of perturbed states 
+##   B: number of conformations in a batch
 ##   R: number of bootstrap replicates
 ## The public entry points accept NumPy or JAX arrays and are type-checked at
 ## runtime (jaxtyping with beartype); the private helpers are annotated only.
