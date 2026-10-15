@@ -8,31 +8,39 @@ from jax import hessian, jit, value_and_grad
 from jax.scipy.special import logsumexp
 
 
-def _solve_mbar(dF_init, energy, num_conf, method, verbose, batch_size=None):
+def _solve_mbar(
+    dF_init, energy, num_conf, method, verbose, batch_size=None, conf_idx=None
+):
     """Solve the MBAR equations for dF.
 
     If batch_size is None, the loss, gradient and Hessian are computed over the whole
     energy matrix at once. Otherwise they are accumulated over batches of
     batch_size configurations, so that the temporary memory scales with batch_size
-    instead of with the number of configurations.
+    instead of with the number of configurations. In batched mode, conf_idx can
+    select the columns of energy to use (e.g. a bootstrap resample) without
+    forming energy[:, conf_idx].
     """
     if batch_size is None:
+        if conf_idx is not None:
+            raise ValueError("conf_idx is only supported with batch_size.")
         loss = _compute_loss_likelihood_of_dF
         value_and_grad_fn = _value_and_grad_loss_likelihood_of_dF
         hessian_fn = _hessian_loss_likelihood_of_dF
+        args = (energy, num_conf)
     else:
         ## put the energy matrix on the device once instead of in every call;
         ## jax.device_put avoids the transient second copy made by jnp.asarray
         energy = jax.device_put(energy)
         num_conf = jnp.asarray(num_conf, dtype=energy.dtype)
         loss, value_and_grad_fn, hessian_fn = _batched_loss_functions(batch_size)
+        args = (energy, num_conf, conf_idx)
 
     if method == "Newton":
         res = fmin_newton(
             value_and_grad_fn,
             hessian_fn,
             dF_init,
-            args=(energy, num_conf),
+            args=args,
             verbose=verbose,
         )
         dF = res["x"]
@@ -40,7 +48,7 @@ def _solve_mbar(dF_init, energy, num_conf, method, verbose, batch_size=None):
         res = fmin_lbfgs(
             loss,
             dF_init,
-            args=(energy, num_conf),
+            args=args,
             verbose=verbose,
         )
         dF = res["x"]
@@ -121,35 +129,46 @@ _value_and_grad_loss_likelihood_of_dF = jit(
 _hessian_loss_likelihood_of_dF = jit(hessian(_compute_loss_likelihood_of_dF))
 
 
-def _accumulate_in_batches(stats, energy, batch_size, init):
-    """Sum stats(energy[:, batch]) over batches of batch_size columns of energy.
+def _loop_over_batches(body, n, batch_size, init):
+    """Run carry = body(start, size, carry) over consecutive batches covering range(n).
 
-    stats maps an (M, B) block of the energy matrix to a pytree with the same
-    structure as init. Full batches are processed in a fori_loop so that only one
-    batch of intermediates is alive at a time; the remaining N % batch_size columns
-    are processed once at the end.
+    Full batches run in a fori_loop so that only one batch of intermediates is alive
+    at a time; the last n % batch_size items are processed once at the end. size is
+    always a Python int, so it can be used as a static slice size.
     """
-    N = energy.shape[1]
-    ## the loop body is traced even when it runs zero times, so the slice in it
-    ## must fit in the energy matrix
-    batch_size = min(batch_size, N)
-    num_full_batches = N // batch_size
-
-    def body(i, acc):
-        u = jax.lax.dynamic_slice_in_dim(energy, i * batch_size, batch_size, axis=1)
-        return jax.tree.map(jnp.add, acc, stats(u))
-
-    acc = jax.lax.fori_loop(0, num_full_batches, body, init)
-    if N % batch_size:
-        acc = jax.tree.map(
-            jnp.add, acc, stats(energy[:, num_full_batches * batch_size :])
-        )
-    return acc
+    ## the loop body is traced even when it runs zero times, so its slices must fit
+    batch_size = min(batch_size, n)
+    num_full_batches = n // batch_size
+    carry = jax.lax.fori_loop(
+        0,
+        num_full_batches,
+        lambda i, c: body(i * batch_size, batch_size, c),
+        init,
+    )
+    if n % batch_size:
+        carry = body(num_full_batches * batch_size, n % batch_size, carry)
+    return carry
 
 
-def _loss_grad_hess_in_batches(dF, energy, num_conf, batch_size, with_hessian):
+def _energy_columns(energy, conf_idx, start, size):
+    """Columns start:start+size of energy, or of energy[:, conf_idx] if conf_idx is
+    given (e.g. a bootstrap resample), without forming energy[:, conf_idx]."""
+    if conf_idx is None:
+        return jax.lax.dynamic_slice_in_dim(energy, start, size, axis=1)
+    idx = jax.lax.dynamic_slice_in_dim(conf_idx, start, size)
+    return jnp.take(energy, idx, axis=1)
+
+
+def _num_columns(energy, conf_idx):
+    return energy.shape[1] if conf_idx is None else conf_idx.shape[0]
+
+
+def _loss_grad_hess_in_batches(
+    dF, energy, num_conf, conf_idx, batch_size, with_hessian
+):
     """Loss, gradient and (optionally) Hessian of _compute_loss_likelihood_of_dF,
-    accumulated over batches of configurations.
+    accumulated over batches of configurations. If conf_idx is given, the energy
+    matrix is energy[:, conf_idx].
 
     With p[n, k] = softmax_k(F_k + log N_k - u_k(x_n)), the negative log-likelihood
     and its derivatives with respect to F are sums over configurations:
@@ -166,19 +185,22 @@ def _loss_grad_hess_in_batches(dF, energy, num_conf, batch_size, with_hessian):
     logn = jnp.log(num_conf)
     M = energy.shape[0]
 
-    def stats(u):
+    def body(start, size, acc):
+        u = _energy_columns(energy, conf_idx, start, size)
         logits = F + logn - u.T
         lse = logsumexp(logits, axis=1)
         p = jnp.exp(logits - lse[:, None])
         s = (lse.sum(), p.sum(axis=0))
         if with_hessian:
             s = s + (p.T @ p,)
-        return s
+        return jax.tree.map(jnp.add, acc, s)
 
     init = (jnp.zeros((), energy.dtype), jnp.zeros((M,), energy.dtype))
     if with_hessian:
         init = init + (jnp.zeros((M, M), energy.dtype),)
-    sums = _accumulate_in_batches(stats, energy, batch_size, init)
+    sums = _loop_over_batches(
+        body, _num_columns(energy, conf_idx), batch_size, init
+    )
 
     N = num_conf.sum()
     loss = (sums[0] - jnp.sum(num_conf * F)) / N
@@ -203,28 +225,34 @@ def _batched_loss_functions(batch_size):
     """
 
     @jax.custom_vjp
-    def loss(dF, energy, num_conf):
-        return _loss_grad_hess_in_batches(dF, energy, num_conf, batch_size, False)[0]
+    def loss(dF, energy, num_conf, conf_idx=None):
+        return _loss_grad_hess_in_batches(
+            dF, energy, num_conf, conf_idx, batch_size, False
+        )[0]
 
-    def loss_fwd(dF, energy, num_conf):
+    def loss_fwd(dF, energy, num_conf, conf_idx=None):
         value, grad = _loss_grad_hess_in_batches(
-            dF, energy, num_conf, batch_size, False
+            dF, energy, num_conf, conf_idx, batch_size, False
         )
         return value, grad
 
     def loss_bwd(grad, g):
         ## only dF is differentiated; None means a zero cotangent for the data
-        return (g * grad, None, None)
+        return (g * grad, None, None, None)
 
     loss.defvjp(loss_fwd, loss_bwd)
 
     @jit
-    def value_and_grad_fn(dF, energy, num_conf):
-        return _loss_grad_hess_in_batches(dF, energy, num_conf, batch_size, False)
+    def value_and_grad_fn(dF, energy, num_conf, conf_idx=None):
+        return _loss_grad_hess_in_batches(
+            dF, energy, num_conf, conf_idx, batch_size, False
+        )
 
     @jit
-    def hessian_fn(dF, energy, num_conf):
-        return _loss_grad_hess_in_batches(dF, energy, num_conf, batch_size, True)[2]
+    def hessian_fn(dF, energy, num_conf, conf_idx=None):
+        return _loss_grad_hess_in_batches(
+            dF, energy, num_conf, conf_idx, batch_size, True
+        )[2]
 
     return loss, value_and_grad_fn, hessian_fn
 

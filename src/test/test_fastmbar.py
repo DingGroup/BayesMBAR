@@ -39,10 +39,27 @@ def test_FastMBAR_batched_matches_unbatched(setup_mbar_data, method, batch_size)
     assert results["F_std"] == approx(results_ref["F_std"], abs=1e-10)
 
 
-def test_FastMBAR_batch_size_with_bootstrap_raises(setup_mbar_data):
+@pytest.mark.parametrize("method", ["Newton", "L-BFGS"])
+@pytest.mark.parametrize("batch_size", [7, 100_000])
+def test_FastMBAR_batched_bootstrap_matches_unbatched(
+    setup_mbar_data, monkeypatch, method, batch_size
+):
     energy, num_conf, F_ref, energy_p, F_ref_p = setup_mbar_data
-    with pytest.raises(ValueError):
-        FastMBAR(energy, num_conf, bootstrap=True, batch_size=10)
+    ## the bootstrap is seeded from the clock; pin it so that both runs draw the
+    ## same resamples
+    monkeypatch.setattr("bayesmbar.fastmbar.time", lambda: 1234.5)
+
+    kwargs = dict(bootstrap=True, bootstrap_num_rep=5, verbose=False, method=method)
+    ref = FastMBAR(energy, num_conf, **kwargs)
+    fastmbar = FastMBAR(energy, num_conf, batch_size=batch_size, **kwargs)
+    assert fastmbar.F == approx(ref.F, abs=1e-10)
+    assert fastmbar.F_std == approx(ref.F_std, abs=1e-10)
+    assert fastmbar.log_prob_mix == approx(ref.log_prob_mix, abs=1e-10)
+
+    results = fastmbar.calculate_free_energies_of_perturbed_states(energy_p)
+    results_ref = ref.calculate_free_energies_of_perturbed_states(energy_p)
+    assert results["F"] == approx(results_ref["F"], abs=1e-10)
+    assert results["F_std"] == approx(results_ref["F_std"], abs=1e-10)
 
 
 @pytest.mark.parametrize("bootstrap", [False, True])

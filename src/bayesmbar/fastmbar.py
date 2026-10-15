@@ -10,7 +10,7 @@ import numpy.typing as npt
 from jax import jit
 from jax.scipy.special import logsumexp
 
-from .utils import _solve_mbar
+from .utils import _energy_columns, _loop_over_batches, _num_columns, _solve_mbar
 
 jax.config.update("jax_enable_x64", True)
 
@@ -70,11 +70,13 @@ class FastMBAR:
             F_init (1D ndarray, optional): The initial guess for the relative free energies. If None, the initial guess is set to zero. Defaults to None.
             batch_size (int, optional): If given, the MBAR equations are solved and the
                 covariance of the free energies is computed by accumulating over batches
-                of batch_size conformations. The energy matrix is copied to the device
-                once, and the temporary memory scales with batch_size x M instead of
-                N x M, which lowers the peak device memory from about four times the
-                size of the energy matrix to about one. Not yet supported together with
-                bootstrap. Defaults to None, meaning no batching.
+                of batch_size conformations; so are the bootstrap replicates and the
+                results of calculate_free_energies_of_perturbed_states. The energy
+                matrix is copied to the device once, and the temporary memory scales
+                with batch_size x M instead of N x M, which lowers the peak device
+                memory from about four times the size of the energy matrix to about
+                one. With bootstrap, the per-replicate log_prob_mix and resampling
+                indices are kept in host memory. Defaults to None, meaning no batching.
         """
 
         #### check the parameters: energy and num_conf
@@ -156,8 +158,6 @@ class FastMBAR:
                 raise TypeError("batch_size has to be an integer or None.")
             if batch_size <= 0:
                 raise ValueError("batch_size has to be strictly greater than 0.")
-            if self.bootstrap:
-                raise ValueError("batch_size is not yet supported with bootstrap.")
         self.batch_size = batch_size
 
         # ## solve the MBAR equation
@@ -190,18 +190,10 @@ class FastMBAR:
             )
             self._log_mu = -self.log_prob_mix
 
-            ## Same covariance as the unbatched branch below (equation 4.2 of
-            ## Kong et al.), which uses R from the QR decomposition of
-            ## P[n, k] = exp(F_k - u_k(x_n) - log_prob_mix[n]). The formula depends
-            ## on R only through R^T R = P^T P, so any R with R^T R = P^T P gives
-            ## the same result. P^T P is an M x M matrix accumulated over batches,
-            ## and R is built from its eigendecomposition, so P is never formed.
+            ## same covariance as the unbatched branch below, computed from the
+            ## M x M Gram matrix P^T P instead of the N x M matrix P
             self.P = None
-            eigval, eigvec = jnp.linalg.eigh(gram)
-            R = jnp.sqrt(jnp.clip(eigval, 0.0))[:, None] * eigvec.T
-            W = jnp.diag(num_conf)
-            A = jnp.eye(self.M) - R @ W @ R.T
-            self._F_cov = R.T @ jnp.linalg.pinv(A, hermitian=True, rtol=1e-7) @ R
+            self._F_cov = _covariance_from_gram(gram, num_conf, rtol=1e-7)
 
             self._F_std = jnp.sqrt(self._F_cov.diagonal())
 
@@ -289,6 +281,11 @@ class FastMBAR:
             if F_init is not None:
                 dF_init = F_init[1:] - F_init[0]
             self._conf_idx = []
+            if self.batch_size is not None:
+                ## copy the energy matrix to the device once; each resample is
+                ## gathered batch by batch instead of forming energy[:, conf_idx]
+                energy = jax.device_put(self.energy)
+                num_conf_dev = jnp.asarray(self.num_conf)
             ## seed once and split per replicate so that replicates drawn within
             ## the same millisecond still get different resamples
             key = jr.PRNGKey(int(time() * 1000))
@@ -297,13 +294,24 @@ class FastMBAR:
                 conf_idx = _bootstrap_conf_idx(
                     subkey, num_conf, self.bootstrap_block_size
                 )
-                dF = _solve_mbar(
-                    dF_init,
-                    self.energy[:, conf_idx],
-                    self.num_conf,
-                    self.method,
-                    verbose=self.verbose,
-                )
+                if self.batch_size is None:
+                    dF = _solve_mbar(
+                        dF_init,
+                        self.energy[:, conf_idx],
+                        self.num_conf,
+                        self.method,
+                        verbose=self.verbose,
+                    )
+                else:
+                    dF = _solve_mbar(
+                        dF_init,
+                        energy,
+                        num_conf_dev,
+                        self.method,
+                        verbose=self.verbose,
+                        batch_size=self.batch_size,
+                        conf_idx=conf_idx,
+                    )
                 dF_init = dF
                 dFs.append(deepcopy(dF))
 
@@ -315,11 +323,26 @@ class FastMBAR:
                 ## same definition as in the non-bootstrap branch; using
                 ## log(num_conf / N) here shifted the free energies of perturbed
                 ## states by -log(N)
-                b = -F - jnp.log(self.num_conf)
-                log_prob_mix.append(
-                    logsumexp(-(self.energy[:, conf_idx] + b[:, None]), axis=0)
-                )
-                self._conf_idx.append(conf_idx)
+                if self.batch_size is None:
+                    b = -F - jnp.log(self.num_conf)
+                    log_prob_mix.append(
+                        logsumexp(-(self.energy[:, conf_idx] + b[:, None]), axis=0)
+                    )
+                    self._conf_idx.append(conf_idx)
+                else:
+                    lpm, _ = _log_prob_mix_and_gram_in_batches(
+                        F,
+                        energy,
+                        num_conf_dev,
+                        self.batch_size,
+                        conf_idx,
+                        with_gram=False,
+                    )
+                    ## keep the per-replicate arrays (each of length N) in host
+                    ## memory so that device memory does not grow with the
+                    ## number of replicates
+                    log_prob_mix.append(np.asarray(lpm))
+                    self._conf_idx.append(np.asarray(conf_idx))
 
             dF = jnp.stack(dFs, axis=1)
             F = jnp.concat([jnp.zeros((1, dF.shape[1])), dF], axis=0)
@@ -332,7 +355,10 @@ class FastMBAR:
             self._F_std = jnp.std(self._F_bootstrap, axis=1)
             self._F_cov = jnp.cov(self._F_bootstrap)
 
-            self._log_prob_mix = jnp.stack(log_prob_mix, axis=0)
+            if self.batch_size is None:
+                self._log_prob_mix = jnp.stack(log_prob_mix, axis=0)
+            else:
+                self._log_prob_mix = np.stack(log_prob_mix, axis=0)
             DeltaF = self._F_bootstrap[None, :, :] - self._F_bootstrap[:, None, :]
             self._DeltaF = jnp.mean(DeltaF, axis=2)
             self._DeltaF_std = jnp.std(DeltaF, axis=2)
@@ -422,7 +448,35 @@ class FastMBAR:
         F_cov = None
         F_std = None
 
-        if not self.bootstrap:
+        if not self.bootstrap and self.batch_size is not None:
+            ## same results as the unbatched branch below, accumulated over batches
+            ## of conformations; the N x (M + L) matrix P is never formed
+            energy = jax.device_put(self.energy)
+            energy_perturbed = jax.device_put(energy_perturbed)
+            F = _perturbed_F_in_batches(
+                energy_perturbed, self._log_prob_mix, self.batch_size
+            )
+            gram = _extended_gram_in_batches(
+                self._F,
+                F,
+                energy,
+                energy_perturbed,
+                self._log_prob_mix,
+                self.batch_size,
+            )
+            weights = jnp.concat([jnp.asarray(self.num_conf), jnp.zeros(L)])
+            F_cov = _covariance_from_gram(gram, weights, rtol=1e-8)
+
+            F_cov = F_cov[self.M :, self.M :]
+            F_std = jnp.sqrt(F_cov.diagonal())
+
+            DeltaF = F[None, :] - F[:, None]
+            DeltaF_cov = (
+                F_cov.diagonal()[:, None] + F_cov.diagonal()[None, :] - 2 * F_cov
+            )
+            DeltaF_std = jnp.sqrt(DeltaF_cov)
+
+        elif not self.bootstrap:
             du = energy_perturbed + self._log_prob_mix
             F = -logsumexp(-du, axis=1)
 
@@ -446,9 +500,19 @@ class FastMBAR:
 
         else:
             F_list = []
+            if self.batch_size is not None:
+                energy_perturbed = jax.device_put(energy_perturbed)
             for k in range(self.bootstrap_num_rep):
-                du = energy_perturbed[:, self._conf_idx[k]] + self._log_prob_mix[k]
-                F = -logsumexp(-du, axis=1)
+                if self.batch_size is None:
+                    du = energy_perturbed[:, self._conf_idx[k]] + self._log_prob_mix[k]
+                    F = -logsumexp(-du, axis=1)
+                else:
+                    F = _perturbed_F_in_batches(
+                        energy_perturbed,
+                        jax.device_put(self._log_prob_mix[k]),
+                        self.batch_size,
+                        jax.device_put(self._conf_idx[k]),
+                    )
                 F_list.append(F)
             Fs = jnp.stack(F_list, axis=1)
             F = jnp.mean(Fs, axis=1)
@@ -472,47 +536,100 @@ class FastMBAR:
 
 
 
-@partial(jit, static_argnames=["batch_size"])
-def _log_prob_mix_and_gram_in_batches(F, energy, num_conf, batch_size):
+@partial(jit, static_argnames=["batch_size", "with_gram"])
+def _log_prob_mix_and_gram_in_batches(
+    F, energy, num_conf, batch_size, conf_idx=None, with_gram=True
+):
     """Compute log_prob_mix and the Gram matrix P^T P over batches of conformations.
 
     log_prob_mix[n] = logsumexp_k(F_k + log N_k - u_k(x_n)) is the log density of
     conformation n in the mixture distribution, and
     P[n, k] = exp(F_k - u_k(x_n) - log_prob_mix[n]) = p[n, k] / N_k, where p[n] are
     the MBAR weights of conformation n. P^T P is accumulated as
-    sum_n p[n]^T p[n] / (N_k N_l), so the N x M matrix P is never formed.
+    sum_n p[n]^T p[n] / (N_k N_l), so the N x M matrix P is never formed. If
+    conf_idx is given, the energy matrix is energy[:, conf_idx]. If with_gram is
+    False, the returned Gram matrix is zero.
     """
-    M, N = energy.shape
+    M = energy.shape[0]
+    N = _num_columns(energy, conf_idx)
     logn = jnp.log(num_conf)
-    ## the loop body is traced even when it runs zero times, so the slice in it
-    ## must fit in the energy matrix
-    batch_size = min(batch_size, N)
 
-    def stats(u):
+    def body(start, size, carry):
+        log_prob_mix, ptp = carry
+        u = _energy_columns(energy, conf_idx, start, size)
         logits = F + logn - u.T
         lse = logsumexp(logits, axis=1)
-        p = jnp.exp(logits - lse[:, None])
-        return lse, p.T @ p
-
-    def body(i, carry):
-        log_prob_mix, ptp = carry
-        u = jax.lax.dynamic_slice_in_dim(energy, i * batch_size, batch_size, axis=1)
-        lse, s = stats(u)
         log_prob_mix = jax.lax.dynamic_update_slice_in_dim(
-            log_prob_mix, lse, i * batch_size, axis=0
+            log_prob_mix, lse, start, axis=0
         )
-        return log_prob_mix, ptp + s
+        if with_gram:
+            p = jnp.exp(logits - lse[:, None])
+            ptp = ptp + p.T @ p
+        return log_prob_mix, ptp
 
-    num_full_batches = N // batch_size
     init = (jnp.zeros((N,), energy.dtype), jnp.zeros((M, M), energy.dtype))
-    log_prob_mix, ptp = jax.lax.fori_loop(0, num_full_batches, body, init)
-    if N % batch_size:
-        lse, s = stats(energy[:, num_full_batches * batch_size :])
-        log_prob_mix = log_prob_mix.at[num_full_batches * batch_size :].set(lse)
-        ptp = ptp + s
-
+    log_prob_mix, ptp = _loop_over_batches(body, N, batch_size, init)
     gram = ptp / (num_conf[:, None] * num_conf[None, :])
     return log_prob_mix, gram
+
+
+@partial(jit, static_argnames=["batch_size"])
+def _perturbed_F_in_batches(energy_perturbed, log_prob_mix, batch_size, conf_idx=None):
+    """F_l = -logsumexp_n(-(u_l(x_n) + log_prob_mix[n])) accumulated over batches.
+
+    If conf_idx is given (a bootstrap resample), the columns of energy_perturbed are
+    energy_perturbed[:, conf_idx], and log_prob_mix must already be aligned with
+    the resampled columns.
+    """
+    L = energy_perturbed.shape[0]
+
+    def body(start, size, acc):
+        u = _energy_columns(energy_perturbed, conf_idx, start, size)
+        lpm = jax.lax.dynamic_slice_in_dim(log_prob_mix, start, size)
+        return jnp.logaddexp(acc, logsumexp(-(u + lpm), axis=1))
+
+    init = jnp.full((L,), -jnp.inf, energy_perturbed.dtype)
+    return -_loop_over_batches(body, log_prob_mix.shape[0], batch_size, init)
+
+
+@partial(jit, static_argnames=["batch_size"])
+def _extended_gram_in_batches(
+    F, F_perturbed, energy, energy_perturbed, log_prob_mix, batch_size
+):
+    """P^T P over the M sampled and L perturbed states, accumulated over batches,
+    where P[n, k] = exp(F_k - u_k(x_n) - log_prob_mix[n])."""
+    F_ext = jnp.concatenate([F, F_perturbed])
+    K = F_ext.shape[0]
+
+    def body(start, size, acc):
+        u = jnp.concatenate(
+            [
+                jax.lax.dynamic_slice_in_dim(energy, start, size, axis=1),
+                jax.lax.dynamic_slice_in_dim(energy_perturbed, start, size, axis=1),
+            ],
+            axis=0,
+        )
+        lpm = jax.lax.dynamic_slice_in_dim(log_prob_mix, start, size)
+        P = jnp.exp(F_ext - u.T - lpm[:, None])
+        return acc + P.T @ P
+
+    init = jnp.zeros((K, K), energy.dtype)
+    return _loop_over_batches(body, log_prob_mix.shape[0], batch_size, init)
+
+
+def _covariance_from_gram(gram, weights, rtol):
+    """Covariance of equation 4.2 of Kong et al. (2003) from the Gram matrix P^T P.
+
+    The unbatched code computes R.T @ pinv(I - R W R^T) @ R with R from the QR
+    decomposition of P. The result depends on R only through R^T R = P^T P, so any
+    R with R^T R = P^T P gives the same covariance. R is built here from the
+    eigendecomposition of P^T P, so P itself is never needed. weights is the
+    diagonal of W.
+    """
+    eigval, eigvec = jnp.linalg.eigh(gram)
+    R = jnp.sqrt(jnp.clip(eigval, 0.0))[:, None] * eigvec.T
+    A = jnp.eye(gram.shape[0]) - R @ jnp.diag(weights) @ R.T
+    return R.T @ jnp.linalg.pinv(A, hermitian=True, rtol=rtol) @ R
 
 
 def _bootstrap_conf_idx(key, num_conf, bootstrap_block_size):
