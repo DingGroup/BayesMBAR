@@ -217,8 +217,14 @@ class FastMBAR:
             if F_init is not None:
                 dF_init = F_init[1:] - F_init[0]
             self._conf_idx = []
+            ## seed once and split per replicate so that replicates drawn within
+            ## the same millisecond still get different resamples
+            key = jr.PRNGKey(int(time() * 1000))
             for _ in range(self.bootstrap_num_rep):
-                conf_idx = _bootstrap_conf_idx(num_conf, self.bootstrap_block_size)
+                key, subkey = jr.split(key)
+                conf_idx = _bootstrap_conf_idx(
+                    subkey, num_conf, self.bootstrap_block_size
+                )
                 dF = _solve_mbar(
                     dF_init,
                     self.energy[:, conf_idx],
@@ -391,21 +397,19 @@ class FastMBAR:
 
 
 
-def _bootstrap_conf_idx(num_conf, bootstrap_block_size):
-    num_conf_cumsum = jnp.cumsum(num_conf, axis=0).tolist()
+def _bootstrap_conf_idx(key, num_conf, bootstrap_block_size):
+    num_conf_cumsum = np.cumsum(num_conf).tolist()
     num_conf_cumsum.pop(-1)
     num_conf_cumsum = [0] + num_conf_cumsum
     conf_idx = []
 
-    key = jr.PRNGKey(int(time() * 1000))
     for i in range(len(num_conf)):
         len_seq = int(num_conf[i])  ## using circular block bootstrap
-        num_sample_block = int(jnp.ceil(len_seq / bootstrap_block_size))
+        num_sample_block = -(-len_seq // bootstrap_block_size)
         key, subkey = jr.split(key)
         idxs = jr.randint(subkey, (num_sample_block,), 0, len_seq)
-        sample_idx = jnp.concat(
-            [jnp.arange(idx, idx + bootstrap_block_size) for idx in idxs]
-        )
+        ## the start index of each block plus offsets within a block, flattened
+        sample_idx = (idxs[:, None] + jnp.arange(bootstrap_block_size)).reshape(-1)
         sample_idx = jnp.remainder(sample_idx, len_seq)
         sample_idx = sample_idx[0:len_seq]
         sample_idx = sample_idx + num_conf_cumsum[i]

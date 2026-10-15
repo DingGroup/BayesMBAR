@@ -1,3 +1,4 @@
+from functools import partial
 from typing import NamedTuple
 
 import jax
@@ -9,9 +10,13 @@ from jax.scipy.special import logsumexp
 
 def _solve_mbar(dF_init, energy, num_conf, method, verbose):
     if method == "Newton":
-        f = jit(value_and_grad(_compute_loss_likelihood_of_dF))
-        hess = jit(hessian(_compute_loss_likelihood_of_dF))
-        res = fmin_newton(f, hess, dF_init, args=(energy, num_conf), verbose=verbose)
+        res = fmin_newton(
+            _value_and_grad_loss_likelihood_of_dF,
+            _hessian_loss_likelihood_of_dF,
+            dF_init,
+            args=(energy, num_conf),
+            verbose=verbose,
+        )
         dF = res["x"]
     elif method == "L-BFGS":
         res = fmin_lbfgs(
@@ -88,6 +93,14 @@ def _compute_loss_likelihood_of_dF(dF, energy, num_conf):
     """
 
     return -_compute_log_likelihood_of_dF(dF, energy, num_conf) / num_conf.sum()
+
+
+## Built once at module level so that repeated solves with the same array shapes
+## (e.g., bootstrap replicates) hit JAX's compilation cache.
+_value_and_grad_loss_likelihood_of_dF = jit(
+    value_and_grad(_compute_loss_likelihood_of_dF)
+)
+_hessian_loss_likelihood_of_dF = jit(hessian(_compute_loss_likelihood_of_dF))
 
 
 def fmin_newton(f, hess, x_init, args=(), verbose=True, eps=1e-10, max_iter=500):
@@ -188,7 +201,15 @@ def fmin_newton(f, hess, x_init, args=(), verbose=True, eps=1e-10, max_iter=500)
 
 ######################################
 #### L-BFGS optimizer using optax ####
-def _run_opt(init_params, fun, opt, max_iter, tol):
+@partial(jit, static_argnames=("f", "max_iter", "tol"))
+def _run_opt(init_params, args, f, max_iter, tol):
+    ## f and the settings are static while the data in args are traced, so repeated
+    ## solves with the same loss and array shapes (e.g., bootstrap replicates)
+    ## reuse one compiled loop instead of recompiling a new closure every call.
+    def fun(x):
+        return f(x, *args)
+
+    opt = optax.chain(_print_info(), optax.lbfgs())
     value_and_grad_fun = optax.value_and_grad_from_state(fun)
 
     def step(carry):
@@ -235,8 +256,6 @@ def _print_info():
     return optax.GradientTransformationExtraArgs(init_fn, update_fn)
 
 def fmin_lbfgs(f, x_init, args=(), verbose=True, tol=1e-8, max_iter=500):
-    opt = optax.chain(_print_info(), optax.lbfgs())
-
     def fun(x):
         return f(x, *args)
 
@@ -247,7 +266,7 @@ def fmin_lbfgs(f, x_init, args=(), verbose=True, tol=1e-8, max_iter=500):
         print("                           * * *                              \n")
         print(f"                    Tolerance = {tol:.3E}                    \n")
 
-    x_final, state_final = _run_opt(x_init, fun, opt, max_iter=max_iter, tol=tol)
+    x_final, state_final = _run_opt(x_init, args, f=f, max_iter=max_iter, tol=tol)
 
     iter_num = optax.tree_utils.tree_get(state_final, "count")
     grad = optax.tree_utils.tree_get(state_final, "grad")
