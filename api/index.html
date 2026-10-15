@@ -2861,7 +2861,9 @@ of conformations matters. Conformations sampled from one state
 need to occpy a continuous chunk of collumns. Conformations sampled
 from state k need to occupy collumns to the left of conformations
 sampled from state l if k &lt; l. If bootstrapping is not used, then
-the order of conformation does not matter.</p>
+the order of conformation does not matter. If your energies are
+stored as an (N x M) array u, pass its transpose u.T; for a float64
+array this is a view and is not copied.</p>
               </div>
             </td>
             <td>

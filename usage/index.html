@@ -835,6 +835,13 @@ shows the perturbed energy matrix <span class="arithmatex">\(B\)</span> (red), d
 <p>Reading down a column gives the <span class="arithmatex">\(M\)</span> reduced energies of one conformation;
 reading across a row gives the energies of all <span class="arithmatex">\(N\)</span> conformations evaluated in a
 single state.</p>
+<div class="admonition tip">
+<p class="admonition-title">Energies stored as <span class="arithmatex">\(N \times M\)</span></p>
+<p>If your energies are stored the other way around, with one row per
+conformation (an <span class="arithmatex">\(N \times M\)</span> array <code>u</code>), pass its transpose <code>u.T</code> as <span class="arithmatex">\(A\)</span>.
+For a <code>float64</code> array, <code>u.T</code> is a view of the same memory, and <code>FastMBAR</code>
+uses it without making a copy.</p>
+</div>
 <p>Both <span class="arithmatex">\(A\)</span> and <span class="arithmatex">\(v\)</span> must be
 <a href="https://numpy.org/devdocs/user/quickstart.html">NumPy arrays</a>: <span class="arithmatex">\(A\)</span> is
 two-dimensional and <span class="arithmatex">\(v\)</span> is one-dimensional. Given them, you create a <code>FastMBAR</code>
