@@ -1,14 +1,16 @@
 from copy import deepcopy
 from functools import partial
 from time import time
+from typing import Literal
 
 import jax
 import jax.numpy as jnp
 import jax.random as jr
 import numpy as np
-import numpy.typing as npt
+from beartype import beartype
 from jax import jit
 from jax.scipy.special import logsumexp
+from jaxtyping import Array, Float, Int, PRNGKeyArray, Real, jaxtyped
 
 from .utils import (
     _energy_columns,
@@ -30,6 +32,14 @@ __version__ = "1.4.5"
 ## due to underflow.
 __EPS__ = 1e-16
 
+## Shapes in the jaxtyping annotations below:
+##   M: number of states            N: number of conformations
+##   L: number of perturbed states  B: number of conformations in a batch
+##   R: number of bootstrap replicates
+## The public entry points accept NumPy or JAX arrays and are type-checked at
+## runtime (jaxtyping with beartype); the private helpers are annotated only.
+HostOrDeviceArray = np.ndarray | Array
+
 
 class FastMBAR:
     """
@@ -41,16 +51,17 @@ class FastMBAR:
     can be used to calculated the relative free energies of perturbed states.
     """
 
+    @jaxtyped(typechecker=beartype)
     def __init__(
         self,
-        energy: npt.NDArray[np.float64],
-        num_conf: npt.NDArray[np.int64],
+        energy: Real[HostOrDeviceArray, "M N"],
+        num_conf: Real[HostOrDeviceArray, " M"],
         bootstrap: bool = False,
         bootstrap_block_size: int = 3,
         bootstrap_num_rep: int = 100,
         verbose: bool = False,
-        method: str = "Newton",
-        F_init: npt.NDArray[np.float64] = None,
+        method: Literal["Newton", "L-BFGS"] = "Newton",
+        F_init: Real[HostOrDeviceArray, " M"] | None = None,
         batch_size: int | None = None,
         energy_on_device: bool | None = None,
     ) -> None:
@@ -101,33 +112,19 @@ class FastMBAR:
                 a copy. If None, the energy matrix is kept on the device when it fits
                 in the free device memory with some margin, and streamed otherwise.
                 Defaults to None.
+
+        Raises:
+            jaxtyping.TypeCheckError: (a subclass of TypeError) if an argument has the
+                wrong type, dtype kind or shape, e.g. if energy is not 2-D or
+                num_conf does not have one entry per row of energy.
+            ValueError: if num_conf has a non-positive entry or does not sum to the
+                number of columns of energy, or if batch_size is not positive.
         """
 
-        #### check the parameters: energy and num_conf
-        ## Note that both self.energy and self.conf will be on CPUs no matter
-        ## if cuda is True or False.
-
-        ## check energy
-        if isinstance(energy, (np.ndarray, jnp.ndarray)):
-            if energy.ndim != 2:
-                raise ValueError("energy has to be two dimensional")
-        else:
-            raise TypeError("energy has to be a 2-D ndarray")
-
-        ## check num_conf
-        if isinstance(num_conf, (np.ndarray, jnp.ndarray)):
-            if num_conf.ndim != 1:
-                raise ValueError("num_conf has to be one dimensional")
-            self.num_conf = num_conf.astype(np.float64)
-        else:
-            raise TypeError("num_conf has to be a 1-D ndarray.")
-
-        ## check the shape of energy and num_conf
-        if energy.shape[0] != num_conf.shape[0]:
-            raise ValueError(
-                "The number of rows in energy must be equal to the length of num_conf. "
-                f"Got {energy.shape[0]} rows in energy and {num_conf.shape[0]} elements in num_conf."
-            )
+        ## The types and shapes of the arguments are checked by jaxtyping and
+        ## beartype (see the annotations); only the checks that cannot be expressed
+        ## as annotations are done here.
+        self.num_conf = num_conf.astype(np.float64)
 
         ## check if the number of conformations sampled from each state is greater than 0
         if np.any(self.num_conf <= 0):
@@ -146,46 +143,22 @@ class FastMBAR:
         self.M = energy.shape[0]
         self.N = energy.shape[1]
 
-        ## whether to use bootstrap to estimate the uncertainty of the calculated free energies
-        ## bootstrap needs to be a boolean
-        if not isinstance(bootstrap, bool):
-            raise TypeError("bootstrap has to be a boolean.")
         self.bootstrap = bootstrap
-
-        ## block size used in block bootstrapping
-        if not isinstance(bootstrap_block_size, int):
-            raise TypeError("bootstrap_block_size has to be an integer.")
         self.bootstrap_block_size = bootstrap_block_size
-
-        ## number of repeats in block bootstrapping
-        if not isinstance(bootstrap_num_rep, int):
-            raise TypeError("bootstrap_num_rep has to be an integer.")
         self.bootstrap_num_rep = bootstrap_num_rep
-
-        ## whether to print the detailed information of solving MBAR equations
-        ## verbose needs to be a boolean
-        if not isinstance(verbose, bool):
-            raise TypeError("verbose has to be a boolean.")
         self.verbose = verbose
-
-        ## method used to solve the MBAR equation
-        if not isinstance(method, str):
-            raise TypeError("method has to be a string.")
-        if method not in ["Newton", "L-BFGS"]:
-            raise ValueError("method has to be Newton or L-BFGS.")
         self.method = method
 
-        ## batch size used to solve the MBAR equation and compute the covariance
+        ## batch size used to solve the MBAR equation and compute the covariance;
+        ## bool is a subclass of int, so the annotation alone does not reject True
         if batch_size is not None:
-            if not isinstance(batch_size, int) or isinstance(batch_size, bool):
+            if isinstance(batch_size, bool):
                 raise TypeError("batch_size has to be an integer or None.")
             if batch_size <= 0:
                 raise ValueError("batch_size has to be strictly greater than 0.")
         self.batch_size = batch_size
 
         ## whether the energy matrix is kept on the device or streamed from the host
-        if energy_on_device is not None and not isinstance(energy_on_device, bool):
-            raise TypeError("energy_on_device has to be a boolean or None.")
         if batch_size is None:
             if energy_on_device is False:
                 raise ValueError("energy_on_device=False requires batch_size.")
@@ -471,14 +444,14 @@ class FastMBAR:
             self._DeltaF_std = jnp.std(DeltaF, axis=2)
 
     @property
-    def F(self) -> np.ndarray:
+    def F(self) -> Float[np.ndarray, " M"]:
         r"""Free energies of the states under the constraint :math:`\sum_{k=1}^{M} N_k * F_k = 0`,
         where :math:`N_k` is the number of conformations sampled from state k.
         """
         return np.array(self._F)
 
     @property
-    def F_std(self) -> np.ndarray:
+    def F_std(self) -> Float[np.ndarray, " M"]:
         r"""Standard deviation of the free energies of the states under the constraint
         :math:`\sum_{k=1}^{M} N_k * F_k = 0`,
         where :math:`N_k` is the number of conformations sampled from state k.
@@ -486,7 +459,7 @@ class FastMBAR:
         return np.array(self._F_std)
 
     @property
-    def F_cov(self) -> np.ndarray:
+    def F_cov(self) -> Float[np.ndarray, "M M"]:
         r"""Covariance matrix of the free energies of the states under the constraint
         :math:`\sum_{k=1}^{M} N_k * F_k = 0`,
         where :math:`N_k` is the number of conformations sampled from state k.
@@ -494,7 +467,7 @@ class FastMBAR:
         return np.array(self._F_cov)
 
     @property
-    def DeltaF(self) -> np.ndarray:
+    def DeltaF(self) -> Float[np.ndarray, "M M"]:
         r"""Free energy difference between states.
         :math:`\mathrm{DeltaF}[i,j]` is the free energy difference between state j and state i,
         i.e., :math:`\mathrm{DeltaF}[i,j] = F[j] - F[i]` .
@@ -502,7 +475,7 @@ class FastMBAR:
         return np.array(self._DeltaF)
 
     @property
-    def DeltaF_std(self) -> np.ndarray:
+    def DeltaF_std(self) -> Float[np.ndarray, "M M"]:
         r"""Standard deviation of the free energy difference between states.
         :math:`\mathrm{DeltaF_std}[i,j]` is the standard deviation of the free energy
         difference :math:`\mathrm{DeltaF}[i,j]`.
@@ -510,13 +483,15 @@ class FastMBAR:
         return np.array(self._DeltaF_std)
 
     @property
-    def log_prob_mix(self) -> np.ndarray:
-        """the log probability density of conformations in the mixture distribution."""
+    def log_prob_mix(self) -> Float[np.ndarray, "*R N"]:
+        """the log probability density of conformations in the mixture distribution.
+        With bootstrap, one row per bootstrap replicate."""
         return np.array(self._log_prob_mix)
 
+    @jaxtyped(typechecker=beartype)
     def calculate_free_energies_of_perturbed_states(
-        self, energy_perturbed: npt.NDArray[np.float64]
-    ) -> dict:
+        self, energy_perturbed: Real[HostOrDeviceArray, "L N"]
+    ) -> dict[str, Float[np.ndarray, "..."]]:
         r"""calculate free energies for perturbed states.
 
         Args:
@@ -533,21 +508,21 @@ class FastMBAR:
                 - **DeltaF** - $\mathrm{DeltaF}[k,l]$ is the free energy difference between state
                   $k$ and state $l$, i.e., $\mathrm{DeltaF}[k,l] = F[l] - F[k]$.
                 - **DeltaF_std** - the standard deviation of the free energy difference.
+
+        Raises:
+            jaxtyping.TypeCheckError: (a subclass of TypeError) if energy_perturbed
+                is not a 2-D real array.
+            ValueError: if energy_perturbed does not have one column per conformation.
         """
 
-        if isinstance(energy_perturbed, np.ndarray):
-            energy_perturbed = energy_perturbed.astype(np.float64)
-        else:
-            raise TypeError("energy_perturbed has to be a numpy array")
-
-        if energy_perturbed.ndim != 2:
-            raise ValueError(
-                "energy_perturbed has to be a 2-D ndarray or a 2-D tensor."
-            )
-        if energy_perturbed.shape[1] != self.energy.shape[1]:
+        ## the type and number of dimensions are checked by jaxtyping; the number of
+        ## columns has to match the energy matrix given to the constructor, which
+        ## the annotation cannot see
+        if energy_perturbed.shape[1] != self.N:
             raise ValueError(
                 "the number of columns in energy_perturbed has to be equal to the number of columns in energy."
             )
+        energy_perturbed = energy_perturbed.astype(np.float64)
 
         L = energy_perturbed.shape[0]
 
@@ -670,8 +645,13 @@ class FastMBAR:
 
 @partial(jit, static_argnames=["batch_size", "with_gram"])
 def _log_prob_mix_and_gram_in_batches(
-    F, energy, num_conf, batch_size, conf_idx=None, with_gram=True
-):
+    F: Float[Array, " M"],
+    energy: Float[Array, "M N"],
+    num_conf: Float[Array, " M"],
+    batch_size: int,
+    conf_idx: Int[Array, " N"] | None = None,
+    with_gram: bool = True,
+) -> tuple[Float[Array, " N"], Float[Array, "M M"]]:
     """Compute log_prob_mix and the Gram matrix P^T P over batches of conformations.
 
     log_prob_mix[n] = logsumexp_k(F_k + log N_k - u_k(x_n)) is the log density of
@@ -706,7 +686,12 @@ def _log_prob_mix_and_gram_in_batches(
 
 
 @partial(jit, static_argnames=["batch_size"])
-def _perturbed_F_in_batches(energy_perturbed, log_prob_mix, batch_size, conf_idx=None):
+def _perturbed_F_in_batches(
+    energy_perturbed: Float[Array, "L N"],
+    log_prob_mix: Float[Array, " N"],
+    batch_size: int,
+    conf_idx: Int[Array, " N"] | None = None,
+) -> Float[Array, " L"]:
     """F_l = -logsumexp_n(-(u_l(x_n) + log_prob_mix[n])) accumulated over batches.
 
     If conf_idx is given (a bootstrap resample), the columns of energy_perturbed are
@@ -726,8 +711,13 @@ def _perturbed_F_in_batches(energy_perturbed, log_prob_mix, batch_size, conf_idx
 
 @partial(jit, static_argnames=["batch_size"])
 def _extended_gram_in_batches(
-    F, F_perturbed, energy, energy_perturbed, log_prob_mix, batch_size
-):
+    F: Float[Array, " M"],
+    F_perturbed: Float[Array, " L"],
+    energy: Float[Array, "M N"],
+    energy_perturbed: Float[Array, "L N"],
+    log_prob_mix: Float[Array, " N"],
+    batch_size: int,
+) -> Float[Array, "M+L M+L"]:
     """P^T P over the M sampled and L perturbed states, accumulated over batches,
     where P[n, k] = exp(F_k - u_k(x_n) - log_prob_mix[n])."""
     F_ext = jnp.concatenate([F, F_perturbed])
@@ -757,7 +747,13 @@ def _extended_gram_in_batches(
 
 
 @partial(jit, static_argnames=["with_gram"])
-def _add_gram_batch(ptp, F, logn, u_T, with_gram):
+def _add_gram_batch(
+    ptp: Float[Array, "M M"],
+    F: Float[Array, " M"],
+    logn: Float[Array, " M"],
+    u_T: Float[Array, "B M"],
+    with_gram: bool,
+) -> tuple[Float[Array, "M M"], Float[Array, " B"]]:
     lse, p = _mbar_weights(F, logn, u_T)
     if with_gram:
         ptp = ptp + p.T @ p
@@ -765,8 +761,13 @@ def _add_gram_batch(ptp, F, logn, u_T, with_gram):
 
 
 def _log_prob_mix_and_gram_streamed(
-    F, energy_T, num_conf, batch_size, conf_idx=None, with_gram=True
-):
+    F: Float[Array, " M"],
+    energy_T: Float[np.ndarray, "N M"],
+    num_conf: Float[Array, " M"],
+    batch_size: int,
+    conf_idx: Int[np.ndarray, " N"] | None = None,
+    with_gram: bool = True,
+) -> tuple[Float[np.ndarray, " N"], Float[Array, "M M"]]:
     """Same as _log_prob_mix_and_gram_in_batches, streaming energy_T, or its rows
     conf_idx if given, to the device in batches. log_prob_mix is returned in host
     memory."""
@@ -783,13 +784,18 @@ def _log_prob_mix_and_gram_streamed(
 
 
 @jit
-def _add_perturbed_lse_batch(acc, up_T, lpm):
+def _add_perturbed_lse_batch(
+    acc: Float[Array, " L"], up_T: Float[Array, "B L"], lpm: Float[Array, " B"]
+) -> Float[Array, " L"]:
     return jnp.logaddexp(acc, logsumexp(-(up_T + lpm[:, None]), axis=0))
 
 
 def _perturbed_F_streamed(
-    energy_perturbed_T, log_prob_mix, batch_size, conf_idx=None
-):
+    energy_perturbed_T: Float[np.ndarray, "N L"],
+    log_prob_mix: Float[np.ndarray, " N"],
+    batch_size: int,
+    conf_idx: Int[np.ndarray, " N"] | None = None,
+) -> Float[Array, " L"]:
     """Same as _perturbed_F_in_batches, streaming the transposed perturbed energies
     energy_perturbed_T (a host (N, L) array; its rows conf_idx if given) together
     with log_prob_mix (a host array aligned with the possibly resampled rows)."""
@@ -806,14 +812,25 @@ def _perturbed_F_streamed(
 
 
 @jit
-def _add_extended_gram_batch(acc, F_ext, u_T, up_T, lpm):
+def _add_extended_gram_batch(
+    acc: Float[Array, "M+L M+L"],
+    F_ext: Float[Array, " M+L"],
+    u_T: Float[Array, "B M"],
+    up_T: Float[Array, "B L"],
+    lpm: Float[Array, " B"],
+) -> Float[Array, "M+L M+L"]:
     P = jnp.exp(F_ext - jnp.concatenate([u_T, up_T], axis=1) - lpm[:, None])
     return acc + P.T @ P
 
 
 def _extended_gram_streamed(
-    F, F_perturbed, energy_T, energy_perturbed_T, log_prob_mix, batch_size
-):
+    F: Float[Array, " M"],
+    F_perturbed: Float[Array, " L"],
+    energy_T: Float[np.ndarray, "N M"],
+    energy_perturbed_T: Float[np.ndarray, "N L"],
+    log_prob_mix: Float[np.ndarray, " N"],
+    batch_size: int,
+) -> Float[Array, "M+L M+L"]:
     """Same as _extended_gram_in_batches, streaming the transposed sampled and
     perturbed energies and log_prob_mix from host memory."""
     F_ext = jnp.concatenate([F, F_perturbed])
@@ -832,7 +849,7 @@ def _extended_gram_streamed(
     return acc
 
 
-def _fits_on_device(nbytes, margin=1.25):
+def _fits_on_device(nbytes: int, margin: float = 1.25) -> bool:
     """Whether an array of nbytes, plus margin for temporaries, fits in the free
     memory of the default device. Devices that do not report memory statistics
     (e.g. the CPU) are assumed to fit."""
@@ -843,7 +860,9 @@ def _fits_on_device(nbytes, margin=1.25):
     return nbytes * margin <= free
 
 
-def _covariance_from_gram(gram, weights, rtol):
+def _covariance_from_gram(
+    gram: Float[Array, "K K"], weights: Float[Array, " K"], rtol: float
+) -> Float[Array, "K K"]:
     """Covariance of equation 4.2 of Kong et al. (2003) from the Gram matrix P^T P.
 
     The unbatched code computes R.T @ pinv(I - R W R^T) @ R with R from the QR
@@ -858,7 +877,13 @@ def _covariance_from_gram(gram, weights, rtol):
     return R.T @ jnp.linalg.pinv(A, hermitian=True, rtol=rtol) @ R
 
 
-def _bootstrap_conf_idx(key, num_conf, bootstrap_block_size):
+def _bootstrap_conf_idx(
+    key: PRNGKeyArray,
+    num_conf: Real[HostOrDeviceArray, " M"],
+    bootstrap_block_size: int,
+) -> Int[Array, " N"]:
+    """Indices of a circular block-bootstrap resample of the conformations, drawn
+    within each state's contiguous block of columns."""
     num_conf_cumsum = np.cumsum(num_conf).tolist()
     num_conf_cumsum.pop(-1)
     num_conf_cumsum = [0] + num_conf_cumsum

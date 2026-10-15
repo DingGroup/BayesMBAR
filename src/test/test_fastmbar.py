@@ -1,5 +1,7 @@
+import jax.numpy as jnp
 import numpy as np
 import pytest
+from jaxtyping import TypeCheckError
 from pytest import approx
 from bayesmbar import FastMBAR
 
@@ -167,3 +169,78 @@ def test_FastMBAR_streamed_from_memmap(setup_mbar_data, tmp_path):
     fastmbar = FastMBAR(energy_mm, num_conf, batch_size=50, energy_on_device=False)
     assert np.shares_memory(fastmbar.energy, energy_mm)
     assert fastmbar.F == approx(FastMBAR(energy, num_conf).F, abs=1e-10)
+
+
+def _modify(energy, num_conf, case):
+    """Arguments for FastMBAR with one thing wrong, chosen by case."""
+    M, N = energy.shape
+    kwargs = {}
+    if case == "energy 1-D":
+        energy = energy[0]
+    elif case == "energy is a list":
+        energy = energy.tolist()
+    elif case == "num_conf wrong length":
+        num_conf = num_conf[:-1]
+    elif case == "F_init wrong length":
+        kwargs["F_init"] = np.zeros(M + 1)
+    elif case == "method misspelled":
+        kwargs["method"] = "newton"
+    elif case == "batch_size float":
+        kwargs["batch_size"] = 2.5
+    elif case == "batch_size bool":
+        kwargs["batch_size"] = True
+    elif case == "bootstrap not bool":
+        kwargs["bootstrap"] = 1
+    elif case == "batch_size zero":
+        kwargs["batch_size"] = 0
+    elif case == "num_conf not positive":
+        num_conf = num_conf.copy()
+        num_conf[0], num_conf[1] = 0, num_conf[1] + num_conf[0]
+    elif case == "num_conf sum mismatch":
+        num_conf = num_conf.copy()
+        num_conf[0] += 1
+    return energy, num_conf, kwargs
+
+
+@pytest.mark.parametrize(
+    "case, error",
+    [
+        ## caught by the jaxtyping/beartype annotations
+        ("energy 1-D", TypeCheckError),
+        ("energy is a list", TypeCheckError),
+        ("num_conf wrong length", TypeCheckError),
+        ("F_init wrong length", TypeCheckError),
+        ("method misspelled", TypeCheckError),
+        ("batch_size float", TypeCheckError),
+        ("bootstrap not bool", TypeCheckError),
+        ## checked by hand
+        ("batch_size bool", TypeError),
+        ("batch_size zero", ValueError),
+        ("num_conf not positive", ValueError),
+        ("num_conf sum mismatch", ValueError),
+    ],
+)
+def test_FastMBAR_invalid_arguments(setup_mbar_data, case, error):
+    energy, num_conf, F_ref, energy_p, F_ref_p = setup_mbar_data
+    energy, num_conf, kwargs = _modify(energy, num_conf, case)
+    with pytest.raises(error):
+        FastMBAR(energy, num_conf, **kwargs)
+
+
+def test_FastMBAR_invalid_perturbed_energy(setup_mbar_data):
+    energy, num_conf, F_ref, energy_p, F_ref_p = setup_mbar_data
+    fastmbar = FastMBAR(energy, num_conf)
+    with pytest.raises(TypeCheckError):
+        fastmbar.calculate_free_energies_of_perturbed_states(energy_p[0])
+    with pytest.raises(ValueError):
+        fastmbar.calculate_free_energies_of_perturbed_states(energy_p[:, :-1])
+
+
+def test_FastMBAR_accepts_jax_arrays(setup_mbar_data):
+    energy, num_conf, F_ref, energy_p, F_ref_p = setup_mbar_data
+    ref = FastMBAR(energy, num_conf)
+    fastmbar = FastMBAR(jnp.asarray(energy), jnp.asarray(num_conf))
+    assert fastmbar.F == approx(ref.F, abs=1e-10)
+    results = fastmbar.calculate_free_energies_of_perturbed_states(jnp.asarray(energy_p))
+    results_ref = ref.calculate_free_energies_of_perturbed_states(energy_p)
+    assert results["F"] == approx(results_ref["F"], abs=1e-10)
