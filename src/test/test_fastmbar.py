@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 from pytest import approx
 from bayesmbar import FastMBAR
@@ -93,7 +94,6 @@ def test_FastMBAR_streamed_matches_unbatched(setup_mbar_data, batch_size):
         (dict(energy_on_device=False), ValueError),
         (dict(batch_size=50, energy_on_device="no"), TypeError),
         (dict(batch_size=50, energy_on_device=False, method="L-BFGS"), NotImplementedError),
-        (dict(batch_size=50, energy_on_device=False, bootstrap=True), NotImplementedError),
     ],
 )
 def test_FastMBAR_energy_on_device_errors(setup_mbar_data, kwargs, error):
@@ -102,8 +102,48 @@ def test_FastMBAR_energy_on_device_errors(setup_mbar_data, kwargs, error):
         FastMBAR(energy, num_conf, **kwargs)
 
 
-def test_FastMBAR_streamed_perturbed_states_not_supported(setup_mbar_data):
+@pytest.mark.parametrize("bootstrap", [False, True])
+@pytest.mark.parametrize("batch_size", [7, 100_000])
+def test_FastMBAR_streamed_perturbed_and_bootstrap_match_unbatched(
+    setup_mbar_data, monkeypatch, bootstrap, batch_size
+):
     energy, num_conf, F_ref, energy_p, F_ref_p = setup_mbar_data
-    fastmbar = FastMBAR(energy, num_conf, batch_size=50, energy_on_device=False)
-    with pytest.raises(NotImplementedError):
-        fastmbar.calculate_free_energies_of_perturbed_states(energy_p)
+    ## the bootstrap is seeded from the clock; pin it so that both runs draw the
+    ## same resamples
+    monkeypatch.setattr("bayesmbar.fastmbar.time", lambda: 1234.5)
+
+    kwargs = dict(bootstrap=bootstrap, bootstrap_num_rep=5, verbose=False)
+    ref = FastMBAR(energy, num_conf, **kwargs)
+    fastmbar = FastMBAR(
+        energy, num_conf, batch_size=batch_size, energy_on_device=False, **kwargs
+    )
+    assert fastmbar.F == approx(ref.F, abs=1e-10)
+    assert fastmbar.F_std == approx(ref.F_std, abs=1e-10)
+    assert fastmbar.log_prob_mix == approx(ref.log_prob_mix, abs=1e-10)
+
+    results = fastmbar.calculate_free_energies_of_perturbed_states(energy_p)
+    results_ref = ref.calculate_free_energies_of_perturbed_states(energy_p)
+    assert results["F"] == approx(results_ref["F"], abs=1e-10)
+    assert results["F_std"] == approx(results_ref["F_std"], abs=1e-10)
+
+
+def test_FastMBAR_streamed_fortran_order_energy_is_not_copied(setup_mbar_data):
+    energy, num_conf, F_ref, energy_p, F_ref_p = setup_mbar_data
+    energy_f = np.asfortranarray(energy, dtype=np.float64)
+    fastmbar = FastMBAR(energy_f, num_conf, batch_size=50, energy_on_device=False)
+    assert np.shares_memory(fastmbar.energy, energy_f)
+    assert fastmbar.F == approx(FastMBAR(energy, num_conf).F, abs=1e-10)
+
+
+def test_FastMBAR_streamed_from_memmap(setup_mbar_data, tmp_path):
+    ## an energy matrix in a file, opened Fortran-ordered, is streamed from the
+    ## file without being copied into memory first
+    energy, num_conf, F_ref, energy_p, F_ref_p = setup_mbar_data
+    mm = np.memmap(tmp_path / "energy.dat", dtype=np.float64, mode="w+", shape=energy.shape, order="F")
+    mm[:] = energy
+    mm.flush()
+    energy_mm = np.memmap(tmp_path / "energy.dat", dtype=np.float64, mode="r", shape=energy.shape, order="F")
+
+    fastmbar = FastMBAR(energy_mm, num_conf, batch_size=50, energy_on_device=False)
+    assert np.shares_memory(fastmbar.energy, energy_mm)
+    assert fastmbar.F == approx(FastMBAR(energy, num_conf).F, abs=1e-10)

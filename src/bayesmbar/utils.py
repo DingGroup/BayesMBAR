@@ -235,51 +235,62 @@ def _loss_grad_hess_from_sums(sums, F, num_conf):
 ## of rows at a time to the device.
 
 
-def _host_batches(energy_T, batch_size):
-    """Yield consecutive row batches of the host (N, M) array energy_T on the device.
+def _host_batches(get_batch, n, batch_size):
+    """Yield get_batch(start, stop) on the device for consecutive batches covering
+    range(n). get_batch returns a host array or a tuple of host arrays.
 
     The copy of the next batch is issued (jax.device_put is asynchronous) before the
     current batch is yielded, so it overlaps with the computation on the current
     batch. Consumers should block on their result for each batch; otherwise the
     Python loop runs ahead and queues copies of many batches on the device at once.
     """
-    N = energy_T.shape[0]
-    next_batch = jax.device_put(energy_T[:batch_size])
-    for start in range(0, N, batch_size):
+    next_batch = jax.device_put(get_batch(0, min(batch_size, n)))
+    for start in range(0, n, batch_size):
         batch = next_batch
-        if start + batch_size < N:
-            next_batch = jax.device_put(
-                energy_T[start + batch_size : start + 2 * batch_size]
-            )
+        stop = start + batch_size
+        if stop < n:
+            next_batch = jax.device_put(get_batch(stop, min(stop + batch_size, n)))
         yield batch
+
+
+def _rows(array, conf_idx=None):
+    """A get_batch for _host_batches returning rows start:stop of the host array,
+    or of array[conf_idx] (e.g. a bootstrap resample) without forming it."""
+    if conf_idx is None:
+        return lambda start, stop: array[start:stop]
+    return lambda start, stop: array[conf_idx[start:stop]]
 
 
 _add_mbar_sums_jit = jit(_add_mbar_sums, static_argnames=["with_hessian"])
 
 
-def _loss_grad_hess_streamed(dF, energy_T, num_conf, batch_size):
+def _loss_grad_hess_streamed(dF, energy_T, num_conf, batch_size, conf_idx=None):
     """Loss, gradient and Hessian of _compute_loss_likelihood_of_dF in one pass over
-    the host (N, M) array energy_T, i.e. the transposed energy matrix."""
+    the host (N, M) array energy_T, i.e. the transposed energy matrix, or over its
+    rows conf_idx if given."""
     F = jnp.concatenate([jnp.zeros((1,), dtype=dF.dtype), dF])
     logn = jnp.log(num_conf)
-    M = energy_T.shape[1]
+    N, M = energy_T.shape
     sums = (jnp.zeros(()), jnp.zeros((M,)), jnp.zeros((M, M)))
-    for u_T in _host_batches(energy_T, batch_size):
+    for u_T in _host_batches(_rows(energy_T, conf_idx), N, batch_size):
         ## block so that at most the current and the prefetched batch are on the
         ## device; see _host_batches
         sums = jax.block_until_ready(_add_mbar_sums_jit(sums, F, logn, u_T))
     return _loss_grad_hess_from_sums(sums, F, num_conf)
 
 
-def _solve_mbar_streamed(dF_init, energy_T, num_conf, verbose, batch_size):
+def _solve_mbar_streamed(
+    dF_init, energy_T, num_conf, verbose, batch_size, conf_idx=None
+):
     """Solve the MBAR equations with Newton's method, streaming the transposed energy
-    matrix energy_T (a host (N, M) array) to the device in batches. Each Newton
-    step usually costs one pass over the data (see fmin_newton_fused)."""
+    matrix energy_T (a host (N, M) array), or its rows conf_idx (a host array of
+    indices), to the device in batches. Each Newton step usually costs one pass
+    over the data (see fmin_newton_fused)."""
     num_conf = jnp.asarray(num_conf)
     res = fmin_newton_fused(
         _loss_grad_hess_streamed,
         dF_init,
-        args=(energy_T, num_conf, batch_size),
+        args=(energy_T, num_conf, batch_size, conf_idx),
         verbose=verbose,
     )
     return res["x"]
