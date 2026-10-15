@@ -2781,7 +2781,7 @@ can be used to calculated the relative free energies of perturbed states.</p>
 
 
 <a href="#bayesmbar.FastMBAR.__init__" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">__init__</span><span class="p">(</span><span class="n">energy</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">float64</span><span class="p">],</span> <span class="n">num_conf</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">int64</span><span class="p">],</span> <span class="n">bootstrap</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">bootstrap_block_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">bootstrap_num_rep</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;Newton&#39;</span><span class="p">,</span> <span class="n">F_init</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">float64</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">__init__</span><span class="p">(</span><span class="n">energy</span><span class="p">:</span> <span class="n">Real</span><span class="p">[</span><span class="n">HostOrDeviceArray</span><span class="p">,</span> <span class="s1">&#39;M N&#39;</span><span class="p">],</span> <span class="n">num_conf</span><span class="p">:</span> <span class="n">Real</span><span class="p">[</span><span class="n">HostOrDeviceArray</span><span class="p">,</span> <span class="s1">&#39; M&#39;</span><span class="p">],</span> <span class="n">bootstrap</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">bootstrap_block_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">bootstrap_num_rep</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;Newton&#39;</span><span class="p">,</span> <span class="s1">&#39;L-BFGS&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;Newton&#39;</span><span class="p">,</span> <span class="n">F_init</span><span class="p">:</span> <span class="n">Real</span><span class="p">[</span><span class="n">HostOrDeviceArray</span><span class="p">,</span> <span class="s1">&#39; M&#39;</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">energy_on_device</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -2941,6 +2941,95 @@ is printed. Defaults to False.</p>
                   <code>None</code>
             </td>
           </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>batch_size</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#int">int</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If given, the MBAR equations are solved and the
+covariance of the free energies is computed by accumulating over batches
+of batch_size conformations; so are the bootstrap replicates and the
+results of calculate_free_energies_of_perturbed_states. The energy
+matrix is copied to the device once, and the temporary memory scales
+with batch_size x M instead of N x M, which lowers the peak device
+memory from about four times the size of the energy matrix to about
+one. With bootstrap, the per-replicate log_prob_mix and resampling
+indices are kept in host memory. Defaults to None, meaning no batching.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>energy_on_device</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#bool">bool</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Only used with batch_size. If True, the
+energy matrix is copied to the device once. If False, it stays in host
+memory and each pass over the conformations streams it to the device in
+batches, so device memory no longer limits the size of the energy
+matrix; this costs one host-to-device copy of the matrix per pass.
+Newton usually needs the fewest passes; L-BFGS needs more passes but
+each skips the M x M Hessian, which can pay off when the number of
+states M is large. In this mode the
+energy matrix is stored transposed, as a contiguous (N, M) array; pass
+a float64 Fortran-ordered energy (e.g. energy_T.T for a C-ordered
+(N, M) array energy_T, or a np.memmap opened with order="F") to avoid
+a copy. If None, the energy matrix is kept on the device when it fits
+in the free device memory with some margin, and streamed otherwise.
+Defaults to None.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="jaxtyping.TypeCheckError">TypeCheckError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>(a subclass of TypeError) if an argument has the
+wrong type, dtype kind or shape, e.g. if energy is not 2-D or
+num_conf does not have one entry per row of energy.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError">ValueError</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>if num_conf has a non-positive entry or does not sum to the
+number of columns of energy, or if batch_size is not positive.</p>
+              </div>
+            </td>
+          </tr>
       </tbody>
     </table>
 
@@ -2967,7 +3056,7 @@ is printed. Defaults to False.</p>
   </span>
 
 <a href="#bayesmbar.FastMBAR.F" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">F</span><span class="p">:</span> <span class="n">ndarray</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">F</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">ndarray</span><span class="p">,</span> <span class="s1">&#39; M&#39;</span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -2997,7 +3086,7 @@ where :math:<code>N_k</code> is the number of conformations sampled from state k
   </span>
 
 <a href="#bayesmbar.FastMBAR.F_std" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">F_std</span><span class="p">:</span> <span class="n">ndarray</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">F_std</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">ndarray</span><span class="p">,</span> <span class="s1">&#39; M&#39;</span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3028,7 +3117,7 @@ where :math:<code>N_k</code> is the number of conformations sampled from state k
   </span>
 
 <a href="#bayesmbar.FastMBAR.F_cov" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">F_cov</span><span class="p">:</span> <span class="n">ndarray</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">F_cov</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">ndarray</span><span class="p">,</span> <span class="s1">&#39;M M&#39;</span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3059,7 +3148,7 @@ where :math:<code>N_k</code> is the number of conformations sampled from state k
   </span>
 
 <a href="#bayesmbar.FastMBAR.DeltaF" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">DeltaF</span><span class="p">:</span> <span class="n">ndarray</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">DeltaF</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">ndarray</span><span class="p">,</span> <span class="s1">&#39;M M&#39;</span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3090,7 +3179,7 @@ i.e., :math:<code>\mathrm{DeltaF}[i,j] = F[j] - F[i]</code> .</p>
   </span>
 
 <a href="#bayesmbar.FastMBAR.DeltaF_std" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">DeltaF_std</span><span class="p">:</span> <span class="n">ndarray</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">DeltaF_std</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">ndarray</span><span class="p">,</span> <span class="s1">&#39;M M&#39;</span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3121,12 +3210,13 @@ difference :math:<code>\mathrm{DeltaF}[i,j]</code>.</p>
   </span>
 
 <a href="#bayesmbar.FastMBAR.log_prob_mix" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log_prob_mix</span><span class="p">:</span> <span class="n">ndarray</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log_prob_mix</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">ndarray</span><span class="p">,</span> <span class="s1">&#39;*R N&#39;</span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>the log probability density of conformations in the mixture distribution.</p>
+        <p>the log probability density of conformations in the mixture distribution.
+With bootstrap, one row per bootstrap replicate.</p>
 
     </div>
 
@@ -3145,7 +3235,7 @@ difference :math:<code>\mathrm{DeltaF}[i,j]</code>.</p>
 
 
 <a href="#bayesmbar.FastMBAR.calculate_free_energies_of_perturbed_states" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">calculate_free_energies_of_perturbed_states</span><span class="p">(</span><span class="n">energy_perturbed</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">float64</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">calculate_free_energies_of_perturbed_states</span><span class="p">(</span><span class="n">energy_perturbed</span><span class="p">:</span> <span class="n">Real</span><span class="p">[</span><span class="n">HostOrDeviceArray</span><span class="p">,</span> <span class="s1">&#39;L N&#39;</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="o">...</span><span class="p">]]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3197,7 +3287,7 @@ represents the reduced energy of the n'th conformation in the l'th perturbed sta
       <tbody>
           <tr class="doc-section-item">
 <td><code>dict</code></td>            <td>
-                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#dict">dict</a></code>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a>, <span title="jaxtyping.Float">Float</span>[<span title="numpy.ndarray">ndarray</span>, ...]]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -3210,6 +3300,40 @@ represents the reduced energy of the n'th conformation in the l'th perturbed sta
   <span class="arithmatex">\(k\)</span> and state <span class="arithmatex">\(l\)</span>, i.e., <span class="arithmatex">\(\mathrm{DeltaF}[k,l] = F[l] - F[k]\)</span>.</li>
 <li><strong>DeltaF_std</strong> - the standard deviation of the free energy difference.</li>
 </ul>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="jaxtyping.TypeCheckError">TypeCheckError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>(a subclass of TypeError) if energy_perturbed
+is not a 2-D real array.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError">ValueError</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>if energy_perturbed does not have one column per conformation.</p>
               </div>
             </td>
           </tr>
