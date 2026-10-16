@@ -2819,13 +2819,12 @@ can be used to calculated the relative free energies of perturbed states.</p>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">num_conf</span><span class="p">:</span> <span class="n">Real</span><span class="p">[</span><span class="n">ndarray</span> <span class="o">|</span> <span class="n">Array</span><span class="p">,</span> <span class="s2">&quot; M&quot;</span><span class="p">],</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">bootstrap</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">bootstrap_block_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">bootstrap_num_rep</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">bootstrap_num_rep</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">method</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;Newton&quot;</span><span class="p">,</span> <span class="s2">&quot;L-BFGS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Newton&quot;</span><span class="p">,</span>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">F_init</span><span class="p">:</span> <span class="n">Real</span><span class="p">[</span><span class="n">ndarray</span> <span class="o">|</span> <span class="n">Array</span><span class="p">,</span> <span class="s2">&quot; M&quot;</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">energy_on_device</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -2849,7 +2848,7 @@ can be used to calculated the relative free energies of perturbed states.</p>
                 <code>energy</code>
             </td>
             <td>
-                  <code>2D ndarray</code>
+                  <code>2D array</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2861,9 +2860,7 @@ of conformations matters. Conformations sampled from one state
 need to occpy a continuous chunk of collumns. Conformations sampled
 from state k need to occupy collumns to the left of conformations
 sampled from state l if k &lt; l. If bootstrapping is not used, then
-the order of conformation does not matter. If your energies are
-stored as an (N x M) array u, pass its transpose u.T; for a float64
-array this is a view and is not copied.</p>
+the order of conformation does not matter.</p>
               </div>
             </td>
             <td>
@@ -2875,12 +2872,12 @@ array this is a view and is not copied.</p>
                 <code>num_conf</code>
             </td>
             <td>
-                  <code>1D int ndarray</code>
+                  <code>1D int array</code>
             </td>
             <td>
               <div class="doc-md-description">
                 <p>It should have a size of M, where num_conf[i] is the num of
-conformations sampled from state i. Therefore, np.sum(num_conf)
+conformations sampled from state i. Therefore the sum of all entries in num_conf
 has to be equal to N. All entries in num_conf have to be strictly
 greater than 0.</p>
               </div>
@@ -2898,8 +2895,8 @@ greater than 0.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>If bootstrap is True, the uncertainty of the calculated free energies
-will be estimate using block bootstraping. Defaults to False.</p>
+                <p>If bootstrap is True, the uncertainty of the calculated 
+free energies will be estimate using block bootstraping. Defaults to False.</p>
               </div>
             </td>
             <td>
@@ -2931,11 +2928,11 @@ will be estimate using block bootstraping. Defaults to False.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>number of repreats in block bootstrapping. Defaults to 100.</p>
+                <p>number of repreats in block bootstrapping. Defaults to 30.</p>
               </div>
             </td>
             <td>
-                  <code>100</code>
+                  <code>30</code>
             </td>
           </tr>
           <tr class="doc-section-item">
@@ -2947,8 +2944,7 @@ will be estimate using block bootstraping. Defaults to False.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>if verbose is true, the detailed information of solving MBAR equations
-is printed. Defaults to False.</p>
+                <p>if verbose is true, the detailed information of solving MBAR equations is printed. Defaults to False.</p>
               </div>
             </td>
             <td>
@@ -2976,11 +2972,13 @@ is printed. Defaults to False.</p>
                 <code>F_init</code>
             </td>
             <td>
-                  <code>1D ndarray</code>
+                  <code>1D array</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The initial guess for the relative free energies. If None, the initial guess is set to zero. Defaults to None.</p>
+                <p>The initial guess for the relative free energies. 
+A good initial guess can speed up the convergence of solving the MBAR equation.
+If None, the initial guess is set to zero. Defaults to None.</p>
               </div>
             </td>
             <td>
@@ -2996,44 +2994,15 @@ is printed. Defaults to False.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>If given, the MBAR equations are solved and the
-covariance of the free energies is computed by accumulating over batches
-of batch_size conformations; so are the bootstrap replicates and the
-results of calculate_free_energies_of_perturbed_states. The energy
-matrix is copied to the device once, and the temporary memory scales
-with batch_size x M instead of N x M, which lowers the peak device
-memory from about four times the size of the energy matrix to about
-one. With bootstrap, the per-replicate log_prob_mix and resampling
-indices are kept in host memory. Defaults to None, meaning no batching.</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>energy_on_device</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#bool">bool</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Only used with batch_size. If True, the
-energy matrix is copied to the device once. If False, it stays in host
-memory and each pass over the conformations streams it to the device in
-batches, so device memory no longer limits the size of the energy
-matrix; this costs one host-to-device copy of the matrix per pass.
-Newton usually needs the fewest passes; L-BFGS needs more passes but
-each skips the M x M Hessian, which can pay off when the number of
-states M is large. In this mode the
-energy matrix is stored transposed, as a contiguous (N, M) array; pass
-a float64 Fortran-ordered energy (e.g. energy_T.T for a C-ordered
-(N, M) array energy_T, or a np.memmap opened with order="F") to avoid
-a copy. If None, the energy matrix is kept on the device when it fits
-in the free device memory with some margin, and streamed otherwise.
-Defaults to None.</p>
+                <p>If given, calculations are done in batches of batch_size 
+conformations to reduce the peak device memory needed. This is useful when the 
+energy matrix is large and the device memory is limited. Where the batches are
+processed depends on where energy is stored. If energy is in host memory (a NumPy
+array, including a np.memmap, or a JAX array on the CPU), it is never copied to
+the device as a whole; batches of conformations are streamed to the device, or
+processed on the CPU if there is no GPU or TPU. If energy is a JAX array on a
+GPU or TPU, the batches are processed there.
+Defaults to None, meaning no batching.</p>
               </div>
             </td>
             <td>
