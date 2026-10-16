@@ -25,8 +25,6 @@ from .utils import (
 
 jax.config.update("jax_enable_x64", True)
 
-__version__ = "1.4.5"
-
 ## A small diagonal matrix with __EPS__ as its diagonal elements is added
 ## to the Hessian matrix to avoid the case where the Hessian matrix is singular
 ## due to underflow.
@@ -61,17 +59,16 @@ class FastMBAR:
         num_conf: Real[np.ndarray | jax.Array, " M"],
         bootstrap: bool = False,
         bootstrap_block_size: int = 3,
-        bootstrap_num_rep: int = 100,
+        bootstrap_num_rep: int = 30,
         verbose: bool = False,
         method: Literal["Newton", "L-BFGS"] = "Newton",
         F_init: Real[np.ndarray | jax.Array, " M"] | None = None,
         batch_size: int | None = None,
-        energy_on_device: bool | None = None,
     ) -> None:
         """Initializer for the class FastMBAR
 
         Args:
-            energy (2D ndarray): It has a size of (M x N), where M is the number of states
+            energy (2D array): It has a size of (M x N), where M is the number of states
                 and N is the total number of conformations. The entry energy[i,j]
                 is the reduced (unitless) energy of conformation j in state i.
                 If bootstrapping is used to calculate the uncertainty, the order
@@ -79,44 +76,29 @@ class FastMBAR:
                 need to occpy a continuous chunk of collumns. Conformations sampled
                 from state k need to occupy collumns to the left of conformations
                 sampled from state l if k < l. If bootstrapping is not used, then
-                the order of conformation does not matter. If your energies are
-                stored as an (N x M) array u, pass its transpose u.T; for a float64
-                array this is a view and is not copied.
-            num_conf (1D int ndarray): It should have a size of M, where num_conf[i] is the num of
-                conformations sampled from state i. Therefore, np.sum(num_conf)
+                the order of conformation does not matter.
+            num_conf (1D int array): It should have a size of M, where num_conf[i] is the num of
+                conformations sampled from state i. Therefore the sum of all entries in num_conf
                 has to be equal to N. All entries in num_conf have to be strictly
                 greater than 0.
-            bootstrap (bool, optional): If bootstrap is True, the uncertainty of the calculated free energies
-                will be estimate using block bootstraping. Defaults to False.
+            bootstrap (bool, optional): If bootstrap is True, the uncertainty of the calculated 
+                free energies will be estimate using block bootstraping. Defaults to False.
             bootstrap_block_size (int, optional): block size used in block bootstrapping. Defaults to 3.
-            bootstrap_num_rep (int, optional): number of repreats in block bootstrapping. Defaults to 100.
-            verbose (bool, optional): if verbose is true, the detailed information of solving MBAR equations
-                is printed. Defaults to False.
+            bootstrap_num_rep (int, optional): number of repreats in block bootstrapping. Defaults to 30.
+            verbose (bool, optional): if verbose is true, the detailed information of solving MBAR equations is printed. Defaults to False.
             method (str, optional): the method used to solve the MBAR equation. Defaults to "Newton".
-            F_init (1D ndarray, optional): The initial guess for the relative free energies. If None, the initial guess is set to zero. Defaults to None.
-            batch_size (int, optional): If given, the MBAR equations are solved and the
-                covariance of the free energies is computed by accumulating over batches
-                of batch_size conformations; so are the bootstrap replicates and the
-                results of calculate_free_energies_of_perturbed_states. The energy
-                matrix is copied to the device once, and the temporary memory scales
-                with batch_size x M instead of N x M, which lowers the peak device
-                memory from about four times the size of the energy matrix to about
-                one. With bootstrap, the per-replicate log_prob_mix and resampling
-                indices are kept in host memory. Defaults to None, meaning no batching.
-            energy_on_device (bool, optional): Only used with batch_size. If True, the
-                energy matrix is copied to the device once. If False, it stays in host
-                memory and each pass over the conformations streams it to the device in
-                batches, so device memory no longer limits the size of the energy
-                matrix; this costs one host-to-device copy of the matrix per pass.
-                Newton usually needs the fewest passes; L-BFGS needs more passes but
-                each skips the M x M Hessian, which can pay off when the number of
-                states M is large. In this mode the
-                energy matrix is stored transposed, as a contiguous (N, M) array; pass
-                a float64 Fortran-ordered energy (e.g. energy_T.T for a C-ordered
-                (N, M) array energy_T, or a np.memmap opened with order="F") to avoid
-                a copy. If None, the energy matrix is kept on the device when it fits
-                in the free device memory with some margin, and streamed otherwise.
-                Defaults to None.
+            F_init (1D array, optional): The initial guess for the relative free energies. 
+                A good initial guess can speed up the convergence of solving the MBAR equation.
+                If None, the initial guess is set to zero. Defaults to None.
+            batch_size (int, optional): If given, calculations are done in batches of batch_size 
+                conformations to reduce the peak device memory needed. This is useful when the 
+                energy matrix is large and the device memory is limited. Where the batches are
+                processed depends on where energy is stored. If energy is in host memory (a NumPy
+                array, including a np.memmap, or a JAX array on the CPU), it is never copied to
+                the device as a whole; batches of conformations are streamed to the device, or
+                processed on the CPU if there is no GPU or TPU. If energy is a JAX array on a
+                GPU or TPU, the batches are processed there.
+                Defaults to None, meaning no batching.
 
         Raises:
             jaxtyping.TypeCheckError: (a subclass of TypeError) if an argument has the
@@ -163,17 +145,18 @@ class FastMBAR:
                 raise ValueError("batch_size has to be strictly greater than 0.")
         self.batch_size = batch_size
 
-        ## whether the energy matrix is kept on the device or streamed from the host
-        if batch_size is None:
-            if energy_on_device is False:
-                raise ValueError("energy_on_device=False requires batch_size.")
-            energy_on_device = True
-        elif energy_on_device is None:
-            energy_on_device = _fits_on_device(self.M * self.N * 8)
-        self.energy_on_device = energy_on_device
+        ## Whether the energy matrix is streamed from host memory in batches. With
+        ## batch_size, a matrix in host memory (a NumPy array or a JAX array on the
+        ## CPU) is streamed, and a JAX array on a GPU or TPU is processed in batches
+        ## where it is. Without batch_size the matrix is always used as a whole.
+        self._streamed = batch_size is not None and not _on_accelerator(energy)
 
-        if self.energy_on_device:
-            ## no copy if energy is already float64
+        ## A JAX array on the CPU is used like a NumPy array, which it is converted
+        ## to without a copy; kept as a JAX array, it could not be combined with
+        ## arrays on the default device when that is a GPU or TPU.
+        energy = _to_numpy_if_on_cpu(energy)
+
+        if not self._streamed:
             self.energy = energy.astype(np.float64, copy=False)
         else:
             ## Keep only a contiguous (N, M) copy so that each batch of
@@ -185,7 +168,7 @@ class FastMBAR:
             self.energy = self._energy_T.T
 
         # ## solve the MBAR equation
-        if self.bootstrap is False and not self.energy_on_device:
+        if self.bootstrap is False and self._streamed:
             energy_T = self._energy_T
             num_conf = jnp.asarray(self.num_conf)
 
@@ -269,12 +252,16 @@ class FastMBAR:
             self._DeltaF_std = jnp.sqrt(self._DeltaF_cov)
 
         elif self.bootstrap is False:
+            ## copy the energy matrix to the device once; a NumPy array passed to
+            ## the jitted functions below would be copied again in every call
+            energy = jax.device_put(self.energy)
+
             dF_init = jnp.zeros(self.M - 1)
             if F_init is not None:
                 dF_init = F_init[1:] - F_init[0]
             dF = _solve_mbar(
                 dF_init,
-                self.energy,
+                energy,
                 self.num_conf,
                 self.method,
                 verbose=self.verbose,
@@ -286,7 +273,7 @@ class FastMBAR:
             self._F = F - jnp.sum(pi * F)
 
             b = -self._F - jnp.log(self.num_conf)
-            self._log_prob_mix = logsumexp(-(self.energy + b[:, None]), axis=0)
+            self._log_prob_mix = logsumexp(-(energy + b[:, None]), axis=0)
             self._log_mu = -self.log_prob_mix
 
             ## Compute self._F_cov under the constraint that \sum_i F[i]*num_conf[i] = 0
@@ -303,7 +290,7 @@ class FastMBAR:
             ## Therefore it is used here.
 
             self.P = jnp.exp(
-                -(self.energy - self._F[:, None] + self._log_prob_mix)
+                -(energy - self._F[:, None] + self._log_prob_mix)
             ).transpose()
             W = jnp.diag(self.num_conf)
             Q, R = jnp.linalg.qr(self.P)
@@ -346,9 +333,10 @@ class FastMBAR:
             self._conf_idx = []
             if self.batch_size is not None:
                 num_conf_dev = jnp.asarray(self.num_conf)
-            if self.batch_size is not None and self.energy_on_device:
-                ## copy the energy matrix to the device once; each resample is
-                ## gathered batch by batch instead of forming energy[:, conf_idx]
+            if not self._streamed:
+                ## copy the energy matrix to the device once; with batch_size,
+                ## each resample is gathered batch by batch instead of forming
+                ## energy[:, conf_idx]
                 energy = jax.device_put(self.energy)
             ## seed once and split per replicate so that replicates drawn within
             ## the same millisecond still get different resamples
@@ -359,14 +347,16 @@ class FastMBAR:
                     subkey, num_conf, self.bootstrap_block_size
                 )
                 if self.batch_size is None:
+                    ## the resample is gathered on the device
+                    energy_rep = energy[:, conf_idx]
                     dF = _solve_mbar(
                         dF_init,
-                        self.energy[:, conf_idx],
+                        energy_rep,
                         self.num_conf,
                         self.method,
                         verbose=self.verbose,
                     )
-                elif self.energy_on_device:
+                elif not self._streamed:
                     dF = _solve_mbar(
                         dF_init,
                         energy,
@@ -402,11 +392,11 @@ class FastMBAR:
                 if self.batch_size is None:
                     b = -F - jnp.log(self.num_conf)
                     log_prob_mix.append(
-                        logsumexp(-(self.energy[:, conf_idx] + b[:, None]), axis=0)
+                        logsumexp(-(energy_rep + b[:, None]), axis=0)
                     )
                     self._conf_idx.append(conf_idx)
                 else:
-                    if self.energy_on_device:
+                    if not self._streamed:
                         lpm, _ = _log_prob_mix_and_gram_in_batches(
                             F,
                             energy,
@@ -528,11 +518,11 @@ class FastMBAR:
             raise ValueError(
                 "the number of columns in energy_perturbed has to be equal to the number of columns in energy."
             )
-        energy_perturbed = energy_perturbed.astype(np.float64)
+        energy_perturbed = _to_numpy_if_on_cpu(energy_perturbed).astype(np.float64)
 
         L = energy_perturbed.shape[0]
 
-        if not self.energy_on_device:
+        if self._streamed:
             ## stream the perturbed energies like the energy matrix: transposed to
             ## (N, L) in host memory so that each batch is a contiguous block
             energy_perturbed_T = np.ascontiguousarray(energy_perturbed.T)
@@ -544,7 +534,7 @@ class FastMBAR:
         if not self.bootstrap and self.batch_size is not None:
             ## same results as the unbatched branch below, accumulated over batches
             ## of conformations; the N x (M + L) matrix P is never formed
-            if self.energy_on_device:
+            if not self._streamed:
                 energy = jax.device_put(self.energy)
                 energy_perturbed = jax.device_put(energy_perturbed)
                 F = _perturbed_F_in_batches(
@@ -583,11 +573,12 @@ class FastMBAR:
             DeltaF_std = jnp.sqrt(DeltaF_cov)
 
         elif not self.bootstrap:
+            energy_perturbed = jax.device_put(energy_perturbed)
             du = energy_perturbed + self._log_prob_mix
             F = -logsumexp(-du, axis=1)
 
             F_ext = jnp.concat([self._F, F])
-            U = jnp.concat([self.energy, energy_perturbed], axis=0).transpose()
+            U = jnp.concat([jax.device_put(self.energy), energy_perturbed], axis=0).T
             self._P = jnp.exp(-(U - F_ext + self._log_prob_mix[:, None]))
 
             W = jnp.diag(jnp.concat([self.num_conf, jnp.zeros(L)]))
@@ -606,13 +597,14 @@ class FastMBAR:
 
         else:
             F_list = []
-            if self.batch_size is not None and self.energy_on_device:
+            if not self._streamed:
+                ## copy once instead of once per replicate
                 energy_perturbed = jax.device_put(energy_perturbed)
             for k in range(self.bootstrap_num_rep):
                 if self.batch_size is None:
                     du = energy_perturbed[:, self._conf_idx[k]] + self._log_prob_mix[k]
                     F = -logsumexp(-du, axis=1)
-                elif not self.energy_on_device:
+                elif self._streamed:
                     F = _perturbed_F_streamed(
                         energy_perturbed_T,
                         self._log_prob_mix[k],
@@ -855,15 +847,15 @@ def _extended_gram_streamed(
     return acc
 
 
-def _fits_on_device(nbytes: int, margin: float = 1.25) -> bool:
-    """Whether an array of nbytes, plus margin for temporaries, fits in the free
-    memory of the default device. Devices that do not report memory statistics
-    (e.g. the CPU) are assumed to fit."""
-    stats = jax.devices()[0].memory_stats()
-    if not stats or "bytes_limit" not in stats:
-        return True
-    free = stats["bytes_limit"] - stats["bytes_in_use"]
-    return nbytes * margin <= free
+def _on_accelerator(x: np.ndarray | jax.Array) -> bool:
+    """Whether x is a JAX array stored on a GPU or TPU rather than in host memory."""
+    return isinstance(x, jax.Array) and any(d.platform != "cpu" for d in x.devices())
+
+
+def _to_numpy_if_on_cpu(x: np.ndarray | jax.Array) -> np.ndarray | jax.Array:
+    """x as a NumPy array if it is in host memory, without a copy; a JAX array on a
+    GPU or TPU is returned as is."""
+    return x if _on_accelerator(x) else np.asarray(x)
 
 
 def _covariance_from_gram(

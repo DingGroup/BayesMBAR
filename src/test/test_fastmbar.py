@@ -1,3 +1,4 @@
+import jax
 import jax.numpy as jnp
 import numpy as np
 import pytest
@@ -24,14 +25,26 @@ def test_FastMBAR(setup_mbar_data, method, bootstrap):
     results['F'] = results['F'] - results['F'].mean()
     assert results['F'] == approx(F_ref_p, abs = 2e-1)
 
+@pytest.fixture
+def on_accelerator(monkeypatch):
+    """Treat every JAX array as stored on a GPU or TPU, so that a JAX energy
+    matrix takes the on-device batched path even on a CPU-only machine."""
+    monkeypatch.setattr(
+        "bayesmbar.fastmbar._on_accelerator", lambda x: isinstance(x, jax.Array)
+    )
+
+
 @pytest.mark.parametrize("method", ["Newton", "L-BFGS"])
 @pytest.mark.parametrize("batch_size", [7, 50, 100_000])
-def test_FastMBAR_batched_matches_unbatched(setup_mbar_data, method, batch_size):
+def test_FastMBAR_batched_matches_unbatched(
+    setup_mbar_data, on_accelerator, method, batch_size
+):
     energy, num_conf, F_ref, energy_p, F_ref_p = setup_mbar_data
     ref = FastMBAR(energy, num_conf, verbose=False, method=method)
     fastmbar = FastMBAR(
-        energy, num_conf, verbose=False, method=method, batch_size=batch_size
+        jnp.asarray(energy), num_conf, verbose=False, method=method, batch_size=batch_size
     )
+    assert not fastmbar._streamed
     assert fastmbar.F == approx(ref.F, abs=1e-10)
     assert fastmbar.F_cov == approx(ref.F_cov, abs=1e-10)
     assert fastmbar.log_prob_mix == approx(ref.log_prob_mix, abs=1e-10)
@@ -45,7 +58,7 @@ def test_FastMBAR_batched_matches_unbatched(setup_mbar_data, method, batch_size)
 @pytest.mark.parametrize("method", ["Newton", "L-BFGS"])
 @pytest.mark.parametrize("batch_size", [7, 100_000])
 def test_FastMBAR_batched_bootstrap_matches_unbatched(
-    setup_mbar_data, monkeypatch, method, batch_size
+    setup_mbar_data, monkeypatch, on_accelerator, method, batch_size
 ):
     energy, num_conf, F_ref, energy_p, F_ref_p = setup_mbar_data
     ## the bootstrap is seeded from the clock; pin it so that both runs draw the
@@ -54,7 +67,8 @@ def test_FastMBAR_batched_bootstrap_matches_unbatched(
 
     kwargs = dict(bootstrap=True, bootstrap_num_rep=5, verbose=False, method=method)
     ref = FastMBAR(energy, num_conf, **kwargs)
-    fastmbar = FastMBAR(energy, num_conf, batch_size=batch_size, **kwargs)
+    fastmbar = FastMBAR(jnp.asarray(energy), num_conf, batch_size=batch_size, **kwargs)
+    assert not fastmbar._streamed
     assert fastmbar.F == approx(ref.F, abs=1e-10)
     assert fastmbar.F_std == approx(ref.F_std, abs=1e-10)
     assert fastmbar.log_prob_mix == approx(ref.log_prob_mix, abs=1e-10)
@@ -96,25 +110,46 @@ def test_FastMBAR_streamed_matches_unbatched(setup_mbar_data, method, batch_size
         verbose=False,
         method=method,
         batch_size=batch_size,
-        energy_on_device=False,
     )
-    assert fastmbar.energy_on_device is False
+    assert fastmbar._streamed
     assert fastmbar.F == approx(ref.F, abs=tol)
     assert fastmbar.F_cov == approx(ref.F_cov, abs=tol)
     assert fastmbar.log_prob_mix == approx(ref.log_prob_mix, abs=tol)
 
 
+def _cpu(x):
+    return jax.device_put(x, jax.devices("cpu")[0])
+
+
 @pytest.mark.parametrize(
-    "kwargs, error",
+    "to_array, batch_size, streamed",
     [
-        (dict(energy_on_device=False), ValueError),
-        (dict(batch_size=50, energy_on_device="no"), TypeError),
+        ## without batch_size the energy matrix is used as a whole
+        (np.asarray, None, False),
+        (_cpu, None, False),
+        ## with batch_size, an energy matrix in host memory is streamed
+        (np.asarray, 50, True),
+        (_cpu, 50, True),
     ],
 )
-def test_FastMBAR_energy_on_device_errors(setup_mbar_data, kwargs, error):
+def test_FastMBAR_streams_energy_in_host_memory(
+    setup_mbar_data, to_array, batch_size, streamed
+):
     energy, num_conf, F_ref, energy_p, F_ref_p = setup_mbar_data
-    with pytest.raises(error):
-        FastMBAR(energy, num_conf, **kwargs)
+    fastmbar = FastMBAR(to_array(energy), num_conf, batch_size=batch_size)
+    assert fastmbar._streamed is streamed
+    assert fastmbar.F == approx(FastMBAR(energy, num_conf).F, abs=1e-10)
+
+
+@pytest.mark.skipif(
+    jax.default_backend() == "cpu", reason="needs a GPU or TPU"
+)
+def test_FastMBAR_batches_energy_on_accelerator(setup_mbar_data):
+    energy, num_conf, F_ref, energy_p, F_ref_p = setup_mbar_data
+    energy_dev = jax.device_put(energy, jax.devices()[0])
+    fastmbar = FastMBAR(energy_dev, num_conf, batch_size=50)
+    assert not fastmbar._streamed
+    assert fastmbar.F == approx(FastMBAR(energy, num_conf).F, abs=1e-10)
 
 
 @pytest.mark.parametrize("method", ["Newton", "L-BFGS"])
@@ -136,7 +171,6 @@ def test_FastMBAR_streamed_perturbed_and_bootstrap_match_unbatched(
         num_conf,
         method=method,
         batch_size=batch_size,
-        energy_on_device=False,
         **kwargs,
     )
     assert fastmbar.F == approx(ref.F, abs=tol)
@@ -152,7 +186,7 @@ def test_FastMBAR_streamed_perturbed_and_bootstrap_match_unbatched(
 def test_FastMBAR_streamed_fortran_order_energy_is_not_copied(setup_mbar_data):
     energy, num_conf, F_ref, energy_p, F_ref_p = setup_mbar_data
     energy_f = np.asfortranarray(energy, dtype=np.float64)
-    fastmbar = FastMBAR(energy_f, num_conf, batch_size=50, energy_on_device=False)
+    fastmbar = FastMBAR(energy_f, num_conf, batch_size=50)
     assert np.shares_memory(fastmbar.energy, energy_f)
     assert fastmbar.F == approx(FastMBAR(energy, num_conf).F, abs=1e-10)
 
@@ -166,7 +200,7 @@ def test_FastMBAR_streamed_from_memmap(setup_mbar_data, tmp_path):
     mm.flush()
     energy_mm = np.memmap(tmp_path / "energy.dat", dtype=np.float64, mode="r", shape=energy.shape, order="F")
 
-    fastmbar = FastMBAR(energy_mm, num_conf, batch_size=50, energy_on_device=False)
+    fastmbar = FastMBAR(energy_mm, num_conf, batch_size=50)
     assert np.shares_memory(fastmbar.energy, energy_mm)
     assert fastmbar.F == approx(FastMBAR(energy, num_conf).F, abs=1e-10)
 
@@ -246,11 +280,12 @@ def test_FastMBAR_accepts_jax_arrays(setup_mbar_data):
     assert results["F"] == approx(results_ref["F"], abs=1e-10)
 
 
-@pytest.mark.parametrize("batch_size", [None, 50])
-def test_FastMBAR_float64_energy_is_not_copied(setup_mbar_data, batch_size):
+def test_FastMBAR_float64_energy_is_not_copied(setup_mbar_data):
+    ## without batch_size; a streamed energy matrix is not copied if it is
+    ## Fortran-ordered, see test_FastMBAR_streamed_fortran_order_energy_is_not_copied
     energy, num_conf, F_ref, energy_p, F_ref_p = setup_mbar_data
     energy = np.asarray(energy, dtype=np.float64)
-    fastmbar = FastMBAR(energy, num_conf, batch_size=batch_size, energy_on_device=True)
+    fastmbar = FastMBAR(energy, num_conf)
     assert np.shares_memory(fastmbar.energy, energy)
 
     ## other dtypes are still converted
